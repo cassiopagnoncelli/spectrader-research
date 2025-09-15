@@ -1,0 +1,35 @@
+Package: research
+Type: Package
+Title: Research framework
+Version: 2.2.1.9000
+Author: Cassio Pagnoncelli <cassiopagnoncelli@gmail.com>
+Maintainer: Cassio Pagnoncelli <cassiopagnoncelli@gmail.com>
+Authors@R:
+    person("Cassio", "Pagnoncelli", , "cassiopagnoncelli@gmail.com", role = c("aut", "cre"),
+           comment = c(ORCID = "0009-0000-7114-7008"))
+Description: A backtesting framework in iterative fashion.
+License: file LICENSE
+Encoding: UTF-8
+LazyData: true
+Depends:
+    R (>= 4.4.0)
+Imports: 
+    DBI,
+    dplyr,
+    forecast (>= 8.22.0),
+    jsonlite (>= 1.8.8),
+    magrittr (>= 2.0.3),
+    pool,
+    progress,
+    R6,
+    RPostgreSQL,
+    TTR,
+    uuid,
+    xts,
+    zoo
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.1
+Suggests: 
+    testthat (>= 3.0.0),
+    withr (>= 3.0.0)
+Config/testthat/edition: 3
