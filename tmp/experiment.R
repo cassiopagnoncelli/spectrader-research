@@ -1,8 +1,6 @@
 devtools::load_all()
 
-db = DatasourcePostgres$new()
+vix <- get_ticker("VIX")
+btc <- get_ticker("CBBTCUSD")
 
-vix <- db$aggregates("VIX")
-btc <- db$univariates("CBBTCUSD")
-
-# lts: to be done...
+align(vix, btc)

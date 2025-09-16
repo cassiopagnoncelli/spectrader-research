@@ -82,7 +82,7 @@ DatasourcePostgres <- R6::R6Class( # nolint: object_name_linter
     disconnect = function() {
       pool::poolClose(self$pool)
     },
-    send_query = function(query, timeseries = FALSE) {
+    send_query = function(query, timeseries = FALSE, xts = FALSE) {
       if (!is.null(self$pool) && !self$pool$valid) {
         self$connect(force_reconnect = TRUE)
       }
@@ -97,11 +97,14 @@ DatasourcePostgres <- R6::R6Class( # nolint: object_name_linter
       } else {
         df <- result
       }
+      if (xts) {
+        df <- xts::xts(df, order.by = as.POSIXct(rownames(df), tz = "UTC"))
+      }
       return(df)
     },
     aggregates = function(ticker, timeframe = NULL) {
       query <- self$query_aggregates(private$sanitize_ticker(ticker), timeframe)
-      return(self$send_query(query, timeseries = TRUE))
+      return(self$send_query(query, timeseries = TRUE, xts = TRUE))
     },
     query_aggregates = function(ticker, timeframe) {
       if (ticker != private$sanitize_ticker(ticker)) {
@@ -130,7 +133,7 @@ DatasourcePostgres <- R6::R6Class( # nolint: object_name_linter
     },
     univariates = function(ticker, timeframe = NULL) {
       query <- self$query_univariates(private$sanitize_ticker(ticker), timeframe)
-      return(self$send_query(query, timeseries = TRUE))
+      return(self$send_query(query, timeseries = TRUE, xts = TRUE))
     },
     query_univariates = function(ticker, timeframe) {
       if (ticker != private$sanitize_ticker(ticker)) {
@@ -151,6 +154,27 @@ DatasourcePostgres <- R6::R6Class( # nolint: object_name_linter
           WHERE %s ticker = '%s'
         ", timeframe_clause, ticker)
       )
+    },
+    kind = function(ticker) {
+      if (!is.null(self$pool) && !self$pool$valid) {
+        self$connect(force_reconnect = TRUE)
+      }
+      if (is.null(self$pool)) {
+        conn <- self$connect()
+      }
+      conn <- self$pool
+      query <- private$sanitize_sql(
+        sprintf("
+          SELECT kind
+          FROM time_series
+          WHERE ticker = '%s'
+        ", private$sanitize_ticker(ticker))
+      )
+      result <- RPostgreSQL::dbGetQuery(conn, query)
+      if (nrow(result) == 0) {
+        stop(sprintf("Ticker '%s' not found", ticker))
+      }
+      return(result$kind[1])
     }
   ),
   private = list(
