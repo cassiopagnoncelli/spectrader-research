@@ -1,6 +1,9 @@
 devtools::load_all()
 
-vix <- get_ticker("VIX")
+vix <- get_ticker("VIX")[, "aclose"]
 btc <- get_ticker("CBBTCUSD")
 
-align(vix, btc, names = FALSE, timeframe = "MN1", aggregate.end = TRUE)
+res <- align(vix, btc, names = FALSE, timeframe = "MN1", aggregates = "average", aggregate.end = TRUE)
+res
+
+colnames(res)
