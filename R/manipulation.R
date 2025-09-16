@@ -10,7 +10,7 @@ get_ticker <- function(ticker) {
   }
 }
 
-align <- function(..., fill = NA, locf = TRUE, names = TRUE, timeframe = NULL, aggregates = c("open", "high", "low", "close")) {
+align <- function(..., fill = NA, locf = TRUE, names = TRUE, timeframe = NULL, aggregates = c("open", "high", "low", "close"), aggregate.end = TRUE) {
   # Get the xts objects and their names
   xts_objects <- list(...)
   
@@ -157,6 +157,41 @@ align <- function(..., fill = NA, locf = TRUE, names = TRUE, timeframe = NULL, a
         colnames(aggregated_list[[i]]) <- names(aggregated_list)[i]
       }
       aligned_xts <- do.call(merge, aggregated_list)
+      
+      # Adjust timestamps if aggregate.end is FALSE
+      if (!aggregate.end) {
+        # Get the current timestamps (end of periods)
+        current_times <- zoo::index(aligned_xts)
+        
+        # Calculate beginning of periods based on timeframe
+        if (timeframe == "MN1") {
+          # For months, set to first day of month
+          new_times <- as.Date(format(current_times, "%Y-%m-01"))
+        } else if (timeframe == "Q") {
+          # For quarters, set to first day of quarter
+          quarters <- as.numeric(format(current_times, "%m"))
+          quarter_starts <- ifelse(quarters <= 3, 1, ifelse(quarters <= 6, 4, ifelse(quarters <= 9, 7, 10)))
+          new_times <- as.Date(paste0(format(current_times, "%Y"), "-", sprintf("%02d", quarter_starts), "-01"))
+        } else if (timeframe == "Y") {
+          # For years, set to January 1st
+          new_times <- as.Date(paste0(format(current_times, "%Y"), "-01-01"))
+        } else if (timeframe == "W1") {
+          # For weeks, set to Monday of the week
+          new_times <- current_times - as.numeric(format(current_times, "%u")) + 1
+        } else if (timeframe == "D1") {
+          # For days, keep the same date (already at beginning)
+          new_times <- current_times
+        } else if (timeframe == "H1") {
+          # For hours, set to beginning of hour
+          new_times <- as.POSIXct(format(current_times, "%Y-%m-%d %H:00:00"), tz = attr(current_times, "tzone"))
+        } else if (timeframe == "M1") {
+          # For minutes, set to beginning of minute
+          new_times <- as.POSIXct(format(current_times, "%Y-%m-%d %H:%M:00"), tz = attr(current_times, "tzone"))
+        }
+        
+        # Update the xts object with new timestamps
+        zoo::index(aligned_xts) <- new_times
+      }
     }
   }
   
