@@ -6,6 +6,10 @@ library("lubridate")
 
 nflx <- tq_get("NFLX", get = "stock.prices")
 
+# Keep OHLC data for visualization
+nflx_ohlc <- nflx %>%
+  select(date, open, high, low, close, adjusted)
+
 nflx_fc <- nflx %>%
   select(date, adjusted) %>%
   rename(ds = date, y = adjusted)
@@ -111,17 +115,25 @@ comparison_data <- nflx_fc %>%
   inner_join(forecast_comparison, by = "ds") %>%
   filter(year(ds) == 2025 & month(ds) >= 6)
 
-# Create visualization comparing 5-step forecasts with actual values
-ggplot(comparison_data, aes(x = ds)) +
-  geom_line(aes(y = y), color = "blue", size = 1, alpha = 0.8) +
-  geom_line(aes(y = forecast_5step), color = "red", size = 1, alpha = 0.8) +
-  geom_point(aes(y = forecast_5step), color = "red", size = 2) +
-  ggtitle("Netflix Stock Price: Actual vs 5-Step Ahead Forecasts (2025, June+)") +
+# Merge with OHLC data for candlestick visualization
+ohlc_comparison <- nflx_ohlc %>%
+  rename(ds = date) %>%
+  inner_join(forecast_comparison, by = "ds") %>%
+  filter(year(ds) == 2025 & month(ds) >= 6)
+
+# Create visualization with OHLC candlesticks and 5-step forecasts
+ggplot(ohlc_comparison, aes(x = ds)) +
+  geom_candlestick(aes(open = open, high = high, low = low, close = close),
+                   colour_up = "darkgreen", colour_down = "darkred",
+                   fill_up = "green", fill_down = "red", alpha = 0.7) +
+  geom_line(aes(y = forecast_5step), color = "blue", size = 1.2, alpha = 0.9) +
+  geom_point(aes(y = forecast_5step), color = "blue", size = 2.5) +
+  ggtitle("Netflix Stock Price: OHLC vs 5-Step Ahead Forecasts (2025, June+)") +
   xlab("Date") + ylab("Price") +
   theme_minimal() +
-  scale_color_manual(values = c("Actual" = "blue", "5-Step Forecast" = "red")) +
-  labs(subtitle = "Red line shows 5-step forecasts made 5 days earlier") +
-  theme(legend.position = "bottom")
+  labs(subtitle = "Blue line shows 5-step forecasts made 5 days earlier, candlesticks show actual OHLC") +
+  theme(legend.position = "bottom") +
+  scale_y_continuous(labels = scales::dollar_format())
 
 # Calculate and print forecast accuracy metrics
 mae <- mean(abs(comparison_data$y - comparison_data$forecast_5step))
