@@ -69,7 +69,7 @@ convert_to_xts <- function(series, series_name = "series") {
   }
 }
 
-withexovars <- function(..., indexed = FALSE) {
+withexovars <- function(..., indexed = FALSE, as.xts = FALSE, as.tibble = FALSE) {
   # Fetch common exogenous variables for financial time series modeling.
   vix <- get_ticker("VIX")[, "close"]       # xts object
   sp500 <- get_ticker("SP500") %>% calcreturns
@@ -189,6 +189,13 @@ withexovars <- function(..., indexed = FALSE) {
     # Set rownames to dates and remove the date column
     rownames(exo_df) <- as.character(exo_df$date)
     exo_df <- exo_df[, !names(exo_df) %in% "date", drop = FALSE]
+  }
+
+  # Convert to object format requested (xts, tibble, or data.frame)
+  if (as.xts) {
+    exo_df <- xts::xts(exo_df)
+  } else if (as.tibble) {
+    exo_df <- tibble::as_tibble(exo_df, rownames = "date")
   }
 
   return(exo_df)
