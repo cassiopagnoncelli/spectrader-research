@@ -219,7 +219,7 @@ garchvar <- function(series, n.ahead = 0) {
   return(fitted_values)
 }
 
-tafeatures <- function(series, slow = 200, long = 80, short = 20, signal = 8) {
+tafeatures <- function(series, slow = 200, long = 80, short = 20, signal = 8, as.xts = TRUE) {
   # Handle different input types first
   if (is.list(series)) {
     # If it's a list, try to extract the first element or find a price column
@@ -354,6 +354,11 @@ tafeatures <- function(series, slow = 200, long = 80, short = 20, signal = 8) {
     rownames(df) <- as.character(original_index)
   } else {
     rownames(df) <- as.character(original_index)
+  }
+
+  # Convert to xts if requested
+  if (as.xts) {
+    df <- xts::xts(df, order.by = as.Date(rownames(df)))
   }
 
   return(df)
