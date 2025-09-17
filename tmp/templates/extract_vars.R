@@ -5,7 +5,7 @@ library("lubridate")
 library("xts")
 library("zoo")
 library("rugarch")
-library("ggplot")
+library("ggplot2")
 
 nflx <- tq_get("NFLX", get = "stock.prices")[, c("date", "adjusted")]
 nflx_garch <- garchvar(nflx[, c("date", "adjusted")])

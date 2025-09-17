@@ -1,3 +1,4 @@
+library("devtools")
 library("tidyquant")
 library("glmnet")
 library("dplyr")
@@ -5,14 +6,26 @@ library("ggplot2")
 library("lubridate")
 library("xts")
 library("zoo")
+library("rugarch")
+
+returns <- function(series) diff(series) / lag(series, 1)
 
 nflx <- tq_get("NFLX", get = "stock.prices")
 vix <- get_ticker("VIX")[, "close"]       # xts object
+sp500 <- get_ticker("SP500") %>% returns
+dxy <- get_ticker("DXYLOOKALIKE")
+cryptocap <- get_ticker("CGMCAP") %>% log
+cryptogrowth <- get_ticker("CGMCAP") %>% returns
+bonds <- get_ticker("DGS2") %>% returns
+jobs <- get_ticker("IHLIDXUS") %>% returns
+oil <- get_ticker("DCOILWTICO") %>% returns
+goldvol <- get_ticker("GVZCLS")
+exo <- align(sp500, dxy, cryptocap, cryptogrowth, bonds, jobs, oil, goldvol)
 
-# Convert VIX xts to data frame and align with NFLX dates
-vix_df <- data.frame(
-  date = as.Date(index(vix)),
-  vix_close = as.numeric(coredata(vix))
+# Convert exo xts to data frame and align with NFLX dates
+exo_df <- data.frame(
+  date = as.Date(index(exo)),
+  as.data.frame(coredata(exo))
 )
 
 # Keep OHLC data for visualization
@@ -24,8 +37,8 @@ nflx_fc <- nflx %>%
   select(date, open, high, low, close, adjusted) %>%
   mutate(midpoint_5_ahead = lead((high + low) / 2, 5)) %>%  # 5-step ahead midpoint
   rename(ds = date, y = midpoint_5_ahead) %>%
-  left_join(vix_df, by = c("ds" = "date")) %>%  # Add VIX data
-  filter(!is.na(vix_close))  # Remove rows where VIX data is missing
+  left_join(exo_df, by = c("ds" = "date")) %>%  # Add exo data
+  filter(complete.cases(.))  # Remove rows where any exo data is missing
 
 nflx_fc <- nflx_fc %>%
   mutate(time_index = as.numeric(ds - min(ds)) + 1) %>%
@@ -34,14 +47,13 @@ nflx_fc <- nflx_fc %>%
   mutate(lag_1 = lag(adjusted, 1)) %>%
   mutate(lag_7 = lag(adjusted, 7)) %>%
   mutate(lag_30 = lag(adjusted, 30)) %>%
-  mutate(vix_lag_1 = lag(vix_close, 1)) %>%  # VIX lagged features
-  mutate(vix_lag_7 = lag(vix_close, 7)) %>%
-  mutate(vix_ma_5 = zoo::rollmean(vix_close, 5, fill = NA, align = "right")) %>%  # VIX moving average
   na.omit()
 
-# Include VIX features in the model
-x <- as.matrix(nflx_fc %>% select(time_index, sin_term, cos_term, lag_1, lag_7, lag_30, 
-                                  vix_close, vix_lag_1, vix_lag_7, vix_ma_5))
+# Include exo features in the model
+# Select base features plus all exo columns (excluding ds, y, and NFLX price columns)
+exo_cols <- setdiff(names(nflx_fc), c("ds", "y", "open", "high", "low", "close", "adjusted",
+                                      "time_index", "sin_term", "cos_term", "lag_1", "lag_7", "lag_30"))
+x <- as.matrix(nflx_fc %>% select(time_index, sin_term, cos_term, lag_1, lag_7, lag_30, all_of(exo_cols)))
 y <- nflx_fc$y
 
 set.seed(123)
@@ -79,20 +91,20 @@ plot_data <- all_nflx_data %>%
 # Create the candlestick plot
 p <- ggplot(plot_data, aes(x = ds)) +
   # Candlestick bodies
-  geom_rect(aes(xmin = ds - 0.3, xmax = ds + 0.3, 
+  geom_rect(aes(xmin = ds - 0.3, xmax = ds + 0.3,
                 ymin = pmin(open, close), ymax = pmax(open, close),
                 fill = color), alpha = 0.8) +
   # Candlestick wicks
-  geom_segment(aes(x = ds, xend = ds, y = low, yend = high), 
-               color = "black", size = 0.3) +
+  geom_segment(aes(x = ds, xend = ds, y = low, yend = high),
+               color = "black", linewidth = 0.3) +
   # Forecast line
-  geom_line(aes(y = pred), color = "blue", size = 1.2, alpha = 0.8) +
+  geom_line(aes(y = pred), color = "blue", linewidth = 1.2, alpha = 0.8) +
   # Actual midpoint line for comparison
-  geom_line(aes(y = actual_midpoint), color = "orange", size = 0.8, alpha = 0.7, linetype = "dashed") +
+  geom_line(aes(y = actual_midpoint), color = "orange", linewidth = 0.8, alpha = 0.7, linetype = "dashed") +
   scale_fill_manual(values = c("green" = "darkgreen", "red" = "darkred")) +
   labs(
     title = "NFLX Candlestick Chart with 5-Step Ahead Midpoint Forecast",
-    subtitle = "Blue line: aligned forecasts | Orange dashed: actual midpoints | VIX features incorporated",
+    subtitle = "Blue line: aligned forecasts | Orange dashed: actual midpoints | Multi-variable exo features incorporated",
     x = "Date",
     y = "Price ($)",
     fill = "Direction"
