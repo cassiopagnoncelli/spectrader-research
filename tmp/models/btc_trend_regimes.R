@@ -321,6 +321,54 @@ p4 <- ggplot(price_ma_data_filtered, aes(x = date, y = price_vs_ma200 * 100, col
 
 print(p4)
 
+# Plot 5: BTC Price Series - ONE continuous line with colors changing by regime
+# Get BTC price data from 2020
+btc_price_2020 <- target_var["2020/"]
+btc_price_2020 <- btc_price_2020[!is.na(btc_price_2020)]
+
+# Create data frame with price and regime
+btc_plot_data <- data.frame(
+  date = as.Date(index(btc_price_2020)),
+  price = as.numeric(btc_price_2020)
+)
+
+# Add regime classification (align by matching dates)
+regime_df <- data.frame(date = dates, regime = regime_classification)
+btc_plot_data <- merge(btc_plot_data, regime_df, by = "date", all.x = TRUE)
+
+# Remove any NAs and sort by date
+btc_plot_data <- btc_plot_data[!is.na(btc_plot_data$regime), ]
+btc_plot_data <- btc_plot_data[order(btc_plot_data$date), ]
+
+# Create segments for continuous line with changing colors
+segments_data <- data.frame()
+for (i in 1:(nrow(btc_plot_data)-1)) {
+  segments_data <- rbind(segments_data, data.frame(
+    x = btc_plot_data$date[i],
+    y = btc_plot_data$price[i],
+    xend = btc_plot_data$date[i+1],
+    yend = btc_plot_data$price[i+1],
+    regime = btc_plot_data$regime[i]
+  ))
+}
+
+# Plot ONE continuous line with colors changing by regime
+p5 <- ggplot(segments_data) +
+  geom_segment(aes(x = x, y = y, xend = xend, yend = yend, color = factor(regime)), 
+               linewidth = 1.2) +
+  scale_color_manual(values = c("1" = "#DC143C", "2" = "#4169E1", "3" = "#2E8B57"),
+                     labels = c("1" = "Bearish", "2" = "Neutral", "3" = "Bullish"),
+                     name = "Regime") +
+  scale_y_continuous(labels = scales::dollar_format()) +
+  labs(title = "Bitcoin Price - ONE Series Colored by Trend Regime (2020-2025)",
+       x = "Date",
+       y = "Bitcoin Price (USD)") +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        plot.title = element_text(size = 16, face = "bold"))
+
+print(p5)
+
 # Regime persistence analysis
 regime_durations <- c()
 current_regime <- regime_classification[!is.na(regime_classification)][1]

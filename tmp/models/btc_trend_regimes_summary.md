@@ -130,12 +130,13 @@ The 2020-2025 period shows a predominance of bullish conditions (49.1% of observ
 
 ## Visualizations Generated
 
-The model produced four comprehensive visualizations for the 2020-2025 period:
+The model produced five comprehensive visualizations for the 2020-2025 period:
 
 1. **Bitcoin Returns with Trend Regime Colors**: Daily returns colored by bearish (red), neutral (blue), and bullish (green) classifications
 2. **Trend Regime Distribution Over Time**: Monthly stacked bar chart showing regime frequency evolution
 3. **Trend Score with Regime Boundaries**: Composite trend score with threshold lines at -2 and +2
 4. **Price vs 200-day MA with Trend Regimes**: Long-term trend deviation analysis
+5. **Bitcoin Price Series with Trend Regimes**: **NEW** - BTC main price series (log scale) colored by trend regime from 2020-2025, showing how price movements correspond to different market conditions
 
 ## Model Validation
 
