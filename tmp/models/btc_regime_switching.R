@@ -19,3 +19,4 @@ exo %>% tail
 
 exotbl <- as_tibble(exo, rownames = "date")
 exoxts <- as.xts(exo)
+

@@ -16,6 +16,7 @@ source("renv/activate.R")
       }, error = function(e) {
         cat("Warning: Error closing connection pool:", e$message, "\n")
       })
+      spectrader_env$pool <- NULL
     }
   }
   
