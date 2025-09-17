@@ -103,15 +103,24 @@ withexovars <- function(..., indexed = FALSE) {
 
     for (i in seq_along(user_series_raw)) {
       series_name <- if (i <= length(call_names)) call_names[i] else paste0("user_series_", i)
-      converted_series <- convert_to_xts(user_series_raw[[i]], series_name)
-
-      # Set a meaningful column name based on the original variable name and detected column
-      original_col_name <- colnames(converted_series)[1]
-      new_col_name <- paste(series_name, original_col_name, sep = "_")
-      colnames(converted_series) <- new_col_name
-
-      user_series[[i]] <- converted_series
-      user_series_names <- c(user_series_names, series_name)
+      
+      # Check if the input is already an xts object with multiple columns (like aligned data)
+      if (xts::is.xts(user_series_raw[[i]]) && ncol(user_series_raw[[i]]) > 1) {
+        # This is already an aligned xts object, use it directly
+        user_series[[i]] <- user_series_raw[[i]]
+        user_series_names <- c(user_series_names, series_name)
+      } else {
+        # Convert single series to xts
+        converted_series <- convert_to_xts(user_series_raw[[i]], series_name)
+        
+        # Set a meaningful column name based on the original variable name and detected column
+        original_col_name <- colnames(converted_series)[1]
+        new_col_name <- paste(series_name, original_col_name, sep = "_")
+        colnames(converted_series) <- new_col_name
+        
+        user_series[[i]] <- converted_series
+        user_series_names <- c(user_series_names, series_name)
+      }
     }
   }
 
@@ -133,26 +142,46 @@ withexovars <- function(..., indexed = FALSE) {
   # Create the final data frame with proper column names
   exo_df <- data.frame(
     date = as.Date(zoo::index(exo)),
-    as.data.frame(xts::coredata(exo))
+    as.data.frame(zoo::coredata(exo))
   )
 
   # Set proper column names for the data frame
   expected_col_names <- c("date")
+  
+  # Handle column names for user series
   if (length(user_series) > 0) {
     for (i in seq_along(user_series)) {
       series_name <- if (i <= length(user_series_names)) user_series_names[i] else paste0("user_series_", i)
-      original_col_name <- colnames(user_series[[i]])[1]
-      # Remove the series_name prefix we added earlier since we're setting the final name
-      clean_col_name <- sub(paste0("^", series_name, "_"), "", original_col_name)
-      expected_col_names <- c(expected_col_names, paste(series_name, clean_col_name, sep = "_"))
+      
+      # Get the actual column names from the user series
+      user_col_names <- colnames(user_series[[i]])
+      
+      if (length(user_col_names) > 1) {
+        # Multi-column series (like aligned data) - use original column names
+        expected_col_names <- c(expected_col_names, user_col_names)
+      } else {
+        # Single column series - create name with series prefix
+        original_col_name <- user_col_names[1]
+        clean_col_name <- sub(paste0("^", series_name, "_"), "", original_col_name)
+        expected_col_names <- c(expected_col_names, paste(series_name, clean_col_name, sep = "_"))
+      }
     }
   }
+  
+  # Add standard exogenous variable names
   expected_col_names <- c(expected_col_names, "vix", "sp500_returns", "dxy", "crypto_cap_log",
                          "crypto_returns", "bonds_returns", "jobs_returns", "oil_returns", "gold_vol")
 
   # Ensure we have the right number of column names
   if (length(expected_col_names) == ncol(exo_df)) {
     colnames(exo_df) <- expected_col_names
+  } else {
+    # If there's a mismatch, use the existing column names from the xts object
+    warning("Column name count mismatch. Using existing column names from aligned data.")
+    existing_names <- c("date", colnames(exo))
+    if (length(existing_names) == ncol(exo_df)) {
+      colnames(exo_df) <- existing_names
+    }
   }
 
   # Handle indexed parameter
