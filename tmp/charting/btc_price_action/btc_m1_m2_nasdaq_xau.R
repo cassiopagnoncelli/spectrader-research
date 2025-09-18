@@ -1,4 +1,7 @@
 library("devtools")
+
+load_all()
+
 library("tidyquant")
 library("dplyr")
 library("lubridate")
@@ -15,9 +18,14 @@ m1 <- get_ticker("M1SL")
 m2 <- get_ticker("M2SL")
 ndaq <- get_ticker("NASDAQCOM")
 btc <- get_ticker("CBBTCUSD")
+xau <- tq_get("GC=F", from = "2000-08-30") %>%
+  mutate(xau = adjusted) %>%
+  dplyr::select(date, xau) %>%
+  as.xts() %>%
+  na.locf
 
-aligned <- align(btc, ndaq, m1, m2)
-colnames(aligned) <- c("btc", "ndaq", "m1", "m2")
+aligned <- align(btc, ndaq, m1, m2, xau)
+colnames(aligned) <- c("btc", "ndaq", "m1", "m2", "xau")
 
 normalised <- aligned %>%
   as_tibble(rownames = 'date') %>%
@@ -26,15 +34,22 @@ normalised <- aligned %>%
   mutate(btc = log(btc / first(btc), base = 100),
          ndaq = log(ndaq / first(ndaq), base = exp(1)),
          m1 = log(m1 / first(m1), base = 5),
-         m2 = log(m2 / first(m2), base = 1.8))
+         m2 = log(m2 / first(m2), base = 1.8),
+         xau = log(xau / first(xau), base = 2.2)
+         )
 
 ggplot(normalised, aes(x = date)) +
   geom_line(aes(y = btc, color = "BTC"), linewidth = 1.2) +
   geom_line(aes(y = ndaq, color = "NASDAQ"), linewidth = 0.5) +
   geom_line(aes(y = m1, color = "M1"), linewidth = 0.5) +
   geom_line(aes(y = m2, color = "M2"), linewidth = 0.5) +
-  scale_color_manual(values = c("BTC" = "black", "NASDAQ" = "blue", "M1" = "orange", "M2" = "red")) +
-  labs(title = "Normalized Comparison of BTC, NASDAQ, M1, and M2 Money Supply",
+  geom_line(aes(y = xau, color = "XAU/USD"), linewidth = 0.5) +
+  scale_color_manual(values = c("BTC" = "black",
+                                "NASDAQ" = "blue",
+                                "M1" = "green",
+                                "M2" = "red",
+                                "XAU/USD" = "gold")) +
+  labs(title = "Normalized Comparison of BTC, NASDAQ, M1/M2 Money Supply, Gold",
        subtitle = "All series normalized at start of 2015 (Log Scale)",
        x = "Date",
        y = "Normalized Value (Log Scale)",
