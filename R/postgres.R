@@ -146,7 +146,7 @@ DatasourcePostgres <- R6::R6Class( # nolint: object_name_linter
             high,
             low,
             close,
-            aclose,
+            adjusted,
             volume
           FROM aggregates
           WHERE %s ticker = '%s'
