@@ -1,4 +1,7 @@
 library("devtools")
+
+load_all()
+
 library("tidyquant")
 library("dplyr")
 library("lubridate")
@@ -6,14 +9,13 @@ library("xts")
 library("zoo")
 library("rugarch")
 library("ggplot2")
+library("ggfortify")
 
-nflx <- tq_get("NFLX", get = "stock.prices")[, c("date", "adjusted")]
-nflx_garch <- garchvar(nflx[, c("date", "adjusted")])
-
+nflx <- as.xts(tq_get("NFLX", get = "stock.prices")[, c("date", "adjusted")])
+nflx_garch <- garchvar(nflx)
 nflx_ta <- tafeatures(nflx)
 
-exo <- withexovars(nflx, nflx_garch, indexed = TRUE)
-exo %>% tail
+aligned <- align(nflx, nflx_garch, nflx_ta)
 
-exotbl <- as_tibble(exo, rownames = 'date')
-exoxts <- as.xts(exo)
+exo <- withexovars(aligned)
+exo %>% tail
