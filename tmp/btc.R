@@ -9,6 +9,7 @@ library("xts")
 library("zoo")
 library("rugarch")
 library("ggplot2")
+library("ggfortify")
 
 btc <- get_ticker("BSBTCUSDH1")
 btc_garch <- garchvar(btc)
@@ -20,9 +21,9 @@ aligned
 exo <- withexovars(aligned)
 exo %>% tail
 
-exotbl <- as_tibble(exo, rownames = "date")
-exoxts <- as.xts(exo)
+exotbl <- exo %>%
+  as_tibble(rownames = "date") %>%
+  mutate(date = as.POSIXct(date))
 
-tbl <- as_tibble(btc_garch, rownames = "date")
-ggplot(tbl, aes(x = date)) +
-  geom_line(aes(y = volatility))
+ggplot(exo, aes(x = Index)) +
+  geom_line(aes(y = btc_garch.volatility))
