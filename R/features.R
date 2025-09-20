@@ -224,19 +224,57 @@ garchvar <- function(series, n.ahead = 0) {
 
   } else if (xts::is.xts(series)) {
     # If it's already an xts object, calculate returns
+    # Handle multi-column xts objects by using the first column
+    if (ncol(series) > 1) {
+      series <- series[, 1]
+    }
+    
     series_returns_xts <- diff(series) / lag(series, 1)
-    series_returns_xts <- series_returns_xts[!is.na(series_returns_xts)]
+    # Use na.omit instead of logical indexing to avoid xts indexing issues
+    series_returns_xts <- na.omit(series_returns_xts)
 
   } else {
     stop("Input must be a data frame with date/price columns or an xts object")
   }
 
-  # Remove any remaining NA values
-  series_returns_xts <- series_returns_xts[!is.na(series_returns_xts)]
+  # Remove any remaining NA values using na.omit for xts compatibility
+  series_returns_xts <- na.omit(series_returns_xts)
 
-  # Check if we have enough data
+  # Additional data validation to remove infinite and NaN values
+  # Check for infinite values
+  if (any(is.infinite(as.numeric(series_returns_xts)))) {
+    warning("Infinite values detected in returns, removing them")
+    series_returns_xts <- series_returns_xts[is.finite(as.numeric(series_returns_xts))]
+  }
+  
+  # Check for NaN values
+  if (any(is.nan(as.numeric(series_returns_xts)))) {
+    warning("NaN values detected in returns, removing them")
+    series_returns_xts <- series_returns_xts[!is.nan(as.numeric(series_returns_xts))]
+  }
+  
+  # Remove extreme outliers that might cause numerical issues
+  returns_numeric <- as.numeric(series_returns_xts)
+  q99 <- quantile(returns_numeric, 0.99, na.rm = TRUE)
+  q01 <- quantile(returns_numeric, 0.01, na.rm = TRUE)
+  
+  # Cap extreme values at 99th and 1st percentiles
+  outlier_indices <- which(returns_numeric > q99 | returns_numeric < q01)
+  if (length(outlier_indices) > 0) {
+    warning(paste("Capping", length(outlier_indices), "extreme outliers"))
+    returns_numeric[returns_numeric > q99] <- q99
+    returns_numeric[returns_numeric < q01] <- q01
+    series_returns_xts <- xts::xts(returns_numeric, order.by = zoo::index(series_returns_xts))
+  }
+
+  # Check if we have enough data after cleaning
   if (length(series_returns_xts) < 10) {
-    stop("Insufficient data for GARCH modeling (need at least 10 observations)")
+    stop("Insufficient data for GARCH modeling after data cleaning (need at least 10 observations)")
+  }
+
+  # Final check for any remaining problematic values
+  if (any(!is.finite(as.numeric(series_returns_xts)))) {
+    stop("Data still contains non-finite values after cleaning. Cannot proceed with GARCH modeling.")
   }
 
   # Specify GARCH(1,1) model
@@ -246,13 +284,21 @@ garchvar <- function(series, n.ahead = 0) {
     distribution.model = "norm"
   )
 
-  # Fit GARCH model
-  garch_fit <- rugarch::ugarchfit(spec = garch_spec, data = series_returns_xts)
-
-  # Return fitted values
-  fitted_values <- rugarch::fitted(garch_fit)
-  colnames(fitted_values) <- "volatility"
-  return(fitted_values)
+  # Fit GARCH model with error handling
+  tryCatch({
+    garch_fit <- rugarch::ugarchfit(spec = garch_spec, data = series_returns_xts)
+    
+    # Return conditional volatility (sigma), not fitted values (mu)
+    # fitted() returns the conditional mean, sigma() returns conditional volatility
+    volatility_values <- rugarch::sigma(garch_fit)
+    colnames(volatility_values) <- "volatility"
+    return(volatility_values)
+  }, error = function(e) {
+    stop(paste("GARCH model fitting failed:", e$message, 
+               "\nData summary: min =", min(series_returns_xts), 
+               ", max =", max(series_returns_xts),
+               ", length =", length(series_returns_xts)))
+  })
 }
 
 tafeatures <- function(series, slow = 200, long = 80, short = 20, signal = 8, as.xts = TRUE) {

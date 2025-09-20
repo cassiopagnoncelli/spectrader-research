@@ -1,4 +1,7 @@
 library("devtools")
+
+load_all()
+
 library("tidyquant")
 library("dplyr")
 library("lubridate")
