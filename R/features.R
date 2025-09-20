@@ -33,15 +33,15 @@ withexovars <- function(series) {
 
   # Create the standard exogenous variables list
   stdseries <- cbind(
-    vix = vix,
-    sp500 = sp500,
+    # vix = vix,
+    # sp500 = sp500,
     dxy = dxy,
-    cryptocap = cryptocap,
-    cryptogrowth = cryptogrowth,
-    bonds = bonds,
-    jobs = jobs,
-    oil = oil,
-    goldvol = goldvol
+    cryptocap = cryptocap
+    # cryptogrowth = cryptogrowth,
+    # bonds = bonds,
+    # jobs = jobs,
+    # oil = oil,
+    # goldvol = goldvol
   )
 
   # Merged user series with exogenous variables
@@ -304,15 +304,26 @@ tafeatures <- function(series, slow = 200, long = 80, short = 20, signal = 8, as
   sma_slow <- TTR::SMA(filled_series, n = slow)
 
   # Calculate the ratios (log of ratios)
+  sma_0 <- log(filled_values / sma_signal)
   sma_1 <- log(sma_signal / sma_short)
   sma_2 <- log(sma_short / sma_long)
   sma_3 <- log(sma_long / sma_slow)
 
+  sma_0_vel <- sma_0 - dplyr::lag(sma_0, 1)
+  sma_1_vel <- sma_1 - dplyr::lag(sma_1, 1)
+  sma_2_vel <- sma_2 - dplyr::lag(sma_2, 1)
+  sma_3_vel <- sma_3 - dplyr::lag(sma_3, 1)
+
   # Create data frame with the results, ensuring same length as original
   df <- data.frame(
+    sma_0 = as.numeric(sma_0),
     sma_1 = as.numeric(sma_1),
     sma_2 = as.numeric(sma_2),
-    sma_3 = as.numeric(sma_3)
+    sma_3 = as.numeric(sma_3),
+    sma_0_vel = as.numeric(sma_0_vel),
+    sma_1_vel = as.numeric(sma_1_vel),
+    sma_2_vel = as.numeric(sma_2_vel),
+    sma_3_vel = as.numeric(sma_3_vel)
   )
 
   # Ensure the data frame has the same number of rows as original series
@@ -321,9 +332,14 @@ tafeatures <- function(series, slow = 200, long = 80, short = 20, signal = 8, as
     if (nrow(df) < original_length) {
       missing_rows <- original_length - nrow(df)
       na_rows <- data.frame(
+        sma_0 = rep(NA, missing_rows),
         sma_1 = rep(NA, missing_rows),
         sma_2 = rep(NA, missing_rows),
-        sma_3 = rep(NA, missing_rows)
+        sma_3 = rep(NA, missing_rows),
+        sma_0_vel = rep(NA, missing_rows),
+        sma_1_vel = rep(NA, missing_rows),
+        sma_2_vel = rep(NA, missing_rows),
+        sma_3_vel = rep(NA, missing_rows)
       )
       df <- rbind(na_rows, df)
     }
