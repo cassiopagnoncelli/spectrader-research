@@ -349,3 +349,31 @@ tafeatures <- function(series, slow = 200, long = 80, short = 20, signal = 8, as
 
   return(df)
 }
+
+build_features <- function(series) {
+  series_garch <- garchvar(series)
+  btc_ta <- tafeatures(series, as.xts = TRUE)
+  aligned <- align(series, series_garch, btc_ta)
+  exo <- withexovars(aligned)
+
+  trend_returns <- na.omit(diff(log(exo[, 1])))
+  trend_fit <- rcfit(trend_returns, regimes = 3)
+  trend_regimes <- rcfitted(trend_fit) %>%
+    as.data.frame() %>%
+    mutate(trend_regime = as.factor(as.character(regime))) %>%
+    dplyr::select(trend_regime) %>%
+    as.xts(order.by = index(rcfitted(trend_fit)))
+
+  vol_fit <- rcfit(na.omit(exo[, 2]), regimes = 3)
+  vol_regimes <- rcfitted(vol_fit) %>%
+    as.data.frame() %>%
+    mutate(vol_regime = as.factor(as.character(regime))) %>%
+    dplyr::select(vol_regime) %>%
+    as.xts(order.by = index(rcfitted(vol_fit)))
+
+  regimes <- merge(trend_regimes, vol_regimes, join = "inner")
+  regimes
+
+  final <- merge(exo, regimes, join = "inner")
+  final
+}
