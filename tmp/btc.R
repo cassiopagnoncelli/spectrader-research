@@ -17,11 +17,12 @@ btc_ta <- tafeatures(btc, as.xts = TRUE)
 aligned <- align(btc, btc_garch, btc_ta)
 aligned
 
-exo <- withexovars(aligned, indexed = TRUE)
+exo <- withexovars(aligned)
 exo %>% tail
 
 exotbl <- as_tibble(exo, rownames = "date")
 exoxts <- as.xts(exo)
 
 tbl <- as_tibble(btc_garch, rownames = "date")
-ggplot(tbl, aes(x = date)) + geom_line(aes(y = volatility))
+ggplot(tbl, aes(x = date)) +
+  geom_line(aes(y = volatility))

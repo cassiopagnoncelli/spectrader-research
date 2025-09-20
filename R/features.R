@@ -5,73 +5,12 @@ calcreturns <- function(series, log = FALSE) {
   diff(series) / lag(series, 1)
 }
 
-# Helper function to convert different input types to xts
-convert_to_xts <- function(series, series_name = "series") {
-  if (xts::is.xts(series)) {
-    # Already an xts object, return as-is
-    return(series)
-  } else if (is.data.frame(series) || tibble::is_tibble(series)) {
-    # Handle data.frame or tibble
+withexovars <- function(series) {
+  if (!inherits(series, "xts"))
+    stop("series should be an xts object")
 
-    # Try to identify date column
-    date_col <- NULL
-    for (col in names(series)) {
-      if (inherits(series[[col]], c("Date", "POSIXct", "POSIXt")) ||
-          tolower(col) %in% c("date", "time", "datetime", "timestamp")) {
-        date_col <- col
-        break
-      }
-    }
-
-    if (is.null(date_col)) {
-      stop(paste("No date column found in", series_name, ". Expected column named 'date', 'time', 'datetime', or 'timestamp', or a column with Date/POSIXct class."))
-    }
-
-    # Extract dates
-    dates <- series[[date_col]]
-
-    # Find value columns (exclude date column)
-    value_cols <- setdiff(names(series), date_col)
-
-    if (length(value_cols) == 0) {
-      stop(paste("No value columns found in", series_name, "after excluding date column."))
-    }
-
-    # Try common financial data column names first
-    preferred_cols <- c("adjusted", "close", "value", "price")
-    value_col <- NULL
-
-    for (pref_col in preferred_cols) {
-      if (pref_col %in% value_cols) {
-        value_col <- pref_col
-        break
-      }
-    }
-
-    # If no preferred column found, use the first numeric column
-    if (is.null(value_col)) {
-      numeric_cols <- value_cols[sapply(value_cols, function(x) is.numeric(series[[x]]))]
-      if (length(numeric_cols) > 0) {
-        value_col <- numeric_cols[1]
-      } else {
-        stop(paste("No numeric value columns found in", series_name))
-      }
-    }
-
-    # Create xts object
-    xts_obj <- xts::xts(series[[value_col]], order.by = as.Date(dates))
-    colnames(xts_obj) <- value_col
-
-    return(xts_obj)
-
-  } else {
-    stop(paste("Input", series_name, "must be a data.frame, tibble, or xts object"))
-  }
-}
-
-withexovars <- function(..., indexed = FALSE, as.xts = FALSE, as.tibble = FALSE) {
   # Fetch common exogenous variables for financial time series modeling.
-  vix <- get_ticker("VIX")[, "close"]       # xts object
+  vix <- get_ticker("VIX")[, "close"]
   sp500 <- get_ticker("SP500") %>% calcreturns
   dxy <- get_ticker("DXYLOOKALIKE")
   cryptocap <- get_ticker("CGMCAP") %>% log
@@ -92,113 +31,25 @@ withexovars <- function(..., indexed = FALSE, as.xts = FALSE, as.tibble = FALSE)
   colnames(oil) <- "oil_returns"
   colnames(goldvol) <- "gold_vol"
 
-  # Convert user-provided series to xts objects
-  user_series_raw <- list(...)
-  user_series <- list()
-  user_series_names <- c()
-
-  if (length(user_series_raw) > 0) {
-    # Get the original variable names from the calling environment
-    call_names <- as.character(substitute(list(...)))[-1]
-
-    for (i in seq_along(user_series_raw)) {
-      series_name <- if (i <= length(call_names)) call_names[i] else paste0("user_series_", i)
-      
-      # Check if the input is already an xts object with multiple columns (like aligned data)
-      if (xts::is.xts(user_series_raw[[i]]) && ncol(user_series_raw[[i]]) > 1) {
-        # This is already an aligned xts object, use it directly
-        user_series[[i]] <- user_series_raw[[i]]
-        user_series_names <- c(user_series_names, series_name)
-      } else {
-        # Convert single series to xts
-        converted_series <- convert_to_xts(user_series_raw[[i]], series_name)
-        
-        # Set a meaningful column name based on the original variable name and detected column
-        original_col_name <- colnames(converted_series)[1]
-        new_col_name <- paste(series_name, original_col_name, sep = "_")
-        colnames(converted_series) <- new_col_name
-        
-        user_series[[i]] <- converted_series
-        user_series_names <- c(user_series_names, series_name)
-      }
-    }
-  }
-
-  # Create named lists for alignment
-  all_series <- c(user_series,
-                  list(vix = vix,
-                       sp500 = sp500,
-                       dxy = dxy,
-                       cryptocap = cryptocap,
-                       cryptogrowth = cryptogrowth,
-                       bonds = bonds,
-                       jobs = jobs,
-                       oil = oil,
-                       goldvol = goldvol))
-
-  # Use align with names = FALSE to avoid automatic name generation
-  exo <- do.call(align, c(all_series, list(names = FALSE)))
-
-  # Create the final data frame with proper column names
-  exo_df <- data.frame(
-    date = as.Date(zoo::index(exo)),
-    as.data.frame(zoo::coredata(exo))
+  # Create the standard exogenous variables list
+  stdseries <- cbind(
+    vix = vix,
+    sp500 = sp500,
+    dxy = dxy,
+    cryptocap = cryptocap,
+    cryptogrowth = cryptogrowth,
+    bonds = bonds,
+    jobs = jobs,
+    oil = oil,
+    goldvol = goldvol
   )
 
-  # Set proper column names for the data frame
-  expected_col_names <- c("date")
-  
-  # Handle column names for user series
-  if (length(user_series) > 0) {
-    for (i in seq_along(user_series)) {
-      series_name <- if (i <= length(user_series_names)) user_series_names[i] else paste0("user_series_", i)
-      
-      # Get the actual column names from the user series
-      user_col_names <- colnames(user_series[[i]])
-      
-      if (length(user_col_names) > 1) {
-        # Multi-column series (like aligned data) - use original column names
-        expected_col_names <- c(expected_col_names, user_col_names)
-      } else {
-        # Single column series - create name with series prefix
-        original_col_name <- user_col_names[1]
-        clean_col_name <- sub(paste0("^", series_name, "_"), "", original_col_name)
-        expected_col_names <- c(expected_col_names, paste(series_name, clean_col_name, sep = "_"))
-      }
-    }
-  }
-  
-  # Add standard exogenous variable names
-  expected_col_names <- c(expected_col_names, "vix", "sp500_returns", "dxy", "crypto_cap_log",
-                         "crypto_returns", "bonds_returns", "jobs_returns", "oil_returns", "gold_vol")
+  # Merged user series with exogenous variables
+  merged <- merge(series, stdseries, join = "left", fill = NA)
 
-  # Ensure we have the right number of column names
-  if (length(expected_col_names) == ncol(exo_df)) {
-    colnames(exo_df) <- expected_col_names
-  } else {
-    # If there's a mismatch, use the existing column names from the xts object
-    warning("Column name count mismatch. Using existing column names from aligned data.")
-    existing_names <- c("date", colnames(exo))
-    if (length(existing_names) == ncol(exo_df)) {
-      colnames(exo_df) <- existing_names
-    }
-  }
-
-  # Handle indexed parameter
-  if (indexed) {
-    # Set rownames to dates and remove the date column
-    rownames(exo_df) <- as.character(exo_df$date)
-    exo_df <- exo_df[, !names(exo_df) %in% "date", drop = FALSE]
-  }
-
-  # Convert to object format requested (xts, tibble, or data.frame)
-  if (as.xts) {
-    exo_df <- xts::xts(exo_df)
-  } else if (as.tibble) {
-    exo_df <- tibble::as_tibble(exo_df, rownames = "date")
-  }
-
-  return(exo_df)
+  # Carry forward the last observation to fill NAs
+  carried_forward <- na.locf(merged)
+  carried_forward
 }
 
 garchvar <- function(series, n.ahead = 0) {
@@ -228,7 +79,7 @@ garchvar <- function(series, n.ahead = 0) {
     if (ncol(series) > 1) {
       series <- series[, 1]
     }
-    
+
     series_returns_xts <- diff(series) / lag(series, 1)
     # Use na.omit instead of logical indexing to avoid xts indexing issues
     series_returns_xts <- na.omit(series_returns_xts)
@@ -246,18 +97,18 @@ garchvar <- function(series, n.ahead = 0) {
     warning("Infinite values detected in returns, removing them")
     series_returns_xts <- series_returns_xts[is.finite(as.numeric(series_returns_xts))]
   }
-  
+
   # Check for NaN values
   if (any(is.nan(as.numeric(series_returns_xts)))) {
     warning("NaN values detected in returns, removing them")
     series_returns_xts <- series_returns_xts[!is.nan(as.numeric(series_returns_xts))]
   }
-  
+
   # Remove extreme outliers that might cause numerical issues
   returns_numeric <- as.numeric(series_returns_xts)
   q99 <- quantile(returns_numeric, 0.99, na.rm = TRUE)
   q01 <- quantile(returns_numeric, 0.01, na.rm = TRUE)
-  
+
   # Cap extreme values at 99th and 1st percentiles
   outlier_indices <- which(returns_numeric > q99 | returns_numeric < q01)
   if (length(outlier_indices) > 0) {
@@ -287,15 +138,15 @@ garchvar <- function(series, n.ahead = 0) {
   # Fit GARCH model with error handling
   tryCatch({
     garch_fit <- rugarch::ugarchfit(spec = garch_spec, data = series_returns_xts)
-    
+
     # Return conditional volatility (sigma), not fitted values (mu)
     # fitted() returns the conditional mean, sigma() returns conditional volatility
     volatility_values <- rugarch::sigma(garch_fit)
     colnames(volatility_values) <- "volatility"
     return(volatility_values)
   }, error = function(e) {
-    stop(paste("GARCH model fitting failed:", e$message, 
-               "\nData summary: min =", min(series_returns_xts), 
+    stop(paste("GARCH model fitting failed:", e$message,
+               "\nData summary: min =", min(series_returns_xts),
                ", max =", max(series_returns_xts),
                ", length =", length(series_returns_xts)))
   })
@@ -328,8 +179,31 @@ tafeatures <- function(series, slow = 200, long = 80, short = 20, signal = 8, as
   # Store original index for later use
   if (xts::is.xts(series)) {
     original_index <- zoo::index(series)
-    original_length <- length(series)
-    series_values <- as.numeric(series)
+
+    # Handle multi-column xts objects by selecting the first column
+    if (ncol(series) > 1) {
+      # Look for common price column names first
+      price_cols <- c("adjusted", "close", "price", "value")
+      found_col <- NULL
+      for (col in price_cols) {
+        if (col %in% colnames(series)) {
+          found_col <- col
+          break
+        }
+      }
+
+      if (!is.null(found_col)) {
+        series_values <- as.numeric(series[, found_col])
+      } else {
+        # Use the first column if no standard price column found
+        series_values <- as.numeric(series[, 1])
+      }
+    } else {
+      # Single column xts object
+      series_values <- as.numeric(series)
+    }
+
+    original_length <- length(series_values)  # Use length of extracted values
   } else if (is.data.frame(series)) {
     # Handle data frame input
     original_length <- nrow(series)
@@ -357,9 +231,15 @@ tafeatures <- function(series, slow = 200, long = 80, short = 20, signal = 8, as
     }
   } else {
     # Regular vector
-    original_length <- length(series)
-    original_index <- seq_len(original_length)
     series_values <- as.numeric(series)
+    original_length <- length(series_values)
+    original_index <- seq_len(original_length)
+  }
+
+  # Ensure lengths match
+  if (length(series_values) != length(original_index)) {
+    stop(paste("Length mismatch: series_values has", length(series_values),
+               "elements but original_index has", length(original_index), "elements"))
   }
 
   # Check if we have any non-NA values
@@ -394,7 +274,25 @@ tafeatures <- function(series, slow = 200, long = 80, short = 20, signal = 8, as
   # Convert back to xts if original was xts
   if (xts::is.xts(series)) {
     filled_series <- xts::xts(filled_values, order.by = original_index)
-    colnames(filled_series) <- colnames(series)
+    # Set column name based on what we selected
+    if (ncol(series) > 1) {
+      # For multi-column, use the name of the selected column
+      price_cols <- c("adjusted", "close", "price", "value")
+      found_col <- NULL
+      for (col in price_cols) {
+        if (col %in% colnames(series)) {
+          found_col <- col
+          break
+        }
+      }
+      if (!is.null(found_col)) {
+        colnames(filled_series) <- found_col
+      } else {
+        colnames(filled_series) <- colnames(series)[1]
+      }
+    } else {
+      colnames(filled_series) <- colnames(series)
+    }
   } else {
     filled_series <- filled_values
   }
@@ -440,7 +338,13 @@ tafeatures <- function(series, slow = 200, long = 80, short = 20, signal = 8, as
 
   # Convert to xts if requested
   if (as.xts) {
-    df <- xts::xts(df, order.by = as.Date(rownames(df)))
+    if (xts::is.xts(series)) {
+      # Use the original index from the xts object
+      df <- xts::xts(df, order.by = original_index)
+    } else {
+      # For non-xts input, try to convert rownames to dates
+      df <- xts::xts(df, order.by = as.Date(rownames(df)))
+    }
   }
 
   return(df)

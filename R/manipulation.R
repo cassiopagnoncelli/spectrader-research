@@ -56,7 +56,19 @@ align <- function(..., fill = NA, locf = TRUE, names = TRUE, timeframe = NULL, a
   if (length(xts_objects) == 1) {
     aligned_xts <- xts_objects[[1]]
   } else {
-    aligned_xts <- Reduce(function(x, y) merge(x, y, all = TRUE), xts_objects)
+    # Use merge.xts to properly handle overlapping timestamps
+    aligned_xts <- Reduce(function(x, y) {
+      # Merge with all = TRUE for outer join behavior
+      merged <- merge(x, y, all = TRUE)
+      # Remove any duplicate timestamps that might have been created
+      if (any(duplicated(zoo::index(merged)))) {
+        # Aggregate duplicate timestamps by taking the mean
+        merged <- xts::period.apply(merged, 
+                                   match(unique(zoo::index(merged)), zoo::index(merged)),
+                                   function(x) if(nrow(x) > 1) colMeans(x, na.rm = TRUE) else as.numeric(x))
+      }
+      return(merged)
+    }, xts_objects)
   }
   
   # Handle missing values
