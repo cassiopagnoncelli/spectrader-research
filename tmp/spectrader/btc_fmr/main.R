@@ -2,24 +2,30 @@ library("TTR")
 library("forecast")
 
 before <- function(...) {
-  btc_fmr_ma5 <- lag(SMA(close("BSBTCUSDH1"), 5))
-  btc_fmr_ma50 <- lag(SMA(close("BSBTCUSDH1"), 50))
-  btc_fmr_signal <<- btc_fmr_ma5 > btc_fmr_ma50 & lag(btc_fmr_ma5) < lag(btc_fmr_ma50)
+  features <- build_features(adjusted)[, -1]
+  sum(apply(is.na(features), 1, any))
 
-  macd <- MACD(close("BSBTCUSDH1"), 12, 80, 12)$macd
-  fit <- auto.arima(macd)
-  macd10 <<- forecast(fit, h = 10)$fitted
+  y <- fmr(data.frame(open, high, low, close), ahead = 20, method = "regularized")[, "fmr"]
+  colnames(y) <- "y"
+
+  data <- merge(y, features) %>% na.omit
+  data_df <- as.data.frame(data)
+  train_size <- floor(0.8 * nrow(data_df))
+  X_train <- as.matrix(data_df[1:train_size, -1])
+  y_train <- data_df[1:train_size, 1]
+  dtrain <- xgb.DMatrix(data = X_train, label = y_train)
+  params <- list(objective = "reg:squarederror", eta = 0.1, max_depth = 6, seed = 123)
+  xgb_model <- xgb.train(params, dtrain, nrounds = 100, verbose = FALSE)
+  X_all <- as.matrix(data_df[, -1])
+  predictions <<- predict(xgb_model, xgb.DMatrix(X_all))
 }
 
 tick <- function() {
-  if (Positions$count(OPEN) >= 3) { return() }
-  if (btc_fmr_signal[I]) {
-    pos_count <- Positions$count(OPEN)
-    max_pos_size <- .internal$lifo$wallet$balance() / ask("BSBTCUSDH1")
-    if (pos_count == 0) { pos_size <- floor(max_pos_size * 0.3) }
-    if (pos_count == 1) { pos_size <- floor(max_pos_size * 0.45) }
-    if (pos_count == 2) { pos_size <- floor(max_pos_size * 0.8) }
-    buy(pos_size, ticker = "BSBTCUSDH1")
+  if (Positions$count(OPEN) >= 1)
+    return()
+
+  if (!is.na(predictions[I]) && predictions[I] > 1.6) {
+    buy(1, ticker = "BSBTCUSDH1")
   }
 }
 

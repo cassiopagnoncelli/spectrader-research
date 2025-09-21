@@ -28,21 +28,27 @@ simulator
 simulator$export("rds", run_db_export_path)
 report_contents <- readRDS(run_db_import_path)
 
-report <- chartsmith::Report$new(report_contents)
-report$call()
-report
+if (nrow(report_contents$trades) > 0) {
+  report <- chartsmith::Report$new(report_contents)
+  report$call()
+  report
 
-metrics <- chartsmith::chartsmith(
-  report,
-  plots = chartsmith::ALL_CHARTS,
-  export = FALSE,
-  interactive = FALSE,
-  dir = program_dir,
-  event_profiler_lookback = 15,
-  event_profiler_discard = 0.2,
-  event_profiler_max_bars_after = NA
-)
+  metrics <- chartsmith::chartsmith(
+    report,
+    # plots = chartsmith::ALL_CHARTS,
+    plots = c(CHART_EQUITY, CHART_RETURNS, CHART_EVENT_PROFILER),
+    export = FALSE,
+    interactive = FALSE,
+    dir = program_dir,
+    event_profiler_lookback = 15,
+    event_profiler_discard = 0.2,
+    event_profiler_max_bars_after = NA
+  )
 
-if (FALSE) {
+  if (FALSE) {
+    simulator$logs()
+  }
+} else {
+  cat("No trades executed.\n")
   simulator$logs()
 }
