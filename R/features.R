@@ -36,8 +36,8 @@ withexovars <- function(series) {
     # vix = vix,
     # sp500 = sp500,
     dxy = dxy,
-    cryptocap = cryptocap
-    # cryptogrowth = cryptogrowth,
+    # cryptocap = cryptocap,
+    cryptogrowth = cryptogrowth
     # bonds = bonds,
     # jobs = jobs,
     # oil = oil,
@@ -376,20 +376,20 @@ build_features <- function(series) {
   trend_fit <- rcfit(trend_returns, regimes = 3)
   trend_regimes <- rcfitted(trend_fit) %>%
     as.data.frame() %>%
-    mutate(trend_regime = as.factor(as.character(regime))) %>%
+    dplyr::mutate(trend_regime = as.factor(as.character(regime))) %>%
     dplyr::select(trend_regime) %>%
-    as.xts(order.by = index(rcfitted(trend_fit)))
+    xts::as.xts(order.by = zoo::index(rcfitted(trend_fit)))
 
   vol_fit <- rcfit(na.omit(exo[, 2]), regimes = 3)
   vol_regimes <- rcfitted(vol_fit) %>%
     as.data.frame() %>%
-    mutate(vol_regime = as.factor(as.character(regime))) %>%
+    dplyr::mutate(vol_regime = as.factor(as.character(regime))) %>%
     dplyr::select(vol_regime) %>%
-    as.xts(order.by = index(rcfitted(vol_fit)))
+    xts::as.xts(order.by = zoo::index(rcfitted(vol_fit)))
 
   regimes <- merge(trend_regimes, vol_regimes, join = "inner")
   regimes
 
-  final <- merge(exo, regimes, join = "inner")
+  final <- merge(exo, regimes, join = "left")
   final
 }
