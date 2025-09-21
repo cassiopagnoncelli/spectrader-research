@@ -24,11 +24,13 @@ fmr <- function(aggregates, ahead = 40, method = "regularized") {
     calc <- sqrt((1 + posleads) / (1 + negleads))
     result <- cbind(posleads, negleads, calc)
     colnames(result) <- c("posleads", "negleads", "fmr")
+    result <- xts::xts(result, order.by = index(aggregates))
     result
   } else if (method == "ratio") {
     calc <- (posleads + negleads) / (1 + negleads)
     result <- cbind(posleads, negleads, calc)
     colnames(result) <- c("posleads", "negleads", "fmr")
+    result <- xts::xts(result, order.by = index(aggregates))
     result
   } else {
     stop("method must be 'regularized' or 'ratio'")

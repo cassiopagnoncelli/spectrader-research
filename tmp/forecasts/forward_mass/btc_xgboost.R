@@ -16,11 +16,7 @@ btc_series <- btc[, "adjusted"]
 features <- build_features(btc_series)[, -1]
 sum(apply(is.na(features), 1, any))
 
-goal <- fmr(btc, ahead = 40, method = "regularized")
-y <- goal[, "fmr"]
-summary(y)
+y <- fmr(btc, ahead = 40, method = "regularized")[, "fmr"]
+colnames(y) <- "y"
 
-data <- merge(features, y, join = "left")
-data <- na.omit(data)
-colnames(data)[ncol(data)] <- "target"
-data <- as.data.frame(data)
+data <- merge(y, features) %>% na.omit
