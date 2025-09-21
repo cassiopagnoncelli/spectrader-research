@@ -9,7 +9,7 @@ library("xts")
 library("zoo")
 library("rugarch")
 library("ggplot2")
-library("xgboost")
+library("glmnet")
 library("caret")
 
 btc <- get_ticker("BSBTCUSDH1")
@@ -23,71 +23,63 @@ colnames(y) <- "y"
 
 data <- merge(y, features) %>% na.omit
 
-# Prepare data for XGBoost
+# ----- begin
+
+# Prepare data for GLMNet
 set.seed(123)
 data_df <- as.data.frame(data)
 
 # Split data into training and testing sets (80/20 split)
-train_size <- floor(0.45 * nrow(data_df))
+train_size <- floor(0.8 * nrow(data_df))
 train_indices <- 1:train_size
 test_indices <- (train_size + 1):nrow(data_df)
 
 train_data <- data_df[train_indices, ]
 test_data <- data_df[test_indices, ]
 
-# Prepare matrices for XGBoost
+# Prepare matrices for GLMNet
 X_train <- as.matrix(train_data[, -1])  # All columns except 'y'
 y_train <- train_data[, 1]              # First column 'y'
 X_test <- as.matrix(test_data[, -1])
 y_test <- test_data[, 1]
 
-# Create DMatrix objects for XGBoost
-dtrain <- xgb.DMatrix(data = X_train, label = y_train)
-dtest <- xgb.DMatrix(data = X_test, label = y_test)
+# Train GLMNet model with cross-validation to find optimal lambda
+# Try both Ridge (alpha=0) and Elastic Net (alpha=0.5) and Lasso (alpha=1)
+cv_ridge <- cv.glmnet(X_train, y_train, alpha = 0, nfolds = 5)
+cv_elastic <- cv.glmnet(X_train, y_train, alpha = 0.5, nfolds = 5)
+cv_lasso <- cv.glmnet(X_train, y_train, alpha = 1, nfolds = 5)
 
-# Set XGBoost parameters
-params <- list(
-  objective = "reg:squarederror",
-  eval_metric = "rmse",
-  eta = 0.1,
-  max_depth = 6,
-  subsample = 0.8,
-  colsample_bytree = 0.8,
-  seed = 123
-)
+# Compare cross-validation errors and select best model
+ridge_error <- min(cv_ridge$cvm)
+elastic_error <- min(cv_elastic$cvm)
+lasso_error <- min(cv_lasso$cvm)
 
-# Train XGBoost model with cross-validation to find optimal rounds
-cv_result <- xgb.cv(
-  params = params,
-  data = dtrain,
-  nrounds = 1000,
-  nfold = 5,
-  early_stopping_rounds = 50,
-  verbose = FALSE,
-  print_every_n = 100
-)
+cat("Cross-validation errors:\n")
+cat("Ridge (alpha=0):", round(ridge_error, 4), "\n")
+cat("Elastic Net (alpha=0.5):", round(elastic_error, 4), "\n")
+cat("Lasso (alpha=1):", round(lasso_error, 4), "\n")
 
-# Get optimal number of rounds
-optimal_rounds <- cv_result$best_iteration
+# Select best model
+best_errors <- c(ridge_error, elastic_error, lasso_error)
+best_model_idx <- which.min(best_errors)
+alphas <- c(0, 0.5, 1)
+model_names <- c("Ridge", "Elastic Net", "Lasso")
 
-# Train final model
-xgb_model <- xgb.train(
-  params = params,
-  data = dtrain,
-  nrounds = optimal_rounds,
-  watchlist = list(train = dtrain, test = dtest),
-  verbose = FALSE,
-  print_every_n = 100
-)
+best_alpha <- alphas[best_model_idx]
+best_model_name <- model_names[best_model_idx]
+cat("Best model:", best_model_name, "with alpha =", best_alpha, "\n")
+
+# Train final model with best alpha
+cv_best <- cv.glmnet(X_train, y_train, alpha = best_alpha, nfolds = 5)
+glmnet_model <- glmnet(X_train, y_train, alpha = best_alpha, lambda = cv_best$lambda.min)
 
 # Make predictions
-train_pred <- predict(xgb_model, dtrain)
-test_pred <- predict(xgb_model, dtest)
+train_pred <- predict(glmnet_model, X_train, s = cv_best$lambda.min)[, 1]
+test_pred <- predict(glmnet_model, X_test, s = cv_best$lambda.min)[, 1]
 
 # Generate predictions for the entire dataset
 X_all <- as.matrix(data_df[, -1])
-dall <- xgb.DMatrix(data = X_all)
-all_pred <- predict(xgb_model, dall)
+all_pred <- predict(glmnet_model, X_all, s = cv_best$lambda.min)[, 1]
 
 # Create complete prediction series
 prediction_series <- data.frame(
@@ -103,8 +95,9 @@ train_mae <- mean(abs(y_train - train_pred))
 test_mae <- mean(abs(y_test - test_pred))
 
 # Print results
-cat("XGBoost Model Performance:\n")
-cat("Optimal rounds:", optimal_rounds, "\n")
+cat("\nGLMNet Model Performance:\n")
+cat("Best model:", best_model_name, "(alpha =", best_alpha, ")\n")
+cat("Optimal lambda:", round(cv_best$lambda.min, 6), "\n")
 cat("Training RMSE:", round(train_rmse, 4), "\n")
 cat("Test RMSE:", round(test_rmse, 4), "\n")
 cat("Training MAE:", round(train_mae, 4), "\n")
@@ -139,13 +132,28 @@ if(length(high_y_indices) > 0) {
   cat("No observations found with y > 1.8\n")
 }
 
-# Feature importance
-importance_matrix <- xgb.importance(feature_names = colnames(X_train), model = xgb_model)
-print("Top 10 Most Important Features:")
-print(head(importance_matrix, 10))
+# Feature importance (coefficients)
+coefficients <- coef(glmnet_model, s = cv_best$lambda.min)
+coef_df <- data.frame(
+  Feature = rownames(coefficients)[-1],  # Exclude intercept
+  Coefficient = as.numeric(coefficients[-1, 1]),
+  Abs_Coefficient = abs(as.numeric(coefficients[-1, 1]))
+)
+coef_df <- coef_df[order(coef_df$Abs_Coefficient, decreasing = TRUE), ]
 
-# Plot feature importance
-xgb.plot.importance(importance_matrix[1:min(20, nrow(importance_matrix)), ])
+cat("\nTop 10 Most Important Features (by absolute coefficient):\n")
+print(head(coef_df, 10))
+
+# Plot feature importance (top 20 coefficients)
+top_coefs <- head(coef_df, 20)
+top_coefs$Feature <- factor(top_coefs$Feature, levels = rev(top_coefs$Feature))
+
+ggplot(top_coefs, aes(x = Feature, y = Coefficient)) +
+  geom_col(fill = "steelblue", alpha = 0.7) +
+  coord_flip() +
+  labs(title = paste("GLMNet Feature Importance (", best_model_name, ")", sep = ""),
+       x = "Features", y = "Coefficient") +
+  theme_minimal()
 
 # Create prediction vs actual plot
 prediction_df <- data.frame(
@@ -157,7 +165,7 @@ prediction_df <- data.frame(
 ggplot(prediction_df, aes(x = actual, y = predicted, color = set)) +
   geom_point(alpha = 0.6) +
   geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "black") +
-  labs(title = "XGBoost: Predicted vs Actual Values",
+  labs(title = "GLMNet: Predicted vs Actual Values",
        x = "Actual", y = "Predicted") +
   theme_minimal() +
   facet_wrap(~set)
@@ -185,6 +193,7 @@ cat("Columns: actual, predicted, index, high_y\n")
 cat("First few rows:\n")
 print(head(prediction_series, 10))
 
+# ----- end
 
 # analysing ratios: all
 df <- data.frame(pos=c(), neg=c(), n=c(), ratio=c())
@@ -232,7 +241,6 @@ ggplot(d2, aes (x=pred, y=log_ratio)) +
   labs(title="Ratio of Positive to Negative Actual Values vs Predicted Threshold",
        x="Predicted Threshold", y="Ratio of Positive to Negative Actual Values") +
   theme_minimal()
-
 
 d
 d2
