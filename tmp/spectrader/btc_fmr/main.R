@@ -1,14 +1,15 @@
 library("TTR")
 library("forecast")
+library("xgboost")
+library("xts")
+
+predictions <<- c()
 
 before <- function(...) {
-  features <- build_features(adjusted)[, -1]
-  sum(apply(is.na(features), 1, any))
-
-  y <- fmr(data.frame(open, high, low, close), ahead = 20, method = "regularized")[, "fmr"]
-  colnames(y) <- "y"
-
-  data <- merge(y, features) %>% na.omit
+  feats <- build_features(adj_close("BSBTCUSDH1"))[, -1]
+  df <- merge(open("BSBTCUSDH1"), high("BSBTCUSDH1"), low("BSBTCUSDH1"), close("BSBTCUSDH1"))
+  y <- fmr(df, ahead = 20, method = "regularized")[, "fmr"]
+  data <- merge(y, feats) %>% na.omit
   data_df <- as.data.frame(data)
   train_size <- floor(0.8 * nrow(data_df))
   X_train <- as.matrix(data_df[1:train_size, -1])

@@ -18,7 +18,7 @@ simulator <- Backtest$new(
   H1,
   program_path,
   start_date = "2015-01-01",
-  simulation_mode = TICK_CLOSE
+  simulation_mode = CONTROL_POINTS
 )
 
 simulator$preload()
