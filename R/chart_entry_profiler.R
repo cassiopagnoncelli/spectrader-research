@@ -200,7 +200,7 @@ plot_entry_profiler <- function(metrics_df, density_arr, lookback = 15) {
 #' @ param file_name Name of the HTML file to export the chart.
 #' @ param lookback Number of bars to look back for each position.
 #' than this proportion.
-chart_entry_profiler <- function(aggregates,
+entry_profiler <- function(aggregates,
                                  entry_timestamps,
                                  lookback = 15,
                                  lookahead = 50) {
@@ -212,7 +212,13 @@ chart_entry_profiler <- function(aggregates,
     message("Provide valid entry timestamps")
     return()
   }
-  position_df <- entry_profiler_matrix(aggregates[, "adjusted"],
+  series <- zoo::na.locf(
+    if (ncol(aggregates) > 1) {
+      aggregates[, "adjusted"] }
+    else {
+      aggregates
+    })
+  position_df <- entry_profiler_matrix(series,
                                        entry_timestamps,
                                        lookback = lookback,
                                        lookahead = lookahead)
@@ -230,7 +236,3 @@ chart_entry_profiler <- function(aggregates,
   plot <- plot_entry_profiler(metrics_df, density_arr, lookback = lookback)
   print(plot)
 }
-
-aggregates <- get_ticker("BSBTCUSDH1")
-entry_timestamps <- sort(sample(zoo::index(aggregates), 20))
-chart_entry_profiler(aggregates, entry_timestamps)
