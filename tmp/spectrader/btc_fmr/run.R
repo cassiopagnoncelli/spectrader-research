@@ -17,8 +17,9 @@ simulator <- Backtest$new(
   c("BSBTCUSDH1"),
   H1,
   program_path,
-  start_date = "2015-01-01",
-  simulation_mode = CONTROL_POINTS
+  start_date = "2020-01-01",
+  simulation_mode = CONTROL_POINTS,
+  initial_balance = 1000000
 )
 
 simulator$preload()
@@ -35,14 +36,13 @@ if (nrow(report_contents$trades) > 0) {
 
   metrics <- chartsmith::chartsmith(
     report,
-    # plots = chartsmith::ALL_CHARTS,
-    plots = c(CHART_EQUITY, CHART_RETURNS, CHART_EVENT_PROFILER),
+    plots = chartsmith::ALL_CHARTS,
     export = FALSE,
     interactive = FALSE,
     dir = program_dir,
-    event_profiler_lookback = 15,
-    event_profiler_discard = 0.2,
-    event_profiler_max_bars_after = NA
+    event_profiler_lookback = 5,
+    event_profiler_discard = 0.1,
+    event_profiler_max_bars_after = 50
   )
 
   if (FALSE) {

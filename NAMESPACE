@@ -1,1 +1,19 @@
+export(constants)
 exportPattern("^[[:alpha:]]+")
+
+# Libraries.
+import("progress")
+import("uuid")
+import("R6")
+
+import("DBI")
+import("RPostgreSQL")
+import("pool")
+
+importFrom("dplyr", `slice`)
+importFrom("dplyr", `row_number`)
+
+importFrom(magrittr, `%>%`)
+import("zoo")
+import("xts")
+import("TTR")
