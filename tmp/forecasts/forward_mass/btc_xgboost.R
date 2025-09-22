@@ -11,6 +11,7 @@ library("rugarch")
 library("ggplot2")
 library("xgboost")
 library("caret")
+library("MASS")
 
 btc <- get_ticker("BSBTCUSDH1")
 btc_series <- btc[, "adjusted"]
@@ -18,7 +19,8 @@ btc_series <- btc[, "adjusted"]
 features <- build_features(btc_series)[, -1]
 sum(apply(is.na(features), 1, any))
 
-y <- fmr(btc, ahead = 20, method = "regularized")[, "fmr"]
+ymat <- fmr(btc, ahead = 20, method = "mass")
+y <- ymat[, "fmr"]
 colnames(y) <- "y"
 
 data <- merge(y, features) %>% na.omit
@@ -110,23 +112,23 @@ cat("Test RMSE:", round(test_rmse, 4), "\n")
 cat("Training MAE:", round(train_mae, 4), "\n")
 cat("Test MAE:", round(test_mae, 4), "\n")
 
-# Analysis for y > 1.8
-high_y_indices <- which(prediction_series$actual > 1.8)
-cat("\nAnalysis for y > 1.8:\n")
-cat("Number of observations with y > 1.8:", length(high_y_indices), "\n")
+# Analysis for y > 4.6
+high_y_indices <- which(prediction_series$actual > 4.6)
+cat("\nAnalysis for y > 4.6:\n")
+cat("Number of observations with y > 4.6:", length(high_y_indices), "\n")
 
 if(length(high_y_indices) > 0) {
   high_y_data <- prediction_series[high_y_indices, ]
   high_y_rmse <- sqrt(mean((high_y_data$actual - high_y_data$predicted)^2))
   high_y_mae <- mean(abs(high_y_data$actual - high_y_data$predicted))
 
-  cat("RMSE for y > 1.8:", round(high_y_rmse, 4), "\n")
-  cat("MAE for y > 1.8:", round(high_y_mae, 4), "\n")
-  cat("Mean actual value when y > 1.8:", round(mean(high_y_data$actual), 4), "\n")
-  cat("Mean predicted value when y > 1.8:", round(mean(high_y_data$predicted), 4), "\n")
+  cat("RMSE for y > 4.6:", round(high_y_rmse, 4), "\n")
+  cat("MAE for y > 4.6:", round(high_y_mae, 4), "\n")
+  cat("Mean actual value when y > 4.6:", round(mean(high_y_data$actual), 4), "\n")
+  cat("Mean predicted value when y > 4.6:", round(mean(high_y_data$predicted), 4), "\n")
 
   # Show detailed comparison for high y values
-  cat("\nDetailed comparison for y > 1.8:\n")
+  cat("\nDetailed comparison for y > 4.6:\n")
   high_y_comparison <- data.frame(
     Index = high_y_data$index,
     Actual = round(high_y_data$actual, 4),
@@ -136,7 +138,7 @@ if(length(high_y_indices) > 0) {
   )
   print(high_y_comparison)
 } else {
-  cat("No observations found with y > 1.8\n")
+  cat("No observations found with y > 4.6\n")
 }
 
 # Feature importance
@@ -163,17 +165,17 @@ ggplot(prediction_df, aes(x = actual, y = predicted, color = set)) +
   facet_wrap(~set)
 
 # Create time series plot of complete predictions
-prediction_series$high_y <- prediction_series$actual > 1.8
+prediction_series$high_y <- prediction_series$actual > 4.6
 
 ggplot(prediction_series, aes(x = index)) +
   geom_line(aes(y = actual, color = "Actual"), alpha = 0.8) +
   geom_line(aes(y = predicted, color = "Predicted"), alpha = 0.8) +
   geom_point(data = prediction_series[prediction_series$high_y, ],
-             aes(y = actual, color = "High Y (>1.8)"), size = 2) +
+             aes(y = actual, color = "High Y (>4.6)"), size = 2) +
   geom_point(data = prediction_series[prediction_series$high_y, ],
              aes(y = predicted, color = "Predicted High Y"), size = 2, shape = 17) +
   scale_color_manual(values = c("Actual" = "blue", "Predicted" = "red",
-                               "High Y (>1.8)" = "darkblue", "Predicted High Y" = "darkred")) +
+                               "High Y (>4.6)" = "darkblue", "Predicted High Y" = "darkred")) +
   labs(title = "Complete Prediction Series with High Y Values Highlighted",
        x = "Index", y = "Value", color = "Series") +
   theme_minimal() +
@@ -186,53 +188,16 @@ cat("First few rows:\n")
 print(head(prediction_series, 10))
 
 
-# analysing ratios: all
-df <- data.frame(pos=c(), neg=c(), n=c(), ratio=c())
-for (pred in seq(1.3, 2.5, by=0.05)) {
-  temp <- prediction_series %>%
-    filter(predicted > pred) %>%
-    mutate(actual = log(actual)) %>%
-    mutate(pactual = pmax(actual, 0), nactual = pmin(actual, 0)) %>%
-    summarise(pos = sum(pactual), neg = abs(sum(nactual)), n = n(), ratio = pos / neg, log_ratio = log(ratio))
-  row <- cbind(pred, temp)
-  df <- rbind(df, row)
-  cat("\n")
-}
-d <- df[, c("pred", "n", "ratio", "log_ratio")]
+# Entry profiler
+entries_indices <- which(prediction_series$predicted > 5)
+entry_timestamps <- zoo::index(btc_series)[entries_indices]
 
-ggplot(d, aes (x=pred, y=log_ratio)) +
-  geom_line(color="blue") +
-  geom_point() +
-  labs(title="Ratio of Positive to Negative Actual Values vs Predicted Threshold",
-       x="Predicted Threshold", y="Ratio of Positive to Negative Actual Values") +
-  theme_minimal()
+entry_profiler(btc_series,
+               entry_timestamps,
+               lookback = 10,
+               lookahead = 25)
 
-# analysing ratios: test
-df <- data.frame(pos=c(), neg=c(), n=c(), ratio=c())
-pred_series <- data.frame(
-  actual = y_test,
-  predicted = test_pred,
-  index = (length(y_train) + 1):(length(y_train) + length(y_test))
-)
-for (pred in seq(1.3, 2.5, by=0.05)) {
-  temp <- pred_series %>%
-    filter(predicted > pred) %>%
-    mutate(actual = log(actual)) %>%
-    mutate(pactual = pmax(actual, 0), nactual = pmin(actual, 0)) %>%
-    summarise(pos = sum(pactual), neg = abs(sum(nactual)), n = n(), ratio = pos / neg, log_ratio = log(ratio))
-  row <- cbind(pred, temp)
-  df <- rbind(df, row)
-  cat("\n")
-}
-d2 <- df[, c("pred", "n", "ratio", "log_ratio")]
-
-ggplot(d2, aes (x=pred, y=log_ratio)) +
-  geom_line(color="blue") +
-  geom_point() +
-  labs(title="Ratio of Positive to Negative Actual Values vs Predicted Threshold",
-       x="Predicted Threshold", y="Ratio of Positive to Negative Actual Values") +
-  theme_minimal()
-
-
-d
-d2
+(prediction_series %>%
+    filter(predicted > 4.6) %>%
+    dplyr::select(actual))$actual %>%
+  truehist

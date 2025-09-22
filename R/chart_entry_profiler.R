@@ -25,7 +25,7 @@ entry_profiler_matrix <- function(series,
 
   # Each row holds quotes around (lookback, lookahead) the entry, in the form
   # of t_lookback, ..., t-1, t0, t1, ..., t_lookahead.
-  elongated_series <- c(rep(NA, 15), as.numeric(series), rep(NA, lookahead))
+  elongated_series <- c(rep(NA, lookback), as.numeric(series), rep(NA, lookahead))
   elongated_center_indices <- center_indices + lookback
   quotes <- data.frame()
   for (i in seq_along(center_indices)) {
@@ -201,9 +201,9 @@ plot_entry_profiler <- function(metrics_df, density_arr, lookback = 15) {
 #' @ param lookback Number of bars to look back for each position.
 #' than this proportion.
 entry_profiler <- function(aggregates,
-                                 entry_timestamps,
-                                 lookback = 15,
-                                 lookahead = 50) {
+                           entry_timestamps,
+                           lookback = 15,
+                           lookahead = 50) {
   if (nrow(aggregates) <= 300) {
     message("Provide a valid OHLC series")
     return()
@@ -213,25 +213,14 @@ entry_profiler <- function(aggregates,
     return()
   }
   series <- zoo::na.locf(
-    if (ncol(aggregates) > 1) {
-      aggregates[, "adjusted"] }
-    else {
-      aggregates
-    })
+    if (ncol(aggregates) > 1) aggregates[, "adjusted"] else aggregates
+  )
   position_df <- entry_profiler_matrix(series,
                                        entry_timestamps,
                                        lookback = lookback,
                                        lookahead = lookahead)
   metrics_df <- entry_profiler_metrics(position_df)
   density_arr <- entry_profiler_density(position_df)
-  max_bars_after <- lookahead
-  if (length(max_bars_after) == 1 && is.numeric(max_bars_after)) {
-    max_bars_after <- max_bars_after + lookback + 1
-    if (max_bars_after > 1 && max_bars_after < nrow(metrics_df)) {
-      metrics_df <- metrics_df[1:max_bars_after, ]
-      density_arr <- density_arr[1:max_bars_after]
-    }
-  }
 
   plot <- plot_entry_profiler(metrics_df, density_arr, lookback = lookback)
   print(plot)
