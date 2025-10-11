@@ -1,5 +1,5 @@
 get_ticker <- function(ticker) {
-  db <- DatasourcePostgres$new()
+  db <- Qetl$new()
   kind <- db$kind(ticker)
   if (kind == "aggregate") {
     return(db$aggregates(ticker))

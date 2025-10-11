@@ -8,8 +8,8 @@ if (!exists(".spectrader_env")) {
 #' @description A singleton, half-duplex/simplex Postgres connector to fetch
 #'  data quotes from a Postgres database.
 #' @export
-DatasourcePostgres <- R6::R6Class( # nolint: object_name_linter
-  "DatasourcePostgres",
+Fetl <- R6::R6Class( # nolint: object_name_linter
+  "Fetl",
   public = list(
     # Parameters.
     pool = NULL,
@@ -23,7 +23,7 @@ DatasourcePostgres <- R6::R6Class( # nolint: object_name_linter
       )
       private$dbname <- ifelse(nchar(Sys.getenv("POSTGRES_DB")) > 0,
                                Sys.getenv("POSTGRES_DB"),
-                               "etl_development"
+                               "fetl_development"
       )
       private$user <- ifelse(nchar(Sys.getenv("POSTGRES_USER")) > 0,
                              Sys.getenv("POSTGRES_USER"),
@@ -43,7 +43,7 @@ DatasourcePostgres <- R6::R6Class( # nolint: object_name_linter
       self$verbose <- verbose
       if (!force_reconnect && !is.null(self$pool)) {
         if (verbose) {
-          message("Data source postgres already connected")
+          message("Data source fetl already connected")
         }
         return(self$pool)
       }
@@ -51,14 +51,14 @@ DatasourcePostgres <- R6::R6Class( # nolint: object_name_linter
           !is.null(.spectrader_env$pool) && .spectrader_env$pool$valid) { # nolint: indentation_linter
         self$pool <- .spectrader_env$pool
         if (verbose) {
-          message("Data source postgres relinked")
+          message("Data source fetl relinked")
         }
         return(self$pool)
       }
 
       if (verbose) {
         message(sprintf(
-          "Data source postgres %s connecting...",
+          "Data source fetl %s connecting...",
           ifelse(force_reconnect, "force", "is")
         ))
       }
@@ -72,7 +72,7 @@ DatasourcePostgres <- R6::R6Class( # nolint: object_name_linter
       )
       if (verbose) {
         message(sprintf(
-          "Data source postgres connected to database %s.",
+          "Data source fetl connected to database %s.",
           private$dbname
         ))
       }
@@ -176,27 +176,6 @@ DatasourcePostgres <- R6::R6Class( # nolint: object_name_linter
           WHERE %s ticker = '%s'
         ", timeframe_clause, ticker)
       )
-    },
-    kind = function(ticker) {
-      if (!is.null(self$pool) && !self$pool$valid) {
-        self$connect(force_reconnect = TRUE)
-      }
-      if (is.null(self$pool)) {
-        conn <- self$connect()
-      }
-      conn <- self$pool
-      query <- private$sanitize_sql(
-        sprintf("
-          SELECT kind
-          FROM time_series
-          WHERE ticker = '%s'
-        ", private$sanitize_ticker(ticker))
-      )
-      result <- RPostgreSQL::dbGetQuery(conn, query)
-      if (nrow(result) == 0) {
-        stop(sprintf("Ticker '%s' not found", ticker))
-      }
-      return(result$kind[1])
     }
   ),
   private = list(
