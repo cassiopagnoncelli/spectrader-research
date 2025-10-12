@@ -6,18 +6,19 @@ calcreturns <- function(series, log = FALSE) {
 }
 
 withexovars <- function(series) {
-  if (!inherits(series, "xts"))
+  if (!inherits(series, "xts")) {
     stop("series should be an xts object")
+  }
 
   # Fetch common exogenous variables for financial time series modeling.
   vix <- get_ticker("VIX")[, "close"]
-  sp500 <- get_ticker("SP500") %>% calcreturns
+  sp500 <- get_ticker("SP500") %>% calcreturns()
   dxy <- get_ticker("DXYLOOKALIKE")
-  cryptocap <- get_ticker("CGMCAP") %>% log
-  cryptogrowth <- get_ticker("CGMCAP") %>% calcreturns
-  bonds <- get_ticker("DGS2") %>% calcreturns
-  jobs <- get_ticker("IHLIDXUS") %>% calcreturns
-  oil <- get_ticker("DCOILWTICO") %>% calcreturns
+  cryptocap <- get_ticker("CGMCAP") %>% log()
+  cryptogrowth <- get_ticker("CGMCAP") %>% calcreturns()
+  bonds <- get_ticker("DGS2") %>% calcreturns()
+  jobs <- get_ticker("IHLIDXUS") %>% calcreturns()
+  oil <- get_ticker("DCOILWTICO") %>% calcreturns()
   goldvol <- get_ticker("GVZCLS")
 
   # Set proper column names for standard variables
@@ -68,11 +69,10 @@ garchvar <- function(series, n.ahead = 0) {
 
     # Calculate returns manually
     returns <- diff(price_series) / price_series[-length(price_series)]
-    returns_dates <- dates[-1]  # Remove first date since we lose one observation
+    returns_dates <- dates[-1] # Remove first date since we lose one observation
 
     # Create xts object
     series_returns_xts <- xts::xts(returns, order.by = returns_dates)
-
   } else if (xts::is.xts(series)) {
     # If it's already an xts object, calculate returns
     # Handle multi-column xts objects by using the first column
@@ -83,7 +83,6 @@ garchvar <- function(series, n.ahead = 0) {
     series_returns_xts <- diff(series) / lag(series, 1)
     # Use na.omit instead of logical indexing to avoid xts indexing issues
     series_returns_xts <- na.omit(series_returns_xts)
-
   } else {
     stop("Input must be a data frame with date/price columns or an xts object")
   }
@@ -136,20 +135,25 @@ garchvar <- function(series, n.ahead = 0) {
   )
 
   # Fit GARCH model with error handling
-  tryCatch({
-    garch_fit <- rugarch::ugarchfit(spec = garch_spec, data = series_returns_xts)
+  tryCatch(
+    {
+      garch_fit <- rugarch::ugarchfit(spec = garch_spec, data = series_returns_xts)
 
-    # Return conditional volatility (sigma), not fitted values (mu)
-    # fitted() returns the conditional mean, sigma() returns conditional volatility
-    volatility_values <- rugarch::sigma(garch_fit)
-    colnames(volatility_values) <- "volatility"
-    return(volatility_values)
-  }, error = function(e) {
-    stop(paste("GARCH model fitting failed:", e$message,
-               "\nData summary: min =", min(series_returns_xts),
-               ", max =", max(series_returns_xts),
-               ", length =", length(series_returns_xts)))
-  })
+      # Return conditional volatility (sigma), not fitted values (mu)
+      # fitted() returns the conditional mean, sigma() returns conditional volatility
+      volatility_values <- rugarch::sigma(garch_fit)
+      colnames(volatility_values) <- "volatility"
+      return(volatility_values)
+    },
+    error = function(e) {
+      stop(paste(
+        "GARCH model fitting failed:", e$message,
+        "\nData summary: min =", min(series_returns_xts),
+        ", max =", max(series_returns_xts),
+        ", length =", length(series_returns_xts)
+      ))
+    }
+  )
 }
 
 tafeatures <- function(series, slow = 200, long = 80, short = 20, signal = 8, as.xts = TRUE) {
@@ -203,7 +207,7 @@ tafeatures <- function(series, slow = 200, long = 80, short = 20, signal = 8, as
       series_values <- as.numeric(series)
     }
 
-    original_length <- length(series_values)  # Use length of extracted values
+    original_length <- length(series_values) # Use length of extracted values
   } else if (is.data.frame(series)) {
     # Handle data frame input
     original_length <- nrow(series)
@@ -238,8 +242,10 @@ tafeatures <- function(series, slow = 200, long = 80, short = 20, signal = 8, as
 
   # Ensure lengths match
   if (length(series_values) != length(original_index)) {
-    stop(paste("Length mismatch: series_values has", length(series_values),
-               "elements but original_index has", length(original_index), "elements"))
+    stop(paste(
+      "Length mismatch: series_values has", length(series_values),
+      "elements but original_index has", length(original_index), "elements"
+    ))
   }
 
   # Check if we have any non-NA values
@@ -253,15 +259,15 @@ tafeatures <- function(series, slow = 200, long = 80, short = 20, signal = 8, as
 
   # Forward fill: carry last observation forward
   for (i in 2:length(filled_values)) {
-    if (is.na(filled_values[i]) && !is.na(filled_values[i-1])) {
-      filled_values[i] <- filled_values[i-1]
+    if (is.na(filled_values[i]) && !is.na(filled_values[i - 1])) {
+      filled_values[i] <- filled_values[i - 1]
     }
   }
 
   # Backward fill: carry first observation backward
-  for (i in (length(filled_values)-1):1) {
-    if (is.na(filled_values[i]) && !is.na(filled_values[i+1])) {
-      filled_values[i] <- filled_values[i+1]
+  for (i in (length(filled_values) - 1):1) {
+    if (is.na(filled_values[i]) && !is.na(filled_values[i + 1])) {
+      filled_values[i] <- filled_values[i + 1]
     }
   }
 

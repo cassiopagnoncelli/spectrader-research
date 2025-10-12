@@ -33,7 +33,7 @@ Fetl <- R6::R6Class( # nolint: object_name_linter
         return(self$pool)
       }
       if (!force_reconnect && exists("pool", envir = .spectrader_env) &&
-          !is.null(.spectrader_env$pool) && .spectrader_env$pool$valid) { # nolint: indentation_linter
+        !is.null(.spectrader_env$pool) && .spectrader_env$pool$valid) { # nolint: indentation_linter
         self$pool <- .spectrader_env$pool
         if (verbose) {
           message("Data source fetl relinked")
@@ -66,26 +66,32 @@ Fetl <- R6::R6Class( # nolint: object_name_linter
     },
     disconnect = function() {
       if (!is.null(self$pool)) {
-        tryCatch({
-          if (inherits(self$pool, "Pool") && self$pool$valid) {
-            pool::poolClose(self$pool)
+        tryCatch(
+          {
+            if (inherits(self$pool, "Pool") && self$pool$valid) {
+              pool::poolClose(self$pool)
+            }
+          },
+          error = function(e) {
+            warning("Error closing connection pool: ", e$message)
           }
-        }, error = function(e) {
-          warning("Error closing connection pool: ", e$message)
-        })
+        )
         self$pool <- NULL
       }
       # Also clean up the global pool
-      if (exists(".spectrader_env", envir = .GlobalEnv) && 
-            !is.null(.spectrader_env$pool)) {
-        tryCatch({
-          if (inherits(.spectrader_env$pool, "Pool") &&
-                .spectrader_env$pool$valid) {
-            pool::poolClose(.spectrader_env$pool)
+      if (exists(".spectrader_env", envir = .GlobalEnv) &&
+        !is.null(.spectrader_env$pool)) {
+        tryCatch(
+          {
+            if (inherits(.spectrader_env$pool, "Pool") &&
+              .spectrader_env$pool$valid) {
+              pool::poolClose(.spectrader_env$pool)
+            }
+          },
+          error = function(e) {
+            warning("Error closing global connection pool: ", e$message)
           }
-        }, error = function(e) {
-          warning("Error closing global connection pool: ", e$message)
-        })
+        )
         .spectrader_env$pool <- NULL
       }
     },
@@ -137,7 +143,8 @@ Fetl <- R6::R6Class( # nolint: object_name_linter
         end_date <- sprintf("'%s'::DATE", end_date)
       }
       private$sanitize_sql(
-        sprintf("SELECT pivot_financial_statement_growths(5)",
+        sprintf(
+          "SELECT pivot_financial_statement_growths(5)",
           n,
           ifelse(allow_partial_results, "TRUE", "FALSE"),
           ifelse(is.null(start_date), "NULL", start_date),
@@ -185,21 +192,27 @@ cleanup_postgres_pools <- function() {
   if (exists(".spectrader_env", envir = .GlobalEnv)) {
     spectrader_env <- get(".spectrader_env", envir = .GlobalEnv)
     if (!is.null(spectrader_env$pool)) {
-      tryCatch({
-        if (inherits(spectrader_env$pool, "Pool") && spectrader_env$pool$valid) {
-          pool::poolClose(spectrader_env$pool)
-          cat("Automatically closed DatasourcePostgres connection pool\n")
-          cleaned <- TRUE
+      tryCatch(
+        {
+          if (inherits(spectrader_env$pool, "Pool") && spectrader_env$pool$valid) {
+            pool::poolClose(spectrader_env$pool)
+            cat("Automatically closed DatasourcePostgres connection pool\n")
+            cleaned <- TRUE
+          }
+        },
+        error = function(e) {
+          cat("Warning: Error closing connection pool:", e$message, "\n")
         }
-      }, error = function(e) {
-        cat("Warning: Error closing connection pool:", e$message, "\n")
-      })
+      )
       spectrader_env$pool <- NULL
     }
   }
-  tryCatch({
-    gc() # Force garbage collection to trigger any finalizers
-  }, error = function(e) {})
+  tryCatch(
+    {
+      gc() # Force garbage collection to trigger any finalizers
+    },
+    error = function(e) {}
+  )
 
   if (cleaned) {
     cat("Session cleanup completed\n")

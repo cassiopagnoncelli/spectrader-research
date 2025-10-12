@@ -18,24 +18,24 @@ Qetl <- R6::R6Class( # nolint: object_name_linter
     # Methods.
     initialize = function() {
       private$host <- ifelse(nchar(Sys.getenv("POSTGRES_HOST")) > 0,
-                             Sys.getenv("POSTGRES_HOST"),
-                             "localhost"
+        Sys.getenv("POSTGRES_HOST"),
+        "localhost"
       )
       private$dbname <- ifelse(nchar(Sys.getenv("POSTGRES_DB")) > 0,
-                               Sys.getenv("POSTGRES_DB"),
-                               "qetl_development"
+        Sys.getenv("POSTGRES_DB"),
+        "qetl_development"
       )
       private$user <- ifelse(nchar(Sys.getenv("POSTGRES_USER")) > 0,
-                             Sys.getenv("POSTGRES_USER"),
-                             "cassio"
+        Sys.getenv("POSTGRES_USER"),
+        "cassio"
       )
       private$password <- ifelse(nchar(Sys.getenv("POSTGRES_PASSWORD")) > 0,
-                                 Sys.getenv("POSTGRES_PASSWORD"),
-                                 "123456"
+        Sys.getenv("POSTGRES_PASSWORD"),
+        "123456"
       )
       private$port <- ifelse(nchar(Sys.getenv("POSTGRES_PORT")) > 0,
-                             Sys.getenv("POSTGRES_PORT"),
-                             5432
+        Sys.getenv("POSTGRES_PORT"),
+        5432
       )
       invisible(self)
     },
@@ -48,7 +48,7 @@ Qetl <- R6::R6Class( # nolint: object_name_linter
         return(self$pool)
       }
       if (!force_reconnect && exists("pool", envir = .spectrader_env) &&
-          !is.null(.spectrader_env$pool) && .spectrader_env$pool$valid) { # nolint: indentation_linter
+        !is.null(.spectrader_env$pool) && .spectrader_env$pool$valid) { # nolint: indentation_linter
         self$pool <- .spectrader_env$pool
         if (verbose) {
           message("Data source postgres relinked")
@@ -81,26 +81,32 @@ Qetl <- R6::R6Class( # nolint: object_name_linter
     },
     disconnect = function() {
       if (!is.null(self$pool)) {
-        tryCatch({
-          if (inherits(self$pool, "Pool") && self$pool$valid) {
-            pool::poolClose(self$pool)
+        tryCatch(
+          {
+            if (inherits(self$pool, "Pool") && self$pool$valid) {
+              pool::poolClose(self$pool)
+            }
+          },
+          error = function(e) {
+            warning("Error closing connection pool: ", e$message)
           }
-        }, error = function(e) {
-          warning("Error closing connection pool: ", e$message)
-        })
+        )
         self$pool <- NULL
       }
-      
+
       # Also clean up the global pool
-      if (exists(".spectrader_env", envir = .GlobalEnv) && 
-          !is.null(.spectrader_env$pool)) {
-        tryCatch({
-          if (inherits(.spectrader_env$pool, "Pool") && .spectrader_env$pool$valid) {
-            pool::poolClose(.spectrader_env$pool)
+      if (exists(".spectrader_env", envir = .GlobalEnv) &&
+        !is.null(.spectrader_env$pool)) {
+        tryCatch(
+          {
+            if (inherits(.spectrader_env$pool, "Pool") && .spectrader_env$pool$valid) {
+              pool::poolClose(.spectrader_env$pool)
+            }
+          },
+          error = function(e) {
+            warning("Error closing global connection pool: ", e$message)
           }
-        }, error = function(e) {
-          warning("Error closing global connection pool: ", e$message)
-        })
+        )
         .spectrader_env$pool <- NULL
       }
     },
@@ -228,38 +234,44 @@ Qetl <- R6::R6Class( # nolint: object_name_linter
 #' @export
 cleanup_postgres_pools <- function() {
   cleaned <- FALSE
-  
+
   # Check if spectrader environment exists and has active pools
   if (exists(".spectrader_env", envir = .GlobalEnv)) {
     spectrader_env <- get(".spectrader_env", envir = .GlobalEnv)
-    
+
     # Close connection pool if it exists and is valid
     if (!is.null(spectrader_env$pool)) {
-      tryCatch({
-        if (inherits(spectrader_env$pool, "Pool") && spectrader_env$pool$valid) {
-          pool::poolClose(spectrader_env$pool)
-          cat("Automatically closed DatasourcePostgres connection pool\n")
-          cleaned <- TRUE
+      tryCatch(
+        {
+          if (inherits(spectrader_env$pool, "Pool") && spectrader_env$pool$valid) {
+            pool::poolClose(spectrader_env$pool)
+            cat("Automatically closed DatasourcePostgres connection pool\n")
+            cleaned <- TRUE
+          }
+        },
+        error = function(e) {
+          cat("Warning: Error closing connection pool:", e$message, "\n")
         }
-      }, error = function(e) {
-        cat("Warning: Error closing connection pool:", e$message, "\n")
-      })
+      )
       spectrader_env$pool <- NULL
     }
   }
-  
+
   # Also check for any lingering pool connections that might not be properly closed
-  tryCatch({
-    # Force garbage collection to trigger any finalizers
-    gc()
-  }, error = function(e) {
-    # Ignore errors during garbage collection
-  })
-  
+  tryCatch(
+    {
+      # Force garbage collection to trigger any finalizers
+      gc()
+    },
+    error = function(e) {
+      # Ignore errors during garbage collection
+    }
+  )
+
   if (cleaned) {
     cat("Session cleanup completed\n")
   }
-  
+
   invisible(cleaned)
 }
 

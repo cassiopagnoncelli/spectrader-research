@@ -29,8 +29,10 @@ entry_profiler_matrix <- function(series,
   elongated_center_indices <- center_indices + lookback
   quotes <- data.frame()
   for (i in seq_along(center_indices)) {
-    elements_indices <- seq(elongated_center_indices[i] - lookback,
-                            elongated_center_indices[i] + lookahead)
+    elements_indices <- seq(
+      elongated_center_indices[i] - lookback,
+      elongated_center_indices[i] + lookahead
+    )
     row <- elongated_series[elements_indices]
     quotes <- rbind(quotes, row)
   }
@@ -216,9 +218,10 @@ entry_profiler <- function(aggregates,
     if (ncol(aggregates) > 1) aggregates[, "adjusted"] else aggregates
   )
   position_df <- entry_profiler_matrix(series,
-                                       entry_timestamps,
-                                       lookback = lookback,
-                                       lookahead = lookahead)
+    entry_timestamps,
+    lookback = lookback,
+    lookahead = lookahead
+  )
   metrics_df <- entry_profiler_metrics(position_df)
   density_arr <- entry_profiler_density(position_df)
 

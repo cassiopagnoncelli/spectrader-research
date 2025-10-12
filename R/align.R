@@ -85,7 +85,7 @@ align <- function(..., fill = NA, locf = TRUE, names = TRUE, timeframe = NULL, a
     # Define timeframe mappings
     timeframe_map <- list(
       "M1" = "mins",
-      "H1" = "hours", 
+      "H1" = "hours",
       "D1" = "days",
       "W1" = "weeks",
       "MN1" = "months",
@@ -187,7 +187,7 @@ align <- function(..., fill = NA, locf = TRUE, names = TRUE, timeframe = NULL, a
             quarter_starts <- ifelse(
               quarters <= 3, 1,
               ifelse(quarters <= 6, 4,
-                     ifelse(quarters <= 9, 7, 10)
+                ifelse(quarters <= 9, 7, 10)
               )
             )
             as.Date(
@@ -213,11 +213,8 @@ align <- function(..., fill = NA, locf = TRUE, names = TRUE, timeframe = NULL, a
           },
           H1 = function(times) {
             as.POSIXct(
-              format(
-                times,
-                "%Y-%m-%d %H:00:00"),
-                tz = attr(times, "tzone")
-              )
+              format(times, "%Y-%m-%d %H:00:00"),
+              tz = attr(times, "tzone")
             )
           },
           M1 = function(times) {
