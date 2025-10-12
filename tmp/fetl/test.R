@@ -1,17 +1,13 @@
-library("devtools")
+devtools::load_all()
 
-load_all()
+# Get Financial Statement Growths
+fsg <- get_fsg() %>% tibble
+fsg
 
-library("tidyquant")
-library("dplyr")
-library("lubridate")
-library("xts")
-library("zoo")
-library("rugarch")
-library("ggplot2")
-library("ggfortify")
-library("tibble")
+# Get Quotes
+quotes <- get_quotes(symbol = "AAPL", from = "2023-01-01") %>% tibble
+quotes
 
-# Get data
-res <- get_fsg() %>% tibble
-res
+# Get Stock Forward Mass
+sfm <- get_sfm(from = "2021-01-01") %>% tibble
+sfm

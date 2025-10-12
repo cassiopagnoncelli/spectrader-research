@@ -125,7 +125,9 @@ Fetl <- R6::R6Class( # nolint: object_name_linter
       conn <- self$pool
       RPostgreSQL::dbGetQuery(conn, query)
     },
+    #
     # Custom queries.
+    #
     fsg = function(n = 5, allow_partial_results = FALSE, start_date = NULL, end_date = NULL) {
       query <- self$build_fsg(n, allow_partial_results, start_date, end_date)
       self$execute_query(query)
@@ -161,6 +163,115 @@ Fetl <- R6::R6Class( # nolint: object_name_linter
           ifelse(is.null(end_date), "NULL", end_date)
         )
       )
+    },
+    quotes = function(symbols, from = NULL, to = NULL, exchange = NULL, sector = NULL, industry = NULL, country = NULL) {
+      query <- self$build_quotes_query(symbols, from, to, exchange, sector, industry, country)
+      self$send_query(query, timeseries = FALSE, xts = FALSE)
+    },
+    build_quotes_query = function(symbols, from, to, exchange, sector, industry, country) {
+      if (!is.null(symbols) && length(symbols) >= 1) {
+        if (!is.character(symbols) || length(symbols) < 1) {
+          stop("Parameter 'symbols' must be a non-empty character vector.")
+        }
+        symbols_sanitized <- gsub("\\s+", "", symbols)
+        symbols_enclosed <- sprintf("'%s'", symbols_sanitized)
+        symbols_comma <- paste(symbols_enclosed, collapse = ", ")
+        clause_symbols <- sprintf("(symbol IN (%s))", symbols_comma)
+      } else {
+        clause_symbols <- NULL
+      }
+      if (!is.null(from)) {
+        if (!grepl("^\\d{4}-\\d{2}-\\d{2}$", from)) {
+          stop("from must be in 'YYYY-MM-DD' format.")
+        }
+        clause_from <- sprintf("(date >= '%s'::DATE)", from)
+      } else {
+        clause_from <- NULL
+      }
+      if (!is.null(to)) {
+        if (!grepl("^\\d{4}-\\d{2}-\\d{2}$", to)) {
+          stop("to must be in 'YYYY-MM-DD' format.")
+        }
+        clause_to <- sprintf("(date <= '%s'::DATE)", to)
+      } else {
+        clause_to <- NULL
+      }
+      if (!is.null(exchange)) {
+        if (!is.character(exchange) || length(exchange) != 1) {
+          stop("Parameter 'exchange' must be a single character string.")
+        }
+        exchange <- private$sanitize_ticker(exchange)
+        clause_exchange <- sprintf("(exchange = '%s')", toupper(exchange))
+      } else {
+        clause_exchange <- NULL
+      }
+      if (!is.null(sector)) {
+        if (!is.character(sector) || length(sector) != 1) {
+          stop("Parameter 'sector' must be a single character string.")
+        }
+        sector <- private$sanitize_ticker(sector)
+        clause_sector <- sprintf("(sector = '%s')", sector)
+      } else {
+        clause_sector <- NULL
+      }
+      if (!is.null(industry)) {
+        if (!is.character(industry) || length(industry) != 1) {
+          stop("Parameter 'industry' must be a single character string.")
+        }
+        industry <- private$sanitize_ticker(industry)
+        clause_industry <- sprintf("'%s'", industry)
+      } else {
+        clause_industry <- NULL
+      }
+      if (!is.null(country)) {
+        if (!is.character(country) || length(country) != 1) {
+          stop("Parameter 'country' must be a single character string.")
+        }
+        country <- private$sanitize_ticker(country)
+        clause_country <- sprintf("(country = '%s')", country)
+      } else {
+        clause_country <- NULL
+      }
+      clauses_vec <- c(
+        clause_symbols,
+        clause_from,
+        clause_to,
+        clause_exchange,
+        clause_sector,
+        clause_industry,
+        clause_country
+      )
+      clauses_nonempty <- clauses_vec[!is.null(clauses_vec) & clauses_vec != ""]
+      clauses <- paste(clauses_nonempty, collapse = " AND ")
+      private$sanitize_sql(sprintf("
+        SELECT
+          c.symbol, q.date AS ts, c.exchange, c.sector, c.industry, c.country,
+          q.open, q.high, q.low, q.close, q.volume
+        FROM quotes q
+        JOIN companies c ON q.company_id = c.id
+        WHERE %s
+        ORDER BY symbol ASC, ts ASC
+      ", clauses))
+    },
+    stock_forward_mass = function(from_date, to_date = today()) {
+      if (!grepl("^\\d{4}-\\d{2}-\\d{2}$", from_date)) {
+        stop("from_date must be in 'YYYY-MM-DD' format.")
+      }
+      query <- private$sanitize_sql(sprintf("
+        SELECT * FROM stock_forward_mass('%s'::DATE, '%s'::DATE)
+      ", from_date, to_date))
+      if (!is.null(self$verbose) && self$verbose) {
+        message(sprintf("Executing query: %s", query))
+      }
+      if (!is.null(self$pool) && !self$pool$valid) {
+        self$connect(force_reconnect = TRUE)
+      }
+      if (is.null(self$pool)) {
+        conn <- self$connect()
+      }
+      conn <- self$pool
+      result <- RPostgreSQL::dbGetQuery(conn, query)
+      result
     }
   ),
   private = list(

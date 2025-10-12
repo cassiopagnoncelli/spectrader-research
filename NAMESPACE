@@ -10,10 +10,19 @@ import("DBI")
 import("RPostgreSQL")
 import("pool")
 
+
+import("dplyr")
 importFrom("dplyr", `slice`)
 importFrom("dplyr", `row_number`)
+import("tibble")
 
-importFrom(magrittr, `%>%`)
+importFrom("magrittr", `%>%`)
 import("zoo")
 import("xts")
+import("lubridate")
+
+import("ggplot2")
+import("ggfortify")
+
 import("TTR")
+import("rugarch")
