@@ -38,14 +38,14 @@ lint:
 		if (!requireNamespace('lintr', quietly = TRUE)) \
 			install.packages('lintr'); \
 		library(lintr); \
-		lint_dir('.')"
+		lint_package(path = '.', linters = NULL)"
 
 style:
 	@${R} --quiet --vanilla --slave -e "\
-		if (!requireNamespace('lintr', quietly = TRUE)) \
-			install.packages('lintr'); \
+		if (!requireNamespace('styler', quietly = TRUE)) \
+			install.packages('styler'); \
 		library(styler); \
-		style_dir('.')"
+		style_pkg()"
 
 stats:
 	@echo "Current lines: "

@@ -17,26 +17,11 @@ Fetl <- R6::R6Class( # nolint: object_name_linter
 
     # Methods.
     initialize = function() {
-      private$host <- ifelse(nchar(Sys.getenv("POSTGRES_HOST")) > 0,
-                             Sys.getenv("POSTGRES_HOST"),
-                             "localhost"
-      )
-      private$dbname <- ifelse(nchar(Sys.getenv("POSTGRES_DB")) > 0,
-                               Sys.getenv("POSTGRES_DB"),
-                               "fetl_development"
-      )
-      private$user <- ifelse(nchar(Sys.getenv("POSTGRES_USER")) > 0,
-                             Sys.getenv("POSTGRES_USER"),
-                             "cassio"
-      )
-      private$password <- ifelse(nchar(Sys.getenv("POSTGRES_PASSWORD")) > 0,
-                                 Sys.getenv("POSTGRES_PASSWORD"),
-                                 "123456"
-      )
-      private$port <- ifelse(nchar(Sys.getenv("POSTGRES_PORT")) > 0,
-                             Sys.getenv("POSTGRES_PORT"),
-                             5432
-      )
+      private$host <- private$get_var("POSTGRES_HOST", "localhost")
+      private$dbname <- private$get_var("POSTGRES_DB", "fetl_development")
+      private$user <- private$get_var("POSTGRES_USER", "cassio")
+      private$password <- private$get_var("POSTGRES_PASSWORD", "123456")
+      private$port <- private$get_var("POSTGRES_PORT", 5432)
       invisible(self)
     },
     connect = function(force_reconnect = FALSE, verbose = FALSE) {
@@ -90,12 +75,12 @@ Fetl <- R6::R6Class( # nolint: object_name_linter
         })
         self$pool <- NULL
       }
-      
       # Also clean up the global pool
       if (exists(".spectrader_env", envir = .GlobalEnv) && 
-          !is.null(.spectrader_env$pool)) {
+            !is.null(.spectrader_env$pool)) {
         tryCatch({
-          if (inherits(.spectrader_env$pool, "Pool") && .spectrader_env$pool$valid) {
+          if (inherits(.spectrader_env$pool, "Pool") &&
+                .spectrader_env$pool$valid) {
             pool::poolClose(.spectrader_env$pool)
           }
         }, error = function(e) {
@@ -124,57 +109,40 @@ Fetl <- R6::R6Class( # nolint: object_name_linter
       }
       return(df)
     },
-    aggregates = function(ticker, timeframe = NULL) {
-      query <- self$query_aggregates(private$sanitize_ticker(ticker), timeframe)
-      return(self$send_query(query, timeseries = TRUE, xts = TRUE))
+    # Custom queries.
+    fsg = function(n = 5, allow_partial_results = FALSE, start_date = NULL, end_date = NULL) {
+      query <- self$build_fsg(n, allow_partial_results, start_date, end_date)
+      self$send_query(query, timeseries = FALSE, xts = FALSE)
+      result <- self$send_query("SELECT * FROM plpsql_tmp.pivoted_fsg_result")
+      self$send_query("DROP TABLE IF EXISTS plpsql_tmp.pivoted_fsg_result")
+      return(result)
     },
-    query_aggregates = function(ticker, timeframe) {
-      if (ticker != private$sanitize_ticker(ticker)) {
-        stop(sprintf("Ticker '%s' is invalid", ticker))
+    build_fsg = function(n, allow_partial_results, start_date, end_date) {
+      if (!is.numeric(n) || n <= 0 || n != round(n)) {
+        stop("Parameter 'n' must be a positive integer.")
       }
-      if (!is.null(timeframe) && !(timeframe %in% TIMEFRAMES)) {
-        stop(sprintf("Timeframe %s not supported.", timeframe))
+      if (!is.logical(allow_partial_results)) {
+        stop("Parameter 'allow_partial_results' must be TRUE or FALSE.")
       }
-      timeframe_clause <- private$sanitize_sql(
-        ifelse(is.null(timeframe), "", sprintf("timeframe = '%s' AND", timeframe))
-      )
+      if (!is.null(start_date)) {
+        if (!grepl("^\\d{4}-\\d{2}-\\d{2}$", start_date)) {
+          stop("start_date must be in 'YYYY-MM-DD' format.")
+        }
+        start_date <- sprintf("'%s'::DATE", start_date)
+      }
+      if (!is.null(end_date)) {
+        if (!grepl("^\\d{4}-\\d{2}-\\d{2}$", end_date)) {
+          stop("end_date must be in 'YYYY-MM-DD' format.")
+        }
+        end_date <- sprintf("'%s'::DATE", end_date)
+      }
       private$sanitize_sql(
-        sprintf("
-          SELECT
-            to_char(ts, 'YYYY-MM-DD HH24:MI:SS') AS ts,
-            open,
-            high,
-            low,
-            close,
-            adjusted,
-            volume
-          FROM aggregates
-          WHERE %s ticker = '%s'
-        ", timeframe_clause, ticker)
-      )
-    },
-    univariates = function(ticker, timeframe = NULL) {
-      query <- self$query_univariates(private$sanitize_ticker(ticker), timeframe)
-      return(self$send_query(query, timeseries = TRUE, xts = TRUE))
-    },
-    query_univariates = function(ticker, timeframe) {
-      if (ticker != private$sanitize_ticker(ticker)) {
-        stop(sprintf("Ticker '%s' is invalid", ticker))
-      }
-      if (!is.null(timeframe) && !(timeframe %in% TIMEFRAMES)) {
-        stop(sprintf("Timeframe %s not supported.", timeframe))
-      }
-      timeframe_clause <- private$sanitize_sql(
-        ifelse(is.null(timeframe), "", sprintf("timeframe = '%s' AND", timeframe))
-      )
-      private$sanitize_sql(
-        sprintf("
-          SELECT
-            to_char(ts, 'YYYY-MM-DD HH24:MI:SS') AS ts,
-            main
-          FROM univariates
-          WHERE %s ticker = '%s'
-        ", timeframe_clause, ticker)
+        sprintf("SELECT pivot_financial_statement_growths(5)",
+          n,
+          ifelse(allow_partial_results, "TRUE", "FALSE"),
+          ifelse(is.null(start_date), "NULL", start_date),
+          ifelse(is.null(end_date), "NULL", end_date)
+        )
       )
     }
   ),
@@ -191,12 +159,18 @@ Fetl <- R6::R6Class( # nolint: object_name_linter
       q <- gsub("\n", " ", str)
       q <- gsub("\\s+", " ", q)
       q <- trimws(q)
-      return(q)
+      q
     },
-    sanitize_ticker = function(ticker) {
-      q <- gsub("[^A-Za-z0-9:-_]", "", ticker)
-      q <- gsub("\\s+", "", q)
-      return(q)
+    sanitize_ticker = function(symbol) {
+      q <- gsub("\\s+", "", symbol)
+      q
+    },
+    get_var = function(env_name, default) {
+      if (nchar(Sys.getenv(env_name)) > 0) {
+        Sys.getenv(env_name)
+      } else {
+        default
+      }
     }
   )
 )
@@ -207,12 +181,9 @@ Fetl <- R6::R6Class( # nolint: object_name_linter
 #' @export
 cleanup_postgres_pools <- function() {
   cleaned <- FALSE
-  
   # Check if spectrader environment exists and has active pools
   if (exists(".spectrader_env", envir = .GlobalEnv)) {
     spectrader_env <- get(".spectrader_env", envir = .GlobalEnv)
-    
-    # Close connection pool if it exists and is valid
     if (!is.null(spectrader_env$pool)) {
       tryCatch({
         if (inherits(spectrader_env$pool, "Pool") && spectrader_env$pool$valid) {
@@ -226,19 +197,13 @@ cleanup_postgres_pools <- function() {
       spectrader_env$pool <- NULL
     }
   }
-  
-  # Also check for any lingering pool connections that might not be properly closed
   tryCatch({
-    # Force garbage collection to trigger any finalizers
-    gc()
-  }, error = function(e) {
-    # Ignore errors during garbage collection
-  })
-  
+    gc() # Force garbage collection to trigger any finalizers
+  }, error = function(e) {})
+
   if (cleaned) {
     cat("Session cleanup completed\n")
   }
-  
   invisible(cleaned)
 }
 

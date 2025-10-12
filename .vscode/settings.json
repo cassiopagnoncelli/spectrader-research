@@ -1,0 +1,17 @@
+{
+  "r.lsp.diagnostics": true,
+  "r.lsp.enabled": true,
+  "r.lintr.enabled": true,
+  "r.lintr.linters": {
+    "line_length_linter": 120
+  },
+  "r.alwaysUseActiveTerminal": true,
+  "r.bracketedPaste": true,
+  "r.sessionWatcher": true,
+  "files.associations": {
+    "*.R": "r",
+    "*.Rmd": "rmd",
+    ".Rprofile": "r",
+    ".lintr": "r"
+  }
+}

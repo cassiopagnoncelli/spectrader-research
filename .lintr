@@ -1,0 +1,3 @@
+linters: linters_with_defaults(line_length_linter(120), object_name_linter = NULL, cyclocomp_linter(25), trailing_blank_lines_linter = NULL, commented_code_linter = NULL, T_and_F_symbol_linter = NULL)
+exclusions: list("renv/", "renv.lock", ".Rproj.user/", "man/", "tmp/")
+encoding: "UTF-8"
