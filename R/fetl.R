@@ -115,12 +115,22 @@ Fetl <- R6::R6Class( # nolint: object_name_linter
       }
       return(df)
     },
+    execute_query = function(query) {
+      if (!is.null(self$pool) && !self$pool$valid) {
+        self$connect(force_reconnect = TRUE)
+      }
+      if (is.null(self$pool)) {
+        conn <- self$connect()
+      }
+      conn <- self$pool
+      RPostgreSQL::dbGetQuery(conn, query)
+    },
     # Custom queries.
     fsg = function(n = 5, allow_partial_results = FALSE, start_date = NULL, end_date = NULL) {
       query <- self$build_fsg(n, allow_partial_results, start_date, end_date)
-      self$send_query(query, timeseries = FALSE, xts = FALSE)
-      result <- self$send_query("SELECT * FROM plpsql_tmp.pivoted_fsg_result")
-      self$send_query("DROP TABLE IF EXISTS plpsql_tmp.pivoted_fsg_result")
+      self$execute_query(query)
+      result <- self$send_query("SELECT * FROM pivoted_fsg_result")
+      self$send_query("DROP TABLE IF EXISTS pivoted_fsg_result", timeseries = FALSE, xts = FALSE)
       return(result)
     },
     build_fsg = function(n, allow_partial_results, start_date, end_date) {
@@ -144,7 +154,7 @@ Fetl <- R6::R6Class( # nolint: object_name_linter
       }
       private$sanitize_sql(
         sprintf(
-          "SELECT pivot_financial_statement_growths(5)",
+          "SELECT pivot_financial_statement_growths(%s, %s, %s, %s)",
           n,
           ifelse(allow_partial_results, "TRUE", "FALSE"),
           ifelse(is.null(start_date), "NULL", start_date),
