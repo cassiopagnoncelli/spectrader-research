@@ -11,3 +11,4 @@ quotes
 # Get Stock Forward Mass
 sfm <- get_sfm(from = "2021-01-01") %>% tibble
 sfm
+

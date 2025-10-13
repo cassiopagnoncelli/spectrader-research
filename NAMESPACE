@@ -1,6 +1,8 @@
 export(constants)
 exportPattern("^[[:alpha:]]+")
 
+importFrom("magrittr", `%>%`)
+
 # Libraries.
 import("progress")
 import("uuid")
@@ -10,19 +12,26 @@ import("DBI")
 import("RPostgreSQL")
 import("pool")
 
-
+# Data frames
 import("dplyr")
 importFrom("dplyr", `slice`)
 importFrom("dplyr", `row_number`)
 import("tibble")
-
-importFrom("magrittr", `%>%`)
 import("zoo")
 import("xts")
+
+# Dates
 import("lubridate")
 
+# Data wrangling
+import("tidyr")
+import("stringr")
+import("purrr")
+
+# Charts
 import("ggplot2")
 import("ggfortify")
 
+# Specifics
 import("TTR")
 import("rugarch")
