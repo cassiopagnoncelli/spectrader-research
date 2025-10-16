@@ -1,15 +1,4 @@
-library("devtools")
-
-load_all()
-
-library("tidyquant")
-library("dplyr")
-library("lubridate")
-library("xts")
-library("zoo")
-library("rugarch")
-library("ggplot2")
-library("ggfortify")
+devtoools::load_all()
 
 btc <- get_ticker("BSBTCUSDH1")
 btc_garch <- garchvar(btc)
