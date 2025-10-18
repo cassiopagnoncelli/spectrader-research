@@ -1,21 +1,25 @@
 devtools::load_all()
 library(xgboost)
 library(caret)
-library(ggplot2)
+
+set.seed(123)
 
 fetl <- Fetl$new()
 
 # Load and prepare data
 sfm <- fetl$send_query("SELECT * FROM tmp_sfm") %>%
   tibble %>%
-  mutate(
-    # upside_type = ifelse(upside < 1.15, "lost", "strike"),
-    downside_type = ifelse(downside > 0.70, "lost", "strike")
+  dplyr::filter(
+    exchange %in% c("NASDAQ", "NYSE")
   ) %>%
-  select(
+  dplyr::mutate(
+    # upside_type = ifelse(upside > log(1.6), "strike", "lost")
+    downside_type = ifelse(downside < log(0.7), "strike", "lost")
+  ) %>%
+  dplyr::select(
     -symbol,
     -ipo_date,
-    -date_ready,
+    -report_date,
     -starts_with("is_date"),
     -downside,
     -upside,
@@ -24,9 +28,8 @@ sfm <- fetl$send_query("SELECT * FROM tmp_sfm") %>%
     -industry
   )
 
-# Train/test split (upside)
-# set.seed(123)
-# idx <- createDataPartition(sfm$upside_type, p = 0.8, list = FALSE)
+# # Train/test split (upside)
+# idx <- createDataPartition(sfm$upside_type, p = 0.4, list = FALSE)
 # train_x <- data.matrix(sfm[idx, -which(names(sfm) == "upside_type")])
 # train_y <- as.numeric(factor(sfm$upside_type[idx])) - 1  # Convert to 0/1 for xgboost
 # test_x <- data.matrix(sfm[-idx, -which(names(sfm) == "upside_type")])
@@ -34,8 +37,7 @@ sfm <- fetl$send_query("SELECT * FROM tmp_sfm") %>%
 # test_y_labels <- sfm$upside_type[-idx]
 
 # Train/test split (downside)
-set.seed(123)
-idx <- createDataPartition(sfm$downside_type, p = 0.6, list = FALSE)
+idx <- createDataPartition(sfm$downside_type, p = 0.7, list = FALSE)
 train_x <- data.matrix(sfm[idx, -which(names(sfm) == "downside_type")])
 train_y <- as.numeric(factor(sfm$downside_type[idx])) - 1  # Convert to 0/1 for xgboost
 test_x <- data.matrix(sfm[-idx, -which(names(sfm) == "downside_type")])
@@ -173,7 +175,7 @@ roc_df <- data.frame(
 )
 
 p_roc <- ggplot(roc_df, aes(x = FPR, y = TPR)) +
-  geom_line(color = "#3498db", size = 1.5) +
+  geom_line(color = "#3498db", linewidth = 1.5) +
   geom_abline(linetype = "dashed", color = "gray") +
   theme_minimal() +
   labs(

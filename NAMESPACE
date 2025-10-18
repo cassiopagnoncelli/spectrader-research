@@ -14,19 +14,22 @@ import("pool")
 
 # Data frames
 import("dplyr")
+import("tibble")
+
 importFrom("dplyr", `slice`)
 importFrom("dplyr", `row_number`)
-import("tibble")
+
+# Data manipulation
 import("zoo")
 import("xts")
-
-# Dates
-import("lubridate")
 
 # Data wrangling
 import("tidyr")
 import("stringr")
 import("purrr")
+
+# Dates
+import("lubridate")
 
 # Charts
 import("ggplot2")
