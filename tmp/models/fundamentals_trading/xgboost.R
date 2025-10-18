@@ -2,7 +2,34 @@ devtools::load_all()
 library(xgboost)
 library(caret)
 
-set.seed(123)
+# ============================================================================
+# CONFIGURATION PARAMETERS - CONSERVATIVE TRUE POSITIVE SETTINGS
+# ============================================================================
+# Higher values = More conservative (fewer false positives, higher precision)
+# Lower values = More aggressive (more true positives, higher recall)
+
+# Model training parameters
+SCALE_POS_WEIGHT <- 3.0       # > 1 makes model conservative (range: 1.5 - 3.0)
+                              # Higher = requires stronger evidence for "strike"
+MAX_DEPTH <- 4                # Lower depth = more conservative (range: 4 - 6)
+ETA <- 0.06                   # Lower learning rate = more stable predictions
+
+# Threshold optimization parameters
+THRESHOLD_MIN <- 0.7          # Minimum threshold to search (range: 0.5 - 0.7)
+THRESHOLD_MAX <- 0.95         # Maximum threshold to search (range: 0.85 - 0.95)
+THRESHOLD_STEP <- 0.05        # Step size for threshold search
+
+MIN_POSITIVE_PREDICTIONS <- 15 # Minimum TP+FP to consider threshold valid
+                               # Higher = requires more predictions to trust precision
+
+# Training parameters
+TRAIN_SPLIT <- 0.7            # Proportion of data for training
+NROUNDS <- 100                # Number of boosting rounds
+RANDOM_SEED <- 123            # For reproducibility
+
+# ============================================================================
+
+set.seed(RANDOM_SEED)
 
 fetl <- Fetl$new()
 
@@ -37,7 +64,7 @@ sfm <- fetl$send_query("SELECT * FROM tmp_sfm") %>%
 # test_y_labels <- sfm$upside_type[-idx]
 
 # Train/test split (downside)
-idx <- createDataPartition(sfm$downside_type, p = 0.7, list = FALSE)
+idx <- createDataPartition(sfm$downside_type, p = TRAIN_SPLIT, list = FALSE)
 train_x <- data.matrix(sfm[idx, -which(names(sfm) == "downside_type")])
 train_y <- as.numeric(factor(sfm$downside_type[idx])) - 1  # Convert to 0/1 for xgboost
 test_x <- data.matrix(sfm[-idx, -which(names(sfm) == "downside_type")])
@@ -51,17 +78,29 @@ dtest <- xgb.DMatrix(data = test_x, label = test_y)
 params <- list(
   objective = "binary:logistic",
   eval_metric = "auc",
-  max_depth = 6,
-  eta = 0.1,
+  max_depth = MAX_DEPTH,
+  eta = ETA,
   subsample = 0.8,
   colsample_bytree = 0.8,
-  scale_pos_weight = 0.7  # < 1 makes model more aggressive in predicting strikes
+  scale_pos_weight = SCALE_POS_WEIGHT
 )
+
+cat(sprintf(
+  paste0(
+    "\n=== MODEL CONFIGURATION (CONSERVATIVE) ===\n",
+    "scale_pos_weight: %.2f (higher = more conservative)\n",
+    "max_depth: %d (lower = more conservative)\n",
+    "eta: %.2f (lower = more stable)\n",
+    "threshold_range: %.2f - %.2f\n",
+    "min_positive_predictions: %d\n\n"
+  ),
+  SCALE_POS_WEIGHT, MAX_DEPTH, ETA, THRESHOLD_MIN, THRESHOLD_MAX, MIN_POSITIVE_PREDICTIONS
+))
 
 model <- xgb.train(
   params = params,
   data = dtrain,
-  nrounds = 100,
+  nrounds = NROUNDS,
   watchlist = list(train = dtrain, test = dtest),
   verbose = 0
 )
@@ -69,9 +108,9 @@ model <- xgb.train(
 # Predictions
 pred_probs <- predict(model, dtest)
 
-# === THRESHOLD OPTIMIZATION FOR MAXIMIZING RECALL ===
-cat("\n=== THRESHOLD OPTIMIZATION (Maximizing Strike Detection) ===\n")
-thresholds <- seq(0.3, 0.7, by = 0.05)
+# === THRESHOLD OPTIMIZATION FOR MAXIMIZING PRECISION ===
+cat("\n=== THRESHOLD OPTIMIZATION (Maximizing Precision - Conservative TP) ===\n")
+thresholds <- seq(THRESHOLD_MIN, THRESHOLD_MAX, by = THRESHOLD_STEP)
 results <- data.frame()
 
 for (thresh in thresholds) {
@@ -103,14 +142,25 @@ for (thresh in thresholds) {
 
 print(results)
 
-# Find optimal threshold for maximum recall
-optimal_idx <- which.max(results$recall)
-optimal_threshold <- results$threshold[optimal_idx]
-cat(sprintf("\n*** OPTIMAL THRESHOLD FOR MAX RECALL: %.2f ***\n", optimal_threshold))
-cat(sprintf("At this threshold: Recall=%.4f, Precision=%.4f, F1=%.4f\n\n",
-            results$recall[optimal_idx],
-            results$precision[optimal_idx],
-            results$f1[optimal_idx]))
+# Find optimal threshold for maximum precision
+# Filter out thresholds with too few predictions to avoid unreliable precision
+valid_results <- results[results$tp + results$fp >= MIN_POSITIVE_PREDICTIONS, ]
+optimal_idx <- which.max(valid_results$precision)
+optimal_threshold <- valid_results$threshold[optimal_idx]
+cat(sprintf(
+  paste0(
+    "\n*** OPTIMAL THRESHOLD FOR MAX PRECISION: %.2f ***\n",
+    "At this threshold: Precision=%.4f, Recall=%.4f, F1=%.4f\n",
+    "True Positives: %d, False Positives: %d, False Negatives: %d\n\n"
+  ),
+  optimal_threshold,
+  valid_results$precision[optimal_idx],
+  valid_results$recall[optimal_idx],
+  valid_results$f1[optimal_idx],
+  valid_results$tp[optimal_idx],
+  valid_results$fp[optimal_idx],
+  valid_results$fn[optimal_idx]
+))
 
 # Use optimal threshold for final predictions
 pred_class <- ifelse(pred_probs > optimal_threshold, 1, 0)
@@ -126,14 +176,22 @@ cat("\nConfusion Matrix:\n")
 print(cm)
 
 # Detailed Confusion Matrix
-cat("\n=== DETAILED CONFUSION MATRIX ===\n")
-cat(sprintf("True Negatives (TN):  %d - Correctly predicted 'lost'\n", cm[1, 1]))
-cat(sprintf("False Positives (FP): %d - Incorrectly predicted 'strike' (was 'lost')\n", cm[2, 1]))
-cat(sprintf("False Negatives (FN): %d - Incorrectly predicted 'lost' (was 'strike')\n", cm[1, 2]))
-cat(sprintf("True Positives (TP):  %d - Correctly predicted 'strike'\n", cm[2, 2]))
-cat(sprintf("\nTotal samples: %d\n", sum(cm)))
-cat(sprintf("Correctly classified: %d (%.2f%%)\n", cm[1,1] + cm[2,2], 100 * (cm[1,1] + cm[2,2]) / sum(cm)))
-cat(sprintf("Misclassified: %d (%.2f%%)\n\n", cm[2,1] + cm[1,2], 100 * (cm[2,1] + cm[1,2]) / sum(cm)))
+cat(sprintf(
+  paste0(
+    "\n=== DETAILED CONFUSION MATRIX ===\n",
+    "True Negatives (TN):  %d - Correctly predicted 'lost'\n",
+    "False Positives (FP): %d - Incorrectly predicted 'strike' (was 'lost')\n",
+    "False Negatives (FN): %d - Incorrectly predicted 'lost' (was 'strike')\n",
+    "True Positives (TP):  %d - Correctly predicted 'strike'\n",
+    "\nTotal samples: %d\n",
+    "Correctly classified: %d (%.2f%%)\n",
+    "Misclassified: %d (%.2f%%)\n\n"
+  ),
+  cm[1, 1], cm[2, 1], cm[1, 2], cm[2, 2],
+  sum(cm),
+  cm[1,1] + cm[2,2], 100 * (cm[1,1] + cm[2,2]) / sum(cm),
+  cm[2,1] + cm[1,2], 100 * (cm[2,1] + cm[1,2]) / sum(cm)
+))
 
 # Additional metrics
 library(pROC)
@@ -149,10 +207,20 @@ fn <- cm[1, 2]
 precision <- tp / (tp + fp)
 recall <- tp / (tp + fn)
 f1 <- 2 * (precision * recall) / (precision + recall)
+specificity <- tn / (tn + fp)
+positive_predictive_value <- precision  # Same as precision
 
-cat(sprintf("Precision: %.4f\n", precision))
-cat(sprintf("Recall: %.4f\n", recall))
-cat(sprintf("F1-Score: %.4f\n", f1))
+cat(sprintf(
+  paste0(
+    "\n=== KEY METRICS (Conservative TP Focus) ===\n",
+    "Precision (PPV): %.4f - When we predict 'strike', how often are we right?\n",
+    "Recall (Sensitivity): %.4f - Of all actual 'strikes', how many did we catch?\n",
+    "Specificity: %.4f - Of all actual 'lost', how many did we correctly identify?\n",
+    "F1-Score: %.4f - Harmonic mean of precision and recall\n",
+    "\n*** TRADE-OFF: High precision (%.4f) means fewer false alarms, but lower recall (%.4f) means we miss some strikes ***\n"
+  ),
+  precision, recall, specificity, f1, precision, recall
+))
 
 # === CONFUSION MATRIX PLOT ===
 cm_df <- as.data.frame(cm)
@@ -198,10 +266,13 @@ pred_df <- data.frame(
 
 p_dist <- ggplot(pred_df, aes(x = Probability, fill = Actual)) +
   geom_histogram(alpha = 0.6, position = "identity", bins = 30) +
-  geom_vline(xintercept = 0.5, linetype = "dashed", color = "red") +
+  geom_vline(xintercept = optimal_threshold, linetype = "dashed", color = "red", linewidth = 1) +
+  annotate("text", x = optimal_threshold, y = Inf,
+           label = sprintf("Threshold: %.2f", optimal_threshold),
+           vjust = 2, color = "red", size = 4) +
   theme_minimal() +
   labs(
-    title = "Predicted Probability Distribution",
+    title = "Predicted Probability Distribution (Conservative Threshold)",
     x = "Predicted Probability",
     y = "Count"
   ) +
