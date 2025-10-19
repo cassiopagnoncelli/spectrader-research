@@ -9,21 +9,21 @@ library(caret)
 # Lower values = More aggressive (more true positives, higher recall)
 
 # Model training parameters
-SCALE_POS_WEIGHT <- 2.8       # > 1 makes model conservative (range: 1.5 - 3.0)
+SCALE_POS_WEIGHT <- 2.9       # > 1 makes model conservative (range: 1.5 - 3.0)
                               # Higher = requires stronger evidence for "strike"
 MAX_DEPTH <- 5                # Lower depth = more conservative (range: 4 - 6)
-ETA <- 0.10                   # Lower learning rate = more stable predictions
+ETA <- 0.09                   # Lower learning rate = more stable predictions
 
 # Threshold optimization parameters
 THRESHOLD_MIN <- 0.6          # Minimum threshold to search (range: 0.5 - 0.7)
 THRESHOLD_MAX <- 0.90         # Maximum threshold to search (range: 0.85 - 0.95)
-THRESHOLD_STEP <- 0.05        # Step size for threshold search
+THRESHOLD_STEP <- 0.025       # Step size for threshold search
 
-MIN_POSITIVE_PREDICTIONS <- 10 # Minimum TP+FP to consider threshold valid
+MIN_POSITIVE_PREDICTIONS <- 20 # Minimum TP+FP to consider threshold valid
                                # Higher = requires more predictions to trust precision
 
 # Training parameters
-TRAIN_SPLIT <- 0.7            # Proportion of data for training
+TRAIN_SPLIT <- 0.6            # Proportion of data for training
 NROUNDS <- 100                # Number of boosting rounds
 RANDOM_SEED <- 123            # For reproducibility
 
@@ -157,79 +157,6 @@ recall <- tp / (tp + fn)
 f1 <- 2 * (precision * recall) / (precision + recall)
 specificity <- tn / (tn + fp)
 positive_predictive_value <- precision  # Same as precision
-
-# === CONFUSION MATRIX PLOT ===
-tryCatch({
-  cm_df <- as.data.frame(cm)
-  cm_df$Predicted <- factor(cm_df$Predicted, levels = c(0, 1), labels = c("lost", "strike"))
-  cm_df$Actual <- factor(cm_df$Actual, levels = c(0, 1), labels = c("lost", "strike"))
-
-  p_cm <- ggplot(cm_df, aes(x = Actual, y = Predicted, fill = Freq)) +
-    geom_tile(color = "white") +
-    geom_text(aes(label = Freq), size = 8, color = "white") +
-    scale_fill_gradient(low = "#2c3e50", high = "#e74c3c") +
-    theme_minimal() +
-    labs(title = "Confusion Matrix", x = "Actual", y = "Predicted") +
-    theme(axis.text = element_text(size = 12))
-  print(p_cm)
-}, error = function(e) {
-  cat("Warning: Could not render confusion matrix plot\n")
-})
-
-# === ROC CURVE ===
-tryCatch({
-  roc_df <- data.frame(
-    TPR = roc_obj$sensitivities,
-    FPR = 1 - roc_obj$specificities
-  )
-
-  p_roc <- ggplot(roc_df, aes(x = FPR, y = TPR)) +
-    geom_line(color = "#3498db", linewidth = 1.5) +
-    geom_abline(linetype = "dashed", color = "gray") +
-    theme_minimal() +
-    labs(
-      title = sprintf("ROC Curve (AUC = %.4f)", auc(roc_obj)),
-      x = "False Positive Rate",
-      y = "True Positive Rate"
-    ) +
-    theme(plot.title = element_text(hjust = 0.5))
-  print(p_roc)
-}, error = function(e) {
-  cat("Warning: Could not render ROC curve plot\n")
-})
-
-# === FEATURE IMPORTANCE ===
-tryCatch({
-  imp <- xgb.importance(model = model)
-  xgb.plot.importance(imp[1:10,])
-}, error = function(e) {
-  cat("Warning: Could not render feature importance plot\n")
-})
-
-# === PROBABILITY DISTRIBUTION ===
-tryCatch({
-  pred_df <- data.frame(
-    Probability = pred_probs,
-    Actual = factor(test_y, levels = c(0, 1), labels = c("lost", "strike"))
-  )
-
-  p_dist <- ggplot(pred_df, aes(x = Probability, fill = Actual)) +
-    geom_histogram(alpha = 0.6, position = "identity", bins = 30) +
-    geom_vline(xintercept = optimal_threshold, linetype = "dashed", color = "red", linewidth = 1) +
-    annotate("text", x = optimal_threshold, y = Inf,
-             label = sprintf("Threshold: %.2f", optimal_threshold),
-             vjust = 2, color = "red", size = 4) +
-    theme_minimal() +
-    labs(
-      title = "Predicted Probability Distribution (Conservative Threshold)",
-      x = "Predicted Probability",
-      y = "Count"
-    ) +
-    scale_fill_manual(values = c("lost" = "#e74c3c", "strike" = "#2ecc71"))
-  print(p_dist)
-}, error = function(e) {
-  cat("Warning: Could not render probability distribution plot\n")
-})
 
 # === CLASS DISTRIBUTION ===
 train_table <- table(factor(train_y, levels = c(0, 1), labels = c("lost", "strike")))
