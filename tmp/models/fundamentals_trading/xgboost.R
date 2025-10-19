@@ -9,22 +9,22 @@ library(caret)
 # Lower values = More aggressive (more true positives, higher recall)
 
 # Model training parameters
-SCALE_POS_WEIGHT <- 2.9       # > 1 makes model conservative (range: 1.5 - 3.0)
+SCALE_POS_WEIGHT <- 2.98      # > 1 makes model conservative (range: 1.5 - 3.0)
                               # Higher = requires stronger evidence for "strike"
-MAX_DEPTH <- 5                # Lower depth = more conservative (range: 4 - 6)
-ETA <- 0.09                   # Lower learning rate = more stable predictions
+MAX_DEPTH <- 4                # Lower depth = more conservative (range: 4 - 6)
+ETA <- 0.10                   # Lower learning rate = more stable predictions
 
 # Threshold optimization parameters
-THRESHOLD_MIN <- 0.6          # Minimum threshold to search (range: 0.5 - 0.7)
-THRESHOLD_MAX <- 0.90         # Maximum threshold to search (range: 0.85 - 0.95)
-THRESHOLD_STEP <- 0.025       # Step size for threshold search
+THRESHOLD_MIN <- 0.70         # Minimum threshold to search (range: 0.5 - 0.7)
+THRESHOLD_MAX <- 0.95         # Maximum threshold to search (range: 0.85 - 0.95)
+THRESHOLD_STEP <- 0.01        # Step size for threshold search
 
-MIN_POSITIVE_PREDICTIONS <- 20 # Minimum TP+FP to consider threshold valid
+MIN_POSITIVE_PREDICTIONS <- 15 # Minimum TP+FP to consider threshold valid
                                # Higher = requires more predictions to trust precision
 
 # Training parameters
-TRAIN_SPLIT <- 0.6            # Proportion of data for training
-NROUNDS <- 100                # Number of boosting rounds
+TRAIN_SPLIT <- 0.5            # Proportion of data for training
+NROUNDS <- 1000                # Number of boosting rounds
 RANDOM_SEED <- 123            # For reproducibility
 
 # ============================================================================
@@ -191,6 +191,7 @@ suppressWarnings({
       y = "True Positive Rate"
     ) +
     theme(plot.title = element_text(hjust = 0.5))
+
   print(p_roc)
 })
 
