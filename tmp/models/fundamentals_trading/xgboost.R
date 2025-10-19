@@ -158,6 +158,71 @@ f1 <- 2 * (precision * recall) / (precision + recall)
 specificity <- tn / (tn + fp)
 positive_predictive_value <- precision  # Same as precision
 
+# === CONFUSION MATRIX PLOT ===
+suppressWarnings({
+  cm_df <- as.data.frame(cm)
+  cm_df$Predicted <- factor(cm_df$Predicted, levels = c(0, 1), labels = c("lost", "strike"))
+  cm_df$Actual <- factor(cm_df$Actual, levels = c(0, 1), labels = c("lost", "strike"))
+
+  p_cm <- ggplot(cm_df, aes(x = Actual, y = Predicted, fill = Freq)) +
+    geom_tile(color = "white") +
+    geom_text(aes(label = Freq), size = 8, color = "white") +
+    scale_fill_gradient(low = "#2c3e50", high = "#e74c3c") +
+    theme_minimal() +
+    labs(title = "Confusion Matrix", x = "Actual", y = "Predicted") +
+    theme(axis.text = element_text(size = 12))
+  print(p_cm)
+})
+
+# === ROC CURVE ===
+suppressWarnings({
+  roc_df <- data.frame(
+    TPR = roc_obj$sensitivities,
+    FPR = 1 - roc_obj$specificities
+  )
+
+  p_roc <- ggplot(roc_df, aes(x = FPR, y = TPR)) +
+    geom_line(color = "#3498db", linewidth = 1.5) +
+    geom_abline(linetype = "dashed", color = "gray") +
+    theme_minimal() +
+    labs(
+      title = sprintf("ROC Curve (AUC = %.4f)", auc(roc_obj)),
+      x = "False Positive Rate",
+      y = "True Positive Rate"
+    ) +
+    theme(plot.title = element_text(hjust = 0.5))
+  print(p_roc)
+})
+
+# === FEATURE IMPORTANCE ===
+suppressWarnings({
+  imp <- xgb.importance(model = model)
+  xgb.plot.importance(imp[1:10,])
+})
+
+# === PROBABILITY DISTRIBUTION ===
+suppressWarnings({
+  pred_df <- data.frame(
+    Probability = pred_probs,
+    Actual = factor(test_y, levels = c(0, 1), labels = c("lost", "strike"))
+  )
+
+  p_dist <- ggplot(pred_df, aes(x = Probability, fill = Actual)) +
+    geom_histogram(alpha = 0.6, position = "identity", bins = 30) +
+    geom_vline(xintercept = optimal_threshold, linetype = "dashed", color = "red", linewidth = 1) +
+    annotate("text", x = optimal_threshold, y = Inf,
+             label = sprintf("Threshold: %.2f", optimal_threshold),
+             vjust = 2, color = "red", size = 4) +
+    theme_minimal() +
+    labs(
+      title = "Predicted Probability Distribution (Conservative Threshold)",
+      x = "Predicted Probability",
+      y = "Count"
+    ) +
+    scale_fill_manual(values = c("lost" = "#e74c3c", "strike" = "#2ecc71"))
+  print(p_dist)
+})
+
 # === CLASS DISTRIBUTION ===
 train_table <- table(factor(train_y, levels = c(0, 1), labels = c("lost", "strike")))
 test_table <- table(factor(test_y, levels = c(0, 1), labels = c("lost", "strike")))
