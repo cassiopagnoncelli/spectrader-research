@@ -9,26 +9,26 @@ library(caret)
 # Lower values = More aggressive (more true positives, higher recall)
 
 # Model training parameters
-SCALE_POS_WEIGHT <- 2.5         # > 1 makes model conservative (range: 1.5 - 3.0)
+SCALE_POS_WEIGHT <- 2.8         # > 1 makes model conservative (range: 1.5 - 3.0)
                                 # Higher = requires stronger evidence for "strike"
 MAX_DEPTH <- 4                  # Lower depth = more conservative (range: 4 - 6)
 ETA <- 0.08                     # Lower learning rate = more stable predictions
 
 # Feature selection parameters
 USE_FEATURE_SELECTION <- TRUE   # Whether to use automatic feature selection
-TOP_N_FEATURES <- 30            # Number of top features to keep (adjust as needed)
+TOP_N_FEATURES <- 15            # Number of top features to keep (adjust as needed)
 FEATURE_SELECTION_ROUNDS <- 150 # Rounds for initial feature importance calculation
 
 # Threshold optimization parameters
 THRESHOLD_MIN <- 0.65           # Minimum threshold to search (range: 0.5 - 0.7)
-THRESHOLD_MAX <- 0.98           # Maximum threshold to search (range: 0.85 - 0.95)
+THRESHOLD_MAX <- 0.96           # Maximum threshold to search (range: 0.85 - 0.95)
 THRESHOLD_STEP <- 0.01          # Step size for threshold search
 
-MIN_POSITIVE_PREDICTIONS <- 5   # Minimum TP+FP to consider threshold valid
+MIN_POSITIVE_PREDICTIONS <- 10  # Minimum TP+FP to consider threshold valid
                                 # Higher = requires more predictions to trust precision
 
 # Training parameters
-TRAIN_SPLIT <- 0.5              # Proportion of data for training
+TRAIN_SPLIT <- 0.6              # Proportion of data for training
 NROUNDS <- 100                  # Number of boosting rounds
 RANDOM_SEED <- 123              # For reproducibility
 
