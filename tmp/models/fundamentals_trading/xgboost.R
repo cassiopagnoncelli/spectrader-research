@@ -9,23 +9,28 @@ library(caret)
 # Lower values = More aggressive (more true positives, higher recall)
 
 # Model training parameters
-SCALE_POS_WEIGHT <- 2.98      # > 1 makes model conservative (range: 1.5 - 3.0)
-                              # Higher = requires stronger evidence for "strike"
-MAX_DEPTH <- 4                # Lower depth = more conservative (range: 4 - 6)
-ETA <- 0.10                   # Lower learning rate = more stable predictions
+SCALE_POS_WEIGHT <- 2.5         # > 1 makes model conservative (range: 1.5 - 3.0)
+                                # Higher = requires stronger evidence for "strike"
+MAX_DEPTH <- 4                  # Lower depth = more conservative (range: 4 - 6)
+ETA <- 0.08                     # Lower learning rate = more stable predictions
+
+# Feature selection parameters
+USE_FEATURE_SELECTION <- TRUE   # Whether to use automatic feature selection
+TOP_N_FEATURES <- 30            # Number of top features to keep (adjust as needed)
+FEATURE_SELECTION_ROUNDS <- 150 # Rounds for initial feature importance calculation
 
 # Threshold optimization parameters
-THRESHOLD_MIN <- 0.70         # Minimum threshold to search (range: 0.5 - 0.7)
-THRESHOLD_MAX <- 0.95         # Maximum threshold to search (range: 0.85 - 0.95)
-THRESHOLD_STEP <- 0.01        # Step size for threshold search
+THRESHOLD_MIN <- 0.65           # Minimum threshold to search (range: 0.5 - 0.7)
+THRESHOLD_MAX <- 0.98           # Maximum threshold to search (range: 0.85 - 0.95)
+THRESHOLD_STEP <- 0.01          # Step size for threshold search
 
-MIN_POSITIVE_PREDICTIONS <- 15 # Minimum TP+FP to consider threshold valid
-                               # Higher = requires more predictions to trust precision
+MIN_POSITIVE_PREDICTIONS <- 5   # Minimum TP+FP to consider threshold valid
+                                # Higher = requires more predictions to trust precision
 
 # Training parameters
-TRAIN_SPLIT <- 0.5            # Proportion of data for training
-NROUNDS <- 1000                # Number of boosting rounds
-RANDOM_SEED <- 123            # For reproducibility
+TRAIN_SPLIT <- 0.5              # Proportion of data for training
+NROUNDS <- 100                  # Number of boosting rounds
+RANDOM_SEED <- 123              # For reproducibility
 
 # ============================================================================
 
@@ -70,6 +75,47 @@ train_y <- as.numeric(factor(sfm$downside_type[idx])) - 1  # Convert to 0/1 for 
 test_x <- data.matrix(sfm[-idx, -which(names(sfm) == "downside_type")])
 test_y <- as.numeric(factor(sfm$downside_type[-idx])) - 1
 test_y_labels <- sfm$downside_type[-idx]
+
+# === FEATURE SELECTION ===
+if (USE_FEATURE_SELECTION) {
+  cat(sprintf("\n=== FEATURE SELECTION ===\n"))
+  cat(sprintf("Original features: %d\n", ncol(train_x)))
+
+  # Train initial model to get feature importance
+  dtrain_initial <- xgb.DMatrix(data = train_x, label = train_y)
+
+  params_initial <- list(
+    objective = "binary:logistic",
+    eval_metric = "auc",
+    max_depth = MAX_DEPTH,
+    eta = ETA,
+    subsample = 0.8,
+    colsample_bytree = 0.8,
+    scale_pos_weight = SCALE_POS_WEIGHT
+  )
+
+  model_initial <- xgb.train(
+    params = params_initial,
+    data = dtrain_initial,
+    nrounds = FEATURE_SELECTION_ROUNDS,
+    verbose = 0
+  )
+
+  # Get feature importance
+  importance <- xgb.importance(model = model_initial)
+
+  # Select top N features
+  top_features <- importance$Feature[1:min(TOP_N_FEATURES, nrow(importance))]
+
+  # Filter training and test data
+  train_x <- train_x[, top_features, drop = FALSE]
+  test_x <- test_x[, top_features, drop = FALSE]
+
+  cat(sprintf("Selected top %d features\n", ncol(train_x)))
+  cat(sprintf("Top 10 features by importance:\n"))
+  cat(sprintf("  %s\n", paste(head(top_features, 10), collapse = ", ")))
+  cat("\n")
+}
 
 # Train XGBoost classification model
 dtrain <- xgb.DMatrix(data = train_x, label = train_y)
