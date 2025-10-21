@@ -21,12 +21,12 @@ importFrom("dplyr", `row_number`)
 
 # Data manipulation
 import("zoo")
-import("xts")
+# import("xts")
 
 # Data wrangling
 import("tidyr")
 import("stringr")
-import("purrr")
+# import("purrr")
 
 # Dates
 import("lubridate")

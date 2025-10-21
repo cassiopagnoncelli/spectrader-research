@@ -2,6 +2,8 @@ devtools::load_all()
 library(xgboost)
 library(caret)
 
+options(scipen = 999)
+
 # ============================================================================
 # CONFIGURATION PARAMETERS - CONSERVATIVE TRUE POSITIVE SETTINGS
 # ============================================================================
@@ -9,14 +11,14 @@ library(caret)
 # Lower values = More aggressive (more true positives, higher recall)
 
 # Model training parameters
-SCALE_POS_WEIGHT <- 2.8         # > 1 makes model conservative (range: 1.5 - 3.0)
+SCALE_POS_WEIGHT <- 2.0         # > 1 makes model conservative (range: 1.5 - 3.0)
                                 # Higher = requires stronger evidence for "strike"
 MAX_DEPTH <- 4                  # Lower depth = more conservative (range: 4 - 6)
 ETA <- 0.08                     # Lower learning rate = more stable predictions
 
 # Feature selection parameters
 USE_FEATURE_SELECTION <- TRUE   # Whether to use automatic feature selection
-TOP_N_FEATURES <- 15            # Number of top features to keep (adjust as needed)
+TOP_N_FEATURES <- 30            # Number of top features to keep (adjust as needed)
 FEATURE_SELECTION_ROUNDS <- 150 # Rounds for initial feature importance calculation
 
 # Threshold optimization parameters
@@ -32,6 +34,11 @@ TRAIN_SPLIT <- 0.6              # Proportion of data for training
 NROUNDS <- 100                  # Number of boosting rounds
 RANDOM_SEED <- 123              # For reproducibility
 
+# Stock selection
+EXCHANGES <- c("SAO")            # Exchanges to include: NYSE, NASDAQ, SAO
+#EXCHANGES <- c("NASDAQ", "NYSE")
+MIN_MARKET_CAP <- 1.5e8          # Minimum market cap filter
+
 # ============================================================================
 
 set.seed(RANDOM_SEED)
@@ -39,15 +46,23 @@ set.seed(RANDOM_SEED)
 fetl <- Fetl$new()
 
 # Load and prepare data
-sfm <- fetl$send_query("SELECT * FROM tmp_sfm") %>%
+sfm_raw <- fetl$send_query("SELECT * FROM tmp_sfm") %>%
   tibble %>%
   dplyr::filter(
-    exchange %in% c("NASDAQ", "NYSE")
+    exchange %in% EXCHANGES,
+    market_cap_0 > log(MIN_MARKET_CAP),
+    !grepl("-WT$", symbol)
   ) %>%
   dplyr::mutate(
-    # upside_type = ifelse(upside > log(1.6), "strike", "lost")
-    downside_type = ifelse(downside < log(0.7), "strike", "lost")
-  ) %>%
+    upside_type = ifelse(upside > log(1.2), "strike", "lost"),
+    # downside_type = ifelse(downside < log(0.8), "strike", "lost")
+  )
+
+# Store symbols before removing them
+symbols_data <- sfm_raw %>% dplyr::select(symbol)
+
+# Remove non-feature columns for modeling
+sfm <- sfm_raw %>%
   dplyr::select(
     -symbol,
     -ipo_date,
@@ -60,21 +75,26 @@ sfm <- fetl$send_query("SELECT * FROM tmp_sfm") %>%
     -industry
   )
 
-# # Train/test split (upside)
-# idx <- createDataPartition(sfm$upside_type, p = 0.4, list = FALSE)
-# train_x <- data.matrix(sfm[idx, -which(names(sfm) == "upside_type")])
-# train_y <- as.numeric(factor(sfm$upside_type[idx])) - 1  # Convert to 0/1 for xgboost
-# test_x <- data.matrix(sfm[-idx, -which(names(sfm) == "upside_type")])
-# test_y <- as.numeric(factor(sfm$upside_type[-idx])) - 1
-# test_y_labels <- sfm$upside_type[-idx]
+sfm_summaries <- inspect(sfm)
 
-# Train/test split (downside)
-idx <- createDataPartition(sfm$downside_type, p = TRAIN_SPLIT, list = FALSE)
-train_x <- data.matrix(sfm[idx, -which(names(sfm) == "downside_type")])
-train_y <- as.numeric(factor(sfm$downside_type[idx])) - 1  # Convert to 0/1 for xgboost
-test_x <- data.matrix(sfm[-idx, -which(names(sfm) == "downside_type")])
-test_y <- as.numeric(factor(sfm$downside_type[-idx])) - 1
-test_y_labels <- sfm$downside_type[-idx]
+# Train/test split (upside)
+idx <- createDataPartition(sfm$upside_type, p = TRAIN_SPLIT, list = FALSE)
+train_x <- data.matrix(sfm[idx, -which(names(sfm) == "upside_type")])
+train_y <- as.numeric(factor(sfm$upside_type[idx])) - 1  # Convert to 0/1 for xgboost
+test_x <- data.matrix(sfm[-idx, -which(names(sfm) == "upside_type")])
+test_y <- as.numeric(factor(sfm$upside_type[-idx])) - 1
+test_y_labels <- sfm$upside_type[-idx]
+
+# # Train/test split (downside)
+# idx <- createDataPartition(sfm$downside_type, p = TRAIN_SPLIT, list = FALSE)
+# train_x <- data.matrix(sfm[idx, -which(names(sfm) == "downside_type")])
+# train_y <- as.numeric(factor(sfm$downside_type[idx])) - 1  # Convert to 0/1 for xgboost
+# test_x <- data.matrix(sfm[-idx, -which(names(sfm) == "downside_type")])
+# test_y <- as.numeric(factor(sfm$downside_type[-idx])) - 1
+# test_y_labels <- sfm$downside_type[-idx]
+
+# Store symbols for test set to track predictions
+test_symbols <- symbols_data$symbol[-idx]
 
 # === FEATURE SELECTION ===
 if (USE_FEATURE_SELECTION) {
@@ -273,6 +293,36 @@ suppressWarnings({
 # === CLASS DISTRIBUTION ===
 train_table <- table(factor(train_y, levels = c(0, 1), labels = c("lost", "strike")))
 test_table <- table(factor(test_y, levels = c(0, 1), labels = c("lost", "strike")))
+
+# === PREDICTED STRIKES WITH SYMBOLS ===
+predictions_df <- data.frame(
+  symbol = test_symbols,
+  actual = factor(test_y, levels = c(0, 1), labels = c("lost", "strike")),
+  predicted = factor(pred_class, levels = c(0, 1), labels = c("lost", "strike")),
+  probability = pred_probs,
+  stringsAsFactors = FALSE
+)
+
+# Filter to show only predicted strikes
+predicted_strikes <- predictions_df %>%
+  dplyr::filter(predicted == "strike") %>%
+  dplyr::arrange(desc(probability))
+
+# Show predicted strikes
+cat("\n=== PREDICTED STRIKES (Symbols) ===\n")
+cat(sprintf("Total predicted strikes: %d\n", nrow(predicted_strikes)))
+cat(sprintf("True positives: %d | False positives: %d\n\n",
+            sum(predicted_strikes$actual == "strike"),
+            sum(predicted_strikes$actual == "lost")))
+
+if (nrow(predicted_strikes) > 0) {
+  cat("Top predicted strikes (sorted by probability):\n")
+  print(predicted_strikes, row.names = FALSE)
+} else {
+  cat("No strikes predicted at current threshold.\n")
+}
+
+cat("\n")
 
 # === CONSOLIDATED OUTPUT ===
 cat(sprintf(
