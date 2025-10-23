@@ -35,9 +35,9 @@ NROUNDS <- 100                  # Number of boosting rounds
 RANDOM_SEED <- 123              # For reproducibility
 
 # Stock selection
-EXCHANGES <- c("SAO")            # Exchanges to include: NYSE, NASDAQ, SAO
-#EXCHANGES <- c("NASDAQ", "NYSE")
-MIN_MARKET_CAP <- 1.5e8          # Minimum market cap filter
+#EXCHANGES <- c("SAO")          # Exchanges to include: NYSE, NASDAQ, SAO
+EXCHANGES <- c("NASDAQ", "NYSE")
+MIN_MARKET_CAP <- 1e10          # Minimum market cap filter
 
 # ============================================================================
 
@@ -51,11 +51,16 @@ sfm_raw <- fetl$send_query("SELECT * FROM tmp_sfm") %>%
   dplyr::filter(
     exchange %in% EXCHANGES,
     market_cap_0 > log(MIN_MARKET_CAP),
-    !grepl("-WT$", symbol)
+    !grepl("-", symbol)
   ) %>%
   dplyr::mutate(
-    upside_type = ifelse(upside > log(1.2), "strike", "lost"),
-    # downside_type = ifelse(downside < log(0.8), "strike", "lost")
+    upside_type = ifelse(exp(upside) > 1 + bs_vol_m_0, "strike", "expire"),
+    downside_type = ifelse(downside < log(0.8), "strike", "expire"),
+    upside_to_vol = ifelse(abs(bs_vol_m_0) <= 1e-3, 1, exp(upside) / bs_vol_m_0),
+    downside_to_vol = ifelse(abs(bs_vol_m_0) <= 1e-3, NA_real_, exp(downside) / bs_vol_m_0)
+  ) %>%
+  dplyr::mutate(
+    target = ifelse(upside_to_vol >= 3 & exp(upside) >= 1.1, "strike", "expire")
   )
 
 # Store symbols before removing them
@@ -70,6 +75,11 @@ sfm <- sfm_raw %>%
     -starts_with("is_date"),
     -downside,
     -upside,
+    -upside_type,
+    -upside_to_vol,
+    -downside,
+    -downside_type,
+    -downside_to_vol,
     -exchange,
     -sector,
     -industry
@@ -78,12 +88,12 @@ sfm <- sfm_raw %>%
 sfm_summaries <- inspect(sfm)
 
 # Train/test split (upside)
-idx <- createDataPartition(sfm$upside_type, p = TRAIN_SPLIT, list = FALSE)
-train_x <- data.matrix(sfm[idx, -which(names(sfm) == "upside_type")])
-train_y <- as.numeric(factor(sfm$upside_type[idx])) - 1  # Convert to 0/1 for xgboost
-test_x <- data.matrix(sfm[-idx, -which(names(sfm) == "upside_type")])
-test_y <- as.numeric(factor(sfm$upside_type[-idx])) - 1
-test_y_labels <- sfm$upside_type[-idx]
+idx <- createDataPartition(sfm$target, p = TRAIN_SPLIT, list = FALSE)
+train_x <- data.matrix(sfm[idx, -which(names(sfm) == "target")])
+train_y <- as.numeric(factor(sfm$target[idx])) - 1  # Convert to 0/1 for xgboost
+test_x <- data.matrix(sfm[-idx, -which(names(sfm) == "target")])
+test_y <- as.numeric(factor(sfm$target[-idx])) - 1
+test_y_labels <- sfm$target[-idx]
 
 # # Train/test split (downside)
 # idx <- createDataPartition(sfm$downside_type, p = TRAIN_SPLIT, list = FALSE)
@@ -227,8 +237,8 @@ positive_predictive_value <- precision  # Same as precision
 # === CONFUSION MATRIX PLOT ===
 suppressWarnings({
   cm_df <- as.data.frame(cm)
-  cm_df$Predicted <- factor(cm_df$Predicted, levels = c(0, 1), labels = c("lost", "strike"))
-  cm_df$Actual <- factor(cm_df$Actual, levels = c(0, 1), labels = c("lost", "strike"))
+  cm_df$Predicted <- factor(cm_df$Predicted, levels = c(0, 1), labels = c("expire", "strike"))
+  cm_df$Actual <- factor(cm_df$Actual, levels = c(0, 1), labels = c("expire", "strike"))
 
   p_cm <- ggplot(cm_df, aes(x = Actual, y = Predicted, fill = Freq)) +
     geom_tile(color = "white") +
@@ -271,7 +281,7 @@ suppressWarnings({
 suppressWarnings({
   pred_df <- data.frame(
     Probability = pred_probs,
-    Actual = factor(test_y, levels = c(0, 1), labels = c("lost", "strike"))
+    Actual = factor(test_y, levels = c(0, 1), labels = c("expire", "strike"))
   )
 
   p_dist <- ggplot(pred_df, aes(x = Probability, fill = Actual)) +
@@ -286,19 +296,19 @@ suppressWarnings({
       x = "Predicted Probability",
       y = "Count"
     ) +
-    scale_fill_manual(values = c("lost" = "#e74c3c", "strike" = "#2ecc71"))
+    scale_fill_manual(values = c("expire" = "#e74c3c", "strike" = "#2ecc71"))
   print(p_dist)
 })
 
 # === CLASS DISTRIBUTION ===
-train_table <- table(factor(train_y, levels = c(0, 1), labels = c("lost", "strike")))
-test_table <- table(factor(test_y, levels = c(0, 1), labels = c("lost", "strike")))
+train_table <- table(factor(train_y, levels = c(0, 1), labels = c("expire", "strike")))
+test_table <- table(factor(test_y, levels = c(0, 1), labels = c("expire", "strike")))
 
 # === PREDICTED STRIKES WITH SYMBOLS ===
 predictions_df <- data.frame(
   symbol = test_symbols,
-  actual = factor(test_y, levels = c(0, 1), labels = c("lost", "strike")),
-  predicted = factor(pred_class, levels = c(0, 1), labels = c("lost", "strike")),
+  actual = factor(test_y, levels = c(0, 1), labels = c("expire", "strike")),
+  predicted = factor(pred_class, levels = c(0, 1), labels = c("expire", "strike")),
   probability = pred_probs,
   stringsAsFactors = FALSE
 )
@@ -313,7 +323,7 @@ cat("\n=== PREDICTED STRIKES (Symbols) ===\n")
 cat(sprintf("Total predicted strikes: %d\n", nrow(predicted_strikes)))
 cat(sprintf("True positives: %d | False positives: %d\n\n",
             sum(predicted_strikes$actual == "strike"),
-            sum(predicted_strikes$actual == "lost")))
+            sum(predicted_strikes$actual == "expire")))
 
 if (nrow(predicted_strikes) > 0) {
   cat("Top predicted strikes (sorted by probability):\n")
@@ -342,9 +352,9 @@ cat(sprintf(
     "Accuracy: %.4f\n",
     "AUC: %.4f\n\n",
     "=== DETAILED CONFUSION MATRIX ===\n",
-    "True Negatives (TN):  %d - Correctly predicted 'lost'\n",
-    "False Positives (FP): %d - Incorrectly predicted 'strike' (was 'lost')\n",
-    "False Negatives (FN): %d - Incorrectly predicted 'lost' (was 'strike')\n",
+    "True Negatives (TN):  %d - Correctly predicted 'expire'\n",
+    "False Positives (FP): %d - Incorrectly predicted 'strike' (was 'expire')\n",
+    "False Negatives (FN): %d - Incorrectly predicted 'expire' (was 'strike')\n",
     "True Positives (TP):  %d - Correctly predicted 'strike'\n",
     "\nTotal samples: %d\n",
     "Correctly classified: %d (%.2f%%)\n",
@@ -352,12 +362,12 @@ cat(sprintf(
     "=== KEY METRICS (Conservative TP Focus) ===\n",
     "Precision (PPV): %.4f - When we predict 'strike', how often are we right?\n",
     "Recall (Sensitivity): %.4f - Of all actual 'strikes', how many did we catch?\n",
-    "Specificity: %.4f - Of all actual 'lost', how many did we correctly identify?\n",
+    "Specificity: %.4f - Of all actual 'expire', how many did we correctly identify?\n",
     "F1-Score: %.4f - Harmonic mean of precision and recall\n\n",
     "*** TRADE-OFF: High precision (%.4f) means fewer false alarms, but lower recall (%.4f) means we miss some strikes ***\n\n",
     "=== CLASS DISTRIBUTION ===\n",
-    "Training set: lost=%d, strike=%d\n",
-    "Test set: lost=%d, strike=%d\n"
+    "Training set: expire=%d, strike=%d\n",
+    "Test set: expire=%d, strike=%d\n"
   ),
   SCALE_POS_WEIGHT, MAX_DEPTH, ETA, THRESHOLD_MIN, THRESHOLD_MAX, MIN_POSITIVE_PREDICTIONS,
   optimal_threshold, valid_results$precision[optimal_idx], valid_results$recall[optimal_idx], valid_results$f1[optimal_idx],
