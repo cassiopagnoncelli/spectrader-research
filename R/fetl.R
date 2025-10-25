@@ -100,10 +100,9 @@ Fetl <- R6::R6Class( # nolint: object_name_linter
         self$connect(force_reconnect = TRUE)
       }
       if (is.null(self$pool)) {
-        conn <- self$connect()
+        self$connect()
       }
-      conn <- self$pool
-      result <- RPostgreSQL::dbGetQuery(conn, query)
+      result <- DBI::dbGetQuery(self$pool, query)
       if (timeseries) {
         df <- result[, -1, drop = FALSE]
         rownames(df) <- result$ts
@@ -120,10 +119,9 @@ Fetl <- R6::R6Class( # nolint: object_name_linter
         self$connect(force_reconnect = TRUE)
       }
       if (is.null(self$pool)) {
-        conn <- self$connect()
+        self$connect()
       }
-      conn <- self$pool
-      RPostgreSQL::dbGetQuery(conn, query)
+      DBI::dbGetQuery(self$pool, query)
     },
     #
     # Custom queries.
@@ -267,10 +265,9 @@ Fetl <- R6::R6Class( # nolint: object_name_linter
         self$connect(force_reconnect = TRUE)
       }
       if (is.null(self$pool)) {
-        conn <- self$connect()
+        self$connect()
       }
-      conn <- self$pool
-      result <- RPostgreSQL::dbGetQuery(conn, query)
+      result <- DBI::dbGetQuery(self$pool, query)
       result
     }
   ),

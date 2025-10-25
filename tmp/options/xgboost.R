@@ -11,7 +11,7 @@ options(scipen = 999)
 # Lower values = More aggressive (more true positives, higher recall)
 
 # Model training parameters
-SCALE_POS_WEIGHT <- 1.5         # > 1 makes model conservative (range: 1.5 - 3.0)
+SCALE_POS_WEIGHT <- 2.5         # > 1 makes model conservative (range: 1.5 - 3.0)
                                 # Higher = requires stronger evidence for "strike"
 MAX_DEPTH <- 4                  # Lower depth = more conservative (range: 4 - 6)
 ETA <- 0.08                     # Lower learning rate = more stable predictions
