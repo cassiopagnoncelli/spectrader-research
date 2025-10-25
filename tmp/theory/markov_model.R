@@ -78,6 +78,17 @@ hittingProbabilities(mc_model)
 # State entropy & predictability
 steadyStates(mc_model) * log2(steadyStates(mc_model))  # Shannon entropy
 
+# Condition probabilities
+mc_model^2  # 2-step transitions
+mc_model^10 # 10-step transitions
 
+# Test if the model differs from a Random Walk
+transition_counts <- table(se[-length(se)], se[-1]) # Actual count of probs
+total_transitions <- sum(transition_counts) # Expected counts under random walk
+expected_random <- matrix(total_transitions / (n_states^2),
+                          nrow = n_states, ncol = n_states)
 
-
+chi_sq <- sum((transition_counts - expected_random)^2 / expected_random)
+df <- (n_states - 1)^2
+p_value <- pchisq(chi_sq, df, lower.tail = FALSE)
+p_value
