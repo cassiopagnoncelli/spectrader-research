@@ -1,15 +1,15 @@
 ## Models
 
 - [x] ~~K-means classfication~~
-- [ ] [**Extreme Gradient Boosting**](https://app.datacamp.com/learn/courses/extreme-gradient-boosting-with-xgboost)
-- [ ] Kohonen's SOM
-- [ ] SVM classification & regression
 - [ ] [**Gaussian Mixture Model**](https://campus.datacamp.com/courses/mixture-models-in-r) (clustering)
+- [ ] [**Extreme Gradient Boosting**](https://app.datacamp.com/learn/courses/extreme-gradient-boosting-with-xgboost)
 - [x] ~~Markov Model~~
 - [ ] Hidden Markov Model
 - [ ] Kalman Filter
 - [-] Temporal Convolutional Network (~~CNN, RNN~~)
+- [ ] SVM classification & regression
 - [-] [Generalized Linear Models](https://app.datacamp.com/learn/courses/generalized-linear-models-in-r) (glmnet)
+- [-] Kohonen's SOM
 
 **Packages**: ~~[x] forecast (TBATS, ETS, HW, MSTS, ARFIMA, STL)~~, [-] AWS AutoGluon (Python), [x] FB Prophet
 
