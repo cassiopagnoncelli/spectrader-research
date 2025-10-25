@@ -52,3 +52,32 @@ ggplot(trans_df, aes(x = To, y = From, fill = Probability)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
         plot.title = element_text(hjust = 0.5, size = 14, face = "bold"))
 
+# Time proportion the system spends in each state
+steadyStates(mc_model)
+
+# how long (on average) it takes to transition from one state to another
+meanFirstPassageTime(mc_model)
+
+# Expected number of steps to return to a given state
+meanRecurrenceTime(mc_model)
+
+# Predict the next N states given a current state
+# Simulate future sequences based on the learned transition probabilities
+predict(mc_model, newdata = "bullish", n.ahead = 10)
+rmarkovchain(n = 100, object = mc_model, t0 = "neutral")
+
+# Can reach any state from any other?
+is.irreducible(mc_model)
+
+# Periodicity analysis
+period(mc_model)
+
+# Hitting probabilities
+hittingProbabilities(mc_model)
+
+# State entropy & predictability
+steadyStates(mc_model) * log2(steadyStates(mc_model))  # Shannon entropy
+
+
+
+
