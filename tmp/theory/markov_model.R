@@ -25,8 +25,13 @@ se <- c(
 
 mc_fit <- markovchainFit(data = se)
 mc_model <- mc_fit$estimate
+
+# Display the Markov Chain Model
 mc_model
 mc_model@states
+mc_fit$standardError
+mc_fit$upperEndpointMatrix
+mc_fit$lowerEndpointMatrix
 
 # Model State Diagram
 plot(mc_model, main = "Markov Model State Diagram", edge.arrow.size = 0.5)
