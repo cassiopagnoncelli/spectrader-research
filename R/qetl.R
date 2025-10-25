@@ -115,10 +115,9 @@ Qetl <- R6::R6Class( # nolint: object_name_linter
         self$connect(force_reconnect = TRUE)
       }
       if (is.null(self$pool)) {
-        conn <- self$connect()
+        self$connect()
       }
-      conn <- self$pool
-      result <- RPostgreSQL::dbGetQuery(conn, query)
+      result <- DBI::dbGetQuery(self$pool, query)
       if (timeseries) {
         df <- result[, -1, drop = FALSE]
         rownames(df) <- result$ts
@@ -188,9 +187,8 @@ Qetl <- R6::R6Class( # nolint: object_name_linter
         self$connect(force_reconnect = TRUE)
       }
       if (is.null(self$pool)) {
-        conn <- self$connect()
+        self$connect()
       }
-      conn <- self$pool
       query <- private$sanitize_sql(
         sprintf("
           SELECT kind
@@ -198,7 +196,7 @@ Qetl <- R6::R6Class( # nolint: object_name_linter
           WHERE ticker = '%s'
         ", private$sanitize_ticker(ticker))
       )
-      result <- RPostgreSQL::dbGetQuery(conn, query)
+      result <- DBI::dbGetQuery(self$pool, query)
       if (nrow(result) == 0) {
         stop(sprintf("Ticker '%s' not found", ticker))
       }
@@ -228,72 +226,5 @@ Qetl <- R6::R6Class( # nolint: object_name_linter
   )
 )
 
-# Cleanup functions for DatasourcePostgres connection pools
-
-#' Clean up all DatasourcePostgres connection pools
-#' @export
-cleanup_postgres_pools <- function() {
-  cleaned <- FALSE
-
-  # Check if spectrader environment exists and has active pools
-  if (exists(".spectrader_env", envir = .GlobalEnv)) {
-    spectrader_env <- get(".spectrader_env", envir = .GlobalEnv)
-
-    # Close connection pool if it exists and is valid
-    if (!is.null(spectrader_env$pool)) {
-      tryCatch(
-        {
-          if (inherits(spectrader_env$pool, "Pool") && spectrader_env$pool$valid) {
-            pool::poolClose(spectrader_env$pool)
-            cat("Automatically closed DatasourcePostgres connection pool\n")
-            cleaned <- TRUE
-          }
-        },
-        error = function(e) {
-          cat("Warning: Error closing connection pool:", e$message, "\n")
-        }
-      )
-      spectrader_env$pool <- NULL
-    }
-  }
-
-  # Also check for any lingering pool connections that might not be properly closed
-  tryCatch(
-    {
-      # Force garbage collection to trigger any finalizers
-      gc()
-    },
-    error = function(e) {
-      # Ignore errors during garbage collection
-    }
-  )
-
-  if (cleaned) {
-    cat("Session cleanup completed\n")
-  }
-
-  invisible(cleaned)
-}
-
-# Register the cleanup function to run on session exit
-.onLoad <- function(libname, pkgname) {
-  # Set up the .Last function in the global environment
-  if (!exists(".Last", envir = .GlobalEnv)) {
-    assign(".Last", cleanup_postgres_pools, envir = .GlobalEnv)
-  } else {
-    # If .Last already exists, wrap it to include our cleanup
-    existing_last <- get(".Last", envir = .GlobalEnv)
-    new_last <- function() {
-      cleanup_postgres_pools()
-      if (is.function(existing_last)) {
-        existing_last()
-      }
-    }
-    assign(".Last", new_last, envir = .GlobalEnv)
-  }
-}
-
-# Also register an exit hook as backup
-reg.finalizer(.GlobalEnv, function(e) {
-  cleanup_postgres_pools()
-}, onexit = TRUE)
+# Note: Connection pool cleanup is handled by the shared cleanup_postgres_pools()
+# function in fetl.R to avoid duplicate cleanup warnings.

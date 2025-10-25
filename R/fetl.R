@@ -300,63 +300,7 @@ Fetl <- R6::R6Class( # nolint: object_name_linter
   )
 )
 
-# Cleanup functions for DatasourcePostgres connection pools
-
-#' Clean up all DatasourcePostgres connection pools
-#' @export
-cleanup_postgres_pools <- function() {
-  cleaned <- FALSE
-  # Check if spectrader environment exists and has active pools
-  if (exists(".spectrader_env", envir = .GlobalEnv)) {
-    spectrader_env <- get(".spectrader_env", envir = .GlobalEnv)
-    if (!is.null(spectrader_env$pool)) {
-      tryCatch(
-        {
-          if (inherits(spectrader_env$pool, "Pool") && spectrader_env$pool$valid) {
-            pool::poolClose(spectrader_env$pool)
-            cat("Automatically closed DatasourcePostgres connection pool\n")
-            cleaned <- TRUE
-          }
-        },
-        error = function(e) {
-          cat("Warning: Error closing connection pool:", e$message, "\n")
-        }
-      )
-      spectrader_env$pool <- NULL
-    }
-  }
-  tryCatch(
-    {
-      gc() # Force garbage collection to trigger any finalizers
-    },
-    error = function(e) {}
-  )
-
-  if (cleaned) {
-    cat("Session cleanup completed\n")
-  }
-  invisible(cleaned)
-}
-
-# Register the cleanup function to run on session exit
-.onLoad <- function(libname, pkgname) {
-  # Set up the .Last function in the global environment
-  if (!exists(".Last", envir = .GlobalEnv)) {
-    assign(".Last", cleanup_postgres_pools, envir = .GlobalEnv)
-  } else {
-    # If .Last already exists, wrap it to include our cleanup
-    existing_last <- get(".Last", envir = .GlobalEnv)
-    new_last <- function() {
-      cleanup_postgres_pools()
-      if (is.function(existing_last)) {
-        existing_last()
-      }
-    }
-    assign(".Last", new_last, envir = .GlobalEnv)
-  }
-}
-
-# Also register an exit hook as backup
-reg.finalizer(.GlobalEnv, function(e) {
-  cleanup_postgres_pools()
-}, onexit = TRUE)
+# Note: Connection pool cleanup is now handled automatically by the pool package's
+# internal finalizers. Since we're using DBI::dbGetQuery() which properly manages
+# connection checkout/return, we don't need explicit cleanup hooks that could
+# interfere with active connections during session termination.

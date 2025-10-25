@@ -18,7 +18,7 @@ ETA <- 0.08                     # Lower learning rate = more stable predictions
 
 # Feature selection parameters
 USE_FEATURE_SELECTION <- TRUE   # Whether to use automatic feature selection
-TOP_N_FEATURES <- 80            # Number of top features to keep (adjust as needed)
+TOP_N_FEATURES <- 55            # Number of top features to keep (adjust as needed)
 FEATURE_SELECTION_ROUNDS <- 200 # Rounds for initial feature importance calculation
 
 # Threshold optimization parameters
