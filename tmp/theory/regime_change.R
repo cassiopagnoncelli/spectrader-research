@@ -1,5 +1,3 @@
-library("devtools")
-
 devtools::load_all()
 
 library("tidyquant")
@@ -14,11 +12,10 @@ library("TTR")
 btc <- get_ticker("CBBTCUSD")
 btc_garch <- garchvar(btc)
 btc_ta <- tafeatures(btc, as.xts = TRUE)
-
 aligned <- align(btc, btc_garch, btc_ta)
-
 exo <- withexovars(aligned)
 
+# Fit Regime Change Model
 trend_returns <- na.omit(diff(log(exo[, 1])))
 trend_fit <- rcfit(trend_returns, regimes = 3)
 trend_regimes <- rcfitted(trend_fit) %>%
@@ -27,6 +24,7 @@ trend_regimes <- rcfitted(trend_fit) %>%
   dplyr::select(trend_regime) %>%
   as.xts(order.by = index(rcfitted(trend_fit)))
 
+# Volatility Regime Change Model
 vol_fit <- rcfit(na.omit(exo[, 2]), regimes = 3)
 vol_regimes <- rcfitted(vol_fit) %>%
   as.data.frame() %>%
@@ -34,5 +32,6 @@ vol_regimes <- rcfitted(vol_fit) %>%
   dplyr::select(vol_regime) %>%
   as.xts(order.by = index(rcfitted(vol_fit)))
 
+# Combine Regimes
 regimes <- merge(trend_regimes, vol_regimes, join = "inner")
 regimes
