@@ -48,7 +48,8 @@ Qetl <- R6::R6Class( # nolint: object_name_linter
         return(self$pool)
       }
       if (!force_reconnect && exists("pool", envir = .spectrader_env) &&
-        !is.null(.spectrader_env$pool) && .spectrader_env$pool$valid) { # nolint: indentation_linter
+        !is.null(.spectrader_env$pool) &&
+        inherits(.spectrader_env$pool, "Pool")) {
         self$pool <- .spectrader_env$pool
         if (verbose) {
           message("Data source postgres relinked")
@@ -83,7 +84,7 @@ Qetl <- R6::R6Class( # nolint: object_name_linter
       if (!is.null(self$pool)) {
         tryCatch(
           {
-            if (inherits(self$pool, "Pool") && self$pool$valid) {
+            if (inherits(self$pool, "Pool")) {
               pool::poolClose(self$pool)
             }
           },
@@ -99,7 +100,7 @@ Qetl <- R6::R6Class( # nolint: object_name_linter
         !is.null(.spectrader_env$pool)) {
         tryCatch(
           {
-            if (inherits(.spectrader_env$pool, "Pool") && .spectrader_env$pool$valid) {
+            if (inherits(.spectrader_env$pool, "Pool")) {
               pool::poolClose(.spectrader_env$pool)
             }
           },
@@ -111,13 +112,21 @@ Qetl <- R6::R6Class( # nolint: object_name_linter
       }
     },
     send_query = function(query, timeseries = FALSE, xts = FALSE) {
-      if (!is.null(self$pool) && !self$pool$valid) {
-        self$connect(force_reconnect = TRUE)
-      }
       if (is.null(self$pool)) {
         self$connect()
       }
-      result <- DBI::dbGetQuery(self$pool, query)
+      
+      # Use poolCheckout/poolReturn explicitly
+      conn <- pool::poolCheckout(self$pool)
+      result <- tryCatch(
+        {
+          RPostgreSQL::dbGetQuery(conn, query)
+        },
+        finally = {
+          RPostgreSQL::dbDisconnect(conn)
+          pool::poolReturn(conn)
+        }
+      )
       if (timeseries) {
         df <- result[, -1, drop = FALSE]
         rownames(df) <- result$ts
@@ -183,12 +192,10 @@ Qetl <- R6::R6Class( # nolint: object_name_linter
       )
     },
     kind = function(ticker) {
-      if (!is.null(self$pool) && !self$pool$valid) {
-        self$connect(force_reconnect = TRUE)
-      }
       if (is.null(self$pool)) {
         self$connect()
       }
+      
       query <- private$sanitize_sql(
         sprintf("
           SELECT kind
@@ -196,7 +203,18 @@ Qetl <- R6::R6Class( # nolint: object_name_linter
           WHERE ticker = '%s'
         ", private$sanitize_ticker(ticker))
       )
-      result <- DBI::dbGetQuery(self$pool, query)
+      
+      # Use poolCheckout/poolReturn explicitly
+      conn <- pool::poolCheckout(self$pool)
+      result <- tryCatch(
+        {
+          RPostgreSQL::dbGetQuery(conn, query)
+        },
+        finally = {
+          RPostgreSQL::dbDisconnect(conn)
+          pool::poolReturn(conn)
+        }
+      )
       if (nrow(result) == 0) {
         stop(sprintf("Ticker '%s' not found", ticker))
       }

@@ -33,7 +33,7 @@ import("lubridate")
 
 # Charts
 import("ggplot2")
-import("ggfortify")
+# import("ggfortify")
 
 # Specifics
 import("TTR")

@@ -33,7 +33,8 @@ Fetl <- R6::R6Class( # nolint: object_name_linter
         return(self$pool)
       }
       if (!force_reconnect && exists("pool", envir = .spectrader_env) &&
-        !is.null(.spectrader_env$pool) && .spectrader_env$pool$valid) { # nolint: indentation_linter
+        !is.null(.spectrader_env$pool) &&
+        inherits(.spectrader_env$pool, "Pool")) {
         self$pool <- .spectrader_env$pool
         if (verbose) {
           message("Data source fetl relinked")
@@ -68,7 +69,7 @@ Fetl <- R6::R6Class( # nolint: object_name_linter
       if (!is.null(self$pool)) {
         tryCatch(
           {
-            if (inherits(self$pool, "Pool") && self$pool$valid) {
+            if (inherits(self$pool, "Pool")) {
               pool::poolClose(self$pool)
             }
           },
@@ -83,8 +84,7 @@ Fetl <- R6::R6Class( # nolint: object_name_linter
         !is.null(.spectrader_env$pool)) {
         tryCatch(
           {
-            if (inherits(.spectrader_env$pool, "Pool") &&
-              .spectrader_env$pool$valid) {
+            if (inherits(.spectrader_env$pool, "Pool")) {
               pool::poolClose(.spectrader_env$pool)
             }
           },
@@ -96,13 +96,21 @@ Fetl <- R6::R6Class( # nolint: object_name_linter
       }
     },
     send_query = function(query, timeseries = FALSE, xts = FALSE) {
-      if (!is.null(self$pool) && !self$pool$valid) {
-        self$connect(force_reconnect = TRUE)
-      }
       if (is.null(self$pool)) {
         self$connect()
       }
-      result <- DBI::dbGetQuery(self$pool, query)
+      
+      # Use poolCheckout/poolReturn explicitly
+      conn <- pool::poolCheckout(self$pool)
+      result <- tryCatch(
+        {
+          RPostgreSQL::dbGetQuery(conn, query)
+        },
+        finally = {
+          RPostgreSQL::dbDisconnect(conn)
+          pool::poolReturn(conn)
+        }
+      )
       if (timeseries) {
         df <- result[, -1, drop = FALSE]
         rownames(df) <- result$ts
@@ -115,13 +123,22 @@ Fetl <- R6::R6Class( # nolint: object_name_linter
       return(df)
     },
     execute_query = function(query) {
-      if (!is.null(self$pool) && !self$pool$valid) {
-        self$connect(force_reconnect = TRUE)
-      }
       if (is.null(self$pool)) {
         self$connect()
       }
-      DBI::dbGetQuery(self$pool, query)
+      
+      # Use poolCheckout/poolReturn explicitly
+      conn <- pool::poolCheckout(self$pool)
+      result <- tryCatch(
+        {
+          RPostgreSQL::dbGetQuery(conn, query)
+        },
+        finally = {
+          RPostgreSQL::dbDisconnect(conn)
+          pool::poolReturn(conn)
+        }
+      )
+      return(result)
     },
     #
     # Custom queries.
@@ -261,14 +278,22 @@ Fetl <- R6::R6Class( # nolint: object_name_linter
       if (!is.null(self$verbose) && self$verbose) {
         message(sprintf("Executing query: %s", query))
       }
-      if (!is.null(self$pool) && !self$pool$valid) {
-        self$connect(force_reconnect = TRUE)
-      }
       if (is.null(self$pool)) {
         self$connect()
       }
-      result <- DBI::dbGetQuery(self$pool, query)
-      result
+      
+      # Use poolCheckout/poolReturn explicitly
+      conn <- pool::poolCheckout(self$pool)
+      result <- tryCatch(
+        {
+          RPostgreSQL::dbGetQuery(conn, query)
+        },
+        finally = {
+          RPostgreSQL::dbDisconnect(conn)
+          pool::poolReturn(conn)
+        }
+      )
+      return(result)
     }
   ),
   private = list(
