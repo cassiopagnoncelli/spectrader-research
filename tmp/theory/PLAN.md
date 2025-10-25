@@ -1,28 +1,34 @@
 ## Models
 
-- [Extreme Gradient Boosting](https://app.datacamp.com/learn/courses/extreme-gradient-boosting-with-xgboost)
-- Kohonen's SOM
-- SVM classification & regression
-- K-means classfication & regression
-- CNN, RNN
-- [Generalized Linear Models](https://app.datacamp.com/learn/courses/generalized-linear-models-in-r) (glmnet)
-- [Gaussian Mixture Model](https://campus.datacamp.com/courses/mixture-models-in-r)
-- Hidden Markov Model
-- Kalman Filter
+- [ ] [Extreme Gradient Boosting](https://app.datacamp.com/learn/courses/extreme-gradient-boosting-with-xgboost)
+- [ ] Kohonen's SOM
+- [ ] SVM classification & regression
+- [ ] K-means classfication & regression
+- [ ] [Generalized Linear Models](https://app.datacamp.com/learn/courses/generalized-linear-models-in-r) (glmnet)
+- [ ] [Gaussian Mixture Model](https://campus.datacamp.com/courses/mixture-models-in-r) (clustering)
+- [x] ~~Markov Model~~
+- [ ] Hidden Markov Model
+- [ ] Kalman Filter
+- [ ] Temporal Convolutional Network (~~CNN, RNN~~)
 
-**Packages**: [ ] prophet, [x] auto.arima, [x] BATS, [-] AutoGluon (Python)
+**Packages**: ~~[x] forecast (TBATS, ETS, HW, MSTS, ARFIMA, STL)~~, [-] AWS AutoGluon (Python), [x] FB Prophet
 
 ## Ensembles
 
-- [x] Voting: each classifier votes for a class
-- [x] Cascading: when model is not so sure about the result, cascades to another model recursively
-- [x] Stacking: meta-learner like genderguess, a model orchestrating based on underyling models predictions
+Homogeneous
+- [x] ~~Bagging: parallel/voting~~
+- [x] ~~Boosting: chaining the same model on errors~~
+
+Heterogeneous
+- [x] ~~Voting: each classifier votes for a class~~
+- [x] ~~Cascading: when model is not so sure about the result, cascades to another model recursively~~
+- [x] Stacking: meta-learner like genderguess, a model orchestrating based on underyling models predictions; trains on OOF
 
 ## Simulation, Optimization
 
 - [x] ~~Monte Carlo simulation~~
 
-**Packages**: [x] optim, [x] pso, [x] simmulated annealing
+**Packages**: ~~[x] optim, [x] pso, [x] simmulated annealing~~
 
 ## Option Pricing
 
@@ -30,11 +36,13 @@
 - Binomial Tree for Black-Scholes
 - Heston
 - SABR
+- Jump-Diffusion
 
 ## Volatility Analysis
 
-- [GARCH](https://app.datacamp.com/learn/courses/garch-models-in-r)
-- MSGARCH - Regime Switching GARCH
+- [x] ~~ARCH: current volatility is a linear comb of past (squared) errors~~
+- [x] ~~[GARCH](https://app.datacamp.com/learn/courses/garch-models-in-r): like ARCH but autoregress on past volatilities~~
+- [x] ~~MSGARCH - Regime Switching GARCH~~
 
 ## Theory
 
