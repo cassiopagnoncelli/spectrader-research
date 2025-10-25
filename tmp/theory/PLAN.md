@@ -5,18 +5,29 @@
 - SVM classification & regression
 - K-means classfication & regression
 - CNN, RNN
-- Generalized Linear Models (glmnet)
+- [Generalized Linear Models](https://app.datacamp.com/learn/courses/generalized-linear-models-in-r) (glmnet)
+- [Gaussian Mixture Model](https://campus.datacamp.com/courses/mixture-models-in-r)
 - Hidden Markov Model
 - Kalman Filter
 
+**Packages**: [ ] prophet, [x] auto.arima, [x] BATS, [-] AutoGluon (Python)
+
+## Ensembles
+
+- [x] Voting: each classifier votes for a class
+- [x] Cascading: when model is not so sure about the result, cascades to another model recursively
+- [x] Stacking: meta-learner like genderguess, a model orchestrating based on underyling models predictions
+
 ## Simulation, Optimization
 
-- Monte Carlo simulation
-- optim, pso, simmulated annealing
+- [x] ~~Monte Carlo simulation~~
+
+**Packages**: [x] optim, [x] pso, [x] simmulated annealing
 
 ## Option Pricing
 
-- Black-Scholes modeling - [read](https://www.youtube.com/watch?v=UoGlUZPNouM&t=2s)
+- Black-Scholes modeling - [read](https://www.youtube.com/watch?v=UoGlUZPNouM)
+- Binomial Tree for Black-Scholes
 - Heston
 - SABR
 
