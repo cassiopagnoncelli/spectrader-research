@@ -152,33 +152,33 @@ cat(sprintf("\nTraining base models with %d-fold cross-validation...\n", n_folds
 
 for (fold in 1:n_folds) {
   cat(sprintf("\n--- Fold %d/%d ---\n", fold, n_folds))
-  
+
   # Split into train and validation for this fold
   val_idx <- which(fold_ids == fold)
   trn_idx <- which(fold_ids != fold)
-  
+
   fold_train_x <- train_x[trn_idx, ]
   fold_train_y <- train_y[trn_idx]
   fold_val_x <- train_x[val_idx, ]
   fold_val_y <- train_y[val_idx]
-  
+
   # Scale data for neural network
   fold_train_x_scaled <- scale(fold_train_x)
-  fold_val_x_scaled <- scale(fold_val_x, 
+  fold_val_x_scaled <- scale(fold_val_x,
                               center = attr(fold_train_x_scaled, "scaled:center"),
                               scale = attr(fold_train_x_scaled, "scaled:scale"))
   test_x_scaled <- scale(test_x,
                          center = attr(fold_train_x_scaled, "scaled:center"),
                          scale = attr(fold_train_x_scaled, "scaled:scale"))
-  
+
   # ============================================================
   # Model 1: XGBoost
   # ============================================================
   cat("[1/3] XGBoost... ")
-  
+
   dtrain_fold <- xgboost::xgb.DMatrix(data = fold_train_x, label = fold_train_y)
   dval_fold <- xgboost::xgb.DMatrix(data = fold_val_x, label = fold_val_y)
-  
+
   xgb_fold <- xgboost::xgb.train(
     params = xgb_params,
     data = dtrain_fold,
@@ -187,30 +187,34 @@ for (fold in 1:n_folds) {
     early_stopping_rounds = 30,
     verbose = 0
   )
-  
+
   oof_xgb[val_idx] <- predict(xgb_fold, dval_fold)
   test_xgb[, fold] <- predict(xgb_fold, xgboost::xgb.DMatrix(data = test_x))
-  
+
   cat(sprintf("RMSE: %.6f\n", sqrt(mean((fold_val_y - oof_xgb[val_idx])^2))))
-  
+
   # ============================================================
-  # Model 2: GLM
+  # Model 2: GLM (Gamma family with exp transformation)
   # ============================================================
   cat("[2/3] GLM... ")
-  
-  glm_fold_df <- data.frame(fold_train_x, target = fold_train_y)
-  glm_fold <- glm(target ~ ., data = glm_fold_df, family = gaussian())
-  
-  oof_svm[val_idx] <- predict(glm_fold, data.frame(fold_val_x), type = "response")
-  test_svm[, fold] <- predict(glm_fold, data.frame(test_x), type = "response")
-  
+
+  # Transform target to positive values using exp()
+  fold_train_y_transformed <- exp(fold_train_y)
+
+  glm_fold_df <- data.frame(fold_train_x, target = fold_train_y_transformed)
+  glm_fold <- glm(target ~ ., data = glm_fold_df, family = Gamma(link = "log"))
+
+  # Predict and transform back using log()
+  oof_svm[val_idx] <- log(predict(glm_fold, data.frame(fold_val_x), type = "response"))
+  test_svm[, fold] <- log(predict(glm_fold, data.frame(test_x), type = "response"))
+
   cat(sprintf("RMSE: %.6f\n", sqrt(mean((fold_val_y - oof_svm[val_idx])^2))))
-  
+
   # ============================================================
   # Model 3: Neural Network
   # ============================================================
   cat("[3/3] Neural Network... ")
-  
+
   nn_fold <- keras::keras_model_sequential() %>%
     keras::layer_dense(units = 128, activation = "relu", input_shape = ncol(fold_train_x)) %>%
     keras::layer_dropout(rate = 0.3) %>%
@@ -218,13 +222,13 @@ for (fold in 1:n_folds) {
     keras::layer_dropout(rate = 0.2) %>%
     keras::layer_dense(units = 32, activation = "relu") %>%
     keras::layer_dense(units = 1)
-  
+
   nn_fold %>% keras::compile(
     loss = "mse",
     optimizer = keras::optimizer_adam(learning_rate = 0.001),
     metrics = c("mae")
   )
-  
+
   nn_fold %>% keras::fit(
     x = fold_train_x_scaled,
     y = fold_train_y,
@@ -236,10 +240,10 @@ for (fold in 1:n_folds) {
     ),
     verbose = 0
   )
-  
+
   oof_nn[val_idx] <- as.vector(predict(nn_fold, fold_val_x_scaled))
   test_nn[, fold] <- as.vector(predict(nn_fold, test_x_scaled))
-  
+
   cat(sprintf("RMSE: %.6f\n", sqrt(mean((fold_val_y - oof_nn[val_idx])^2))))
 }
 
@@ -291,7 +295,7 @@ cat("\n--- Training Final Models on Full Training Set ---\n")
 
 # Scale full training data for neural network
 train_x_scaled <- scale(train_x)
-test_x_scaled_final <- scale(test_x, 
+test_x_scaled_final <- scale(test_x,
                               center = attr(train_x_scaled, "scaled:center"),
                               scale = attr(train_x_scaled, "scaled:scale"))
 
@@ -305,10 +309,11 @@ xgb_final <- xgboost::xgb.train(
   verbose = 0
 )
 
-# Final GLM
+# Final GLM (Gamma family with exp transformation)
 cat("[2/3] Final GLM...\n")
-glm_final_df <- data.frame(train_x, target = train_y)
-glm_final <- glm(target ~ ., data = glm_final_df, family = gaussian())
+train_y_transformed <- exp(train_y)
+glm_final_df <- data.frame(train_x, target = train_y_transformed)
+glm_final <- glm(target ~ ., data = glm_final_df, family = Gamma(link = "log"))
 
 # Final Neural Network
 cat("[3/3] Final Neural Network...\n")
@@ -345,7 +350,7 @@ cat("\n--- Generating Final Ensemble Predictions ---\n")
 
 # Get predictions from final models
 xgb_test_pred_final <- predict(xgb_final, xgboost::xgb.DMatrix(data = test_x))
-glm_test_pred_final <- predict(glm_final, data.frame(test_x), type = "response")
+glm_test_pred_final <- log(predict(glm_final, data.frame(test_x), type = "response"))
 nn_test_pred_final <- as.vector(predict(nn_final, test_x_scaled_final))
 
 # Create meta-features for test set
@@ -448,6 +453,45 @@ plot(test_y, ensemble_test_pred, main = "Stacked Ensemble (OOF)",
 abline(0, 1, col = "red", lwd = 2)
 
 par(mfrow = c(1, 1))
+
+# ============================================================
+# Discriminative Power Analysis
+# ============================================================
+
+# Analyze correlation between predictions and actual values
+cat("\n--- Prediction-Actual Correlations ---\n")
+cat(sprintf("XGBoost:        %.4f\n", cor(test_xgb_pred, test_y)))
+cat(sprintf("GLM:            %.4f\n", cor(test_svm_pred, test_y)))
+cat(sprintf("Neural Network: %.4f\n", cor(test_nn_pred, test_y)))
+cat(sprintf("Ensemble:       %.4f\n", cor(ensemble_test_pred, test_y)))
+
+# Analyze how well predictions separate positive vs negative cases
+target_threshold <- 0.08
+positive_cases <- test_y > target_threshold
+negative_cases <- test_y <= target_threshold
+
+if (sum(positive_cases) > 0 && sum(negative_cases) > 0) {
+  cat(sprintf("\n--- Separation Analysis (target = %.2f) ---\n", target_threshold))
+  cat(sprintf("Positive cases: %d (%.1f%%)\n",
+              sum(positive_cases), 100 * mean(positive_cases)))
+
+  cat(sprintf("\nEnsemble predictions for positive cases:\n"))
+  cat(sprintf("  Mean: %.4f, SD: %.4f\n",
+              mean(ensemble_test_pred[positive_cases]),
+              sd(ensemble_test_pred[positive_cases])))
+
+  cat(sprintf("Ensemble predictions for negative cases:\n"))
+  cat(sprintf("  Mean: %.4f, SD: %.4f\n",
+              mean(ensemble_test_pred[negative_cases]),
+              sd(ensemble_test_pred[negative_cases])))
+
+  # Calculate discrimination metric (AUC-like)
+  wilcox_test <- wilcox.test(
+    ensemble_test_pred[positive_cases],
+    ensemble_test_pred[negative_cases]
+  )
+  cat(sprintf("\nWilcoxon p-value: %.4e\n", wilcox_test$p.value))
+}
 
 # ============================================================
 # Final Results Summary
