@@ -34,6 +34,7 @@ import("lubridate")
 # Charts
 import("ggplot2")
 # import("ggfortify")
+importFrom("MASS", `truehist`)
 
 # Specifics
 import("TTR")

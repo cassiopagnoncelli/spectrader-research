@@ -194,22 +194,15 @@ for (fold in 1:n_folds) {
   cat(sprintf("RMSE: %.6f\n", sqrt(mean((fold_val_y - oof_xgb[val_idx])^2))))
   
   # ============================================================
-  # Model 2: SVM
+  # Model 2: GLM
   # ============================================================
-  cat("[2/3] SVM... ")
+  cat("[2/3] GLM... ")
   
-  svm_fold <- e1071::svm(
-    x = fold_train_x,
-    y = fold_train_y,
-    type = "eps-regression",
-    kernel = "radial",
-    cost = 1,
-    epsilon = 0.1,
-    gamma = 1 / ncol(fold_train_x)
-  )
+  glm_fold_df <- data.frame(fold_train_x, target = fold_train_y)
+  glm_fold <- glm(target ~ ., data = glm_fold_df, family = gaussian())
   
-  oof_svm[val_idx] <- predict(svm_fold, fold_val_x)
-  test_svm[, fold] <- predict(svm_fold, test_x)
+  oof_svm[val_idx] <- predict(glm_fold, data.frame(fold_val_x), type = "response")
+  test_svm[, fold] <- predict(glm_fold, data.frame(test_x), type = "response")
   
   cat(sprintf("RMSE: %.6f\n", sqrt(mean((fold_val_y - oof_svm[val_idx])^2))))
   
@@ -262,34 +255,34 @@ oof_nn_rmse <- sqrt(mean((train_y - oof_nn)^2))
 
 cat(sprintf("\n--- Out-of-Fold Performance ---
 XGBoost OOF RMSE:        %.6f
-SVM OOF RMSE:            %.6f
+GLM OOF RMSE:            %.6f
 Neural Network OOF RMSE: %.6f\n",
   oof_xgb_rmse, oof_svm_rmse, oof_nn_rmse))
 
 # ============================================================
 # Train Meta-Model on Out-of-Fold Predictions
 # ============================================================
-cat("\n--- Training Meta-Model (SVM) on OOF Predictions ---\n")
+cat("\n--- Training Meta-Model (Random Forest) on OOF Predictions ---\n")
 
 # Create meta-features from OOF predictions
-meta_train_x <- as.matrix(data.frame(
+meta_train_x <- data.frame(
   xgb = oof_xgb,
   svm = oof_svm,
   nn = oof_nn
-))
-
-# Train SVM meta-model with optimized parameters
-meta_model <- e1071::svm(
-  x = meta_train_x,
-  y = train_y,
-  type = "eps-regression",
-  kernel = "radial",
-  cost = 10,
-  epsilon = 0.01,
-  gamma = 0.5
 )
 
-cat("Meta-model (SVM) trained successfully\n")
+# Train Random Forest meta-model
+meta_model <- randomForest::randomForest(
+  x = meta_train_x,
+  y = train_y,
+  ntree = 100,
+  mtry = 2,
+  importance = TRUE
+)
+
+cat("Meta-model (Random Forest) trained successfully\n")
+cat("Meta-model variable importance:\n")
+print(randomForest::importance(meta_model))
 
 # ============================================================
 # Train Final Models on Full Training Set
@@ -312,17 +305,10 @@ xgb_final <- xgboost::xgb.train(
   verbose = 0
 )
 
-# Final SVM
-cat("[2/3] Final SVM...\n")
-svm_final <- e1071::svm(
-  x = train_x,
-  y = train_y,
-  type = "eps-regression",
-  kernel = "radial",
-  cost = 1,
-  epsilon = 0.1,
-  gamma = 1 / ncol(train_x)
-)
+# Final GLM
+cat("[2/3] Final GLM...\n")
+glm_final_df <- data.frame(train_x, target = train_y)
+glm_final <- glm(target ~ ., data = glm_final_df, family = gaussian())
 
 # Final Neural Network
 cat("[3/3] Final Neural Network...\n")
@@ -359,19 +345,24 @@ cat("\n--- Generating Final Ensemble Predictions ---\n")
 
 # Get predictions from final models
 xgb_test_pred_final <- predict(xgb_final, xgboost::xgb.DMatrix(data = test_x))
-svm_test_pred_final <- predict(svm_final, test_x)
+glm_test_pred_final <- predict(glm_final, data.frame(test_x), type = "response")
 nn_test_pred_final <- as.vector(predict(nn_final, test_x_scaled_final))
 
 # Create meta-features for test set
 meta_test_x <- data.frame(
   xgb = xgb_test_pred_final,
-  svm = svm_test_pred_final,
+  svm = glm_test_pred_final,
   nn = nn_test_pred_final
 )
 
 # Ensemble predictions
-ensemble_train_pred <- predict(meta_model, meta_train_x)
-ensemble_test_pred <- predict(meta_model, as.matrix(meta_test_x))
+meta_train_x_pred <- data.frame(
+  xgb = oof_xgb,
+  svm = oof_svm,
+  nn = oof_nn
+)
+ensemble_train_pred <- predict(meta_model, meta_train_x_pred)
+ensemble_test_pred <- predict(meta_model, meta_test_x)
 
 # ============================================================
 # Evaluate Performance
@@ -444,7 +435,7 @@ plot(test_y, test_xgb_pred, main = "XGBoost (OOF Avg)",
      xlab = "Actual", ylab = "Predicted", pch = 16, col = rgb(0, 0, 1, 0.5))
 abline(0, 1, col = "red", lwd = 2)
 
-plot(test_y, test_svm_pred, main = "SVM (OOF Avg)",
+plot(test_y, test_svm_pred, main = "GLM (OOF Avg)",
      xlab = "Actual", ylab = "Predicted", pch = 16, col = rgb(0, 1, 0, 0.5))
 abline(0, 1, col = "red", lwd = 2)
 
@@ -464,7 +455,7 @@ par(mfrow = c(1, 1))
 
 cat(sprintf("\n=== Individual Model Performance (Test Set) ===
 XGBoost RMSE:        %.6f
-SVM RMSE:            %.6f
+GLM RMSE:            %.6f
 Neural Network RMSE: %.6f
 
 === Stacked Ensemble Performance ===
