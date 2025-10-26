@@ -51,6 +51,8 @@ dfm <- dfm_raw %>%
     vol_0 = TTR::runSD(close, n = 10),
     vol_1 = lag(TTR::runSD(close, n = 10)),
     vol_2 = lag(TTR::runSD(close, n = 10), 2),
+    vol_9 = lag(TTR::runSD(close, n = 10), 9),
+    vol_22 = lag(TTR::runSD(close, n = 10), 22),
     sig_0 = TTR::SMA(close, n = 5),
     sig_1 = lag(TTR::SMA(close, n = 5)),
     sig_2 = lag(TTR::SMA(close, n = 5), 2),
@@ -83,7 +85,6 @@ dfm <- dfm_raw %>%
   select(-c(
     symbol,
     close,
-    vol_0, vol_1, vol_2,
     sig_0, sig_1, sig_2,
     fast_0, fast_1, fast_2,
     slow_0, slow_1, slow_2
@@ -129,12 +130,10 @@ fold_ids <- sample(rep(1:n_folds, length.out = nrow(train_data)))
 
 # Initialize OOF prediction matrices
 oof_xgb <- numeric(nrow(train_data))
-oof_svm <- numeric(nrow(train_data))
 oof_nn <- numeric(nrow(train_data))
 
 # Initialize test prediction matrices (will average across folds)
 test_xgb <- matrix(0, nrow = nrow(test_data), ncol = n_folds)
-test_svm <- matrix(0, nrow = nrow(test_data), ncol = n_folds)
 test_nn <- matrix(0, nrow = nrow(test_data), ncol = n_folds)
 
 xgb_params <- list(
@@ -194,26 +193,9 @@ for (fold in 1:n_folds) {
   cat(sprintf("RMSE: %.6f\n", sqrt(mean((fold_val_y - oof_xgb[val_idx])^2))))
 
   # ============================================================
-  # Model 2: GLM (Gamma family with exp transformation)
+  # Model 2: Neural Network
   # ============================================================
-  cat("[2/3] GLM... ")
-
-  # Transform target to positive values using exp()
-  fold_train_y_transformed <- exp(fold_train_y)
-
-  glm_fold_df <- data.frame(fold_train_x, target = fold_train_y_transformed)
-  glm_fold <- glm(target ~ ., data = glm_fold_df, family = Gamma(link = "log"))
-
-  # Predict and transform back using log()
-  oof_svm[val_idx] <- log(predict(glm_fold, data.frame(fold_val_x), type = "response"))
-  test_svm[, fold] <- log(predict(glm_fold, data.frame(test_x), type = "response"))
-
-  cat(sprintf("RMSE: %.6f\n", sqrt(mean((fold_val_y - oof_svm[val_idx])^2))))
-
-  # ============================================================
-  # Model 3: Neural Network
-  # ============================================================
-  cat("[3/3] Neural Network... ")
+  cat("[2/2] Neural Network... ")
 
   nn_fold <- keras::keras_model_sequential() %>%
     keras::layer_dense(units = 128, activation = "relu", input_shape = ncol(fold_train_x)) %>%
@@ -249,19 +231,16 @@ for (fold in 1:n_folds) {
 
 # Average test predictions across folds
 test_xgb_pred <- rowMeans(test_xgb)
-test_svm_pred <- rowMeans(test_svm)
 test_nn_pred <- rowMeans(test_nn)
 
 # Calculate OOF scores
 oof_xgb_rmse <- sqrt(mean((train_y - oof_xgb)^2))
-oof_svm_rmse <- sqrt(mean((train_y - oof_svm)^2))
 oof_nn_rmse <- sqrt(mean((train_y - oof_nn)^2))
 
 cat(sprintf("\n--- Out-of-Fold Performance ---
 XGBoost OOF RMSE:        %.6f
-GLM OOF RMSE:            %.6f
 Neural Network OOF RMSE: %.6f\n",
-  oof_xgb_rmse, oof_svm_rmse, oof_nn_rmse))
+  oof_xgb_rmse, oof_nn_rmse))
 
 # ============================================================
 # Train Meta-Model on Out-of-Fold Predictions
@@ -271,7 +250,6 @@ cat("\n--- Training Meta-Model (Random Forest) on OOF Predictions ---\n")
 # Create meta-features from OOF predictions
 meta_train_x <- data.frame(
   xgb = oof_xgb,
-  svm = oof_svm,
   nn = oof_nn
 )
 
@@ -300,7 +278,7 @@ test_x_scaled_final <- scale(test_x,
                               scale = attr(train_x_scaled, "scaled:scale"))
 
 # Final XGBoost
-cat("[1/3] Final XGBoost...\n")
+cat("[1/2] Final XGBoost...\n")
 dtrain_full <- xgboost::xgb.DMatrix(data = train_x, label = train_y)
 xgb_final <- xgboost::xgb.train(
   params = xgb_params,
@@ -309,14 +287,8 @@ xgb_final <- xgboost::xgb.train(
   verbose = 0
 )
 
-# Final GLM (Gamma family with exp transformation)
-cat("[2/3] Final GLM...\n")
-train_y_transformed <- exp(train_y)
-glm_final_df <- data.frame(train_x, target = train_y_transformed)
-glm_final <- glm(target ~ ., data = glm_final_df, family = Gamma(link = "log"))
-
 # Final Neural Network
-cat("[3/3] Final Neural Network...\n")
+cat("[2/2] Final Neural Network...\n")
 nn_final <- keras::keras_model_sequential() %>%
   keras::layer_dense(units = 128, activation = "relu", input_shape = ncol(train_x)) %>%
   keras::layer_dropout(rate = 0.3) %>%
@@ -350,20 +322,17 @@ cat("\n--- Generating Final Ensemble Predictions ---\n")
 
 # Get predictions from final models
 xgb_test_pred_final <- predict(xgb_final, xgboost::xgb.DMatrix(data = test_x))
-glm_test_pred_final <- log(predict(glm_final, data.frame(test_x), type = "response"))
 nn_test_pred_final <- as.vector(predict(nn_final, test_x_scaled_final))
 
 # Create meta-features for test set
 meta_test_x <- data.frame(
   xgb = xgb_test_pred_final,
-  svm = glm_test_pred_final,
   nn = nn_test_pred_final
 )
 
 # Ensemble predictions
 meta_train_x_pred <- data.frame(
   xgb = oof_xgb,
-  svm = oof_svm,
   nn = oof_nn
 )
 ensemble_train_pred <- predict(meta_model, meta_train_x_pred)
@@ -375,7 +344,6 @@ ensemble_test_pred <- predict(meta_model, meta_test_x)
 
 # Individual model performance on test set (averaged OOF predictions)
 xgb_test_rmse <- sqrt(mean((test_y - test_xgb_pred)^2))
-svm_test_rmse <- sqrt(mean((test_y - test_svm_pred)^2))
 nn_test_rmse <- sqrt(mean((test_y - test_nn_pred)^2))
 
 # Ensemble performance
@@ -408,7 +376,6 @@ results <- data.frame(
   actual = test_y,
   ensemble = ensemble_test_pred,
   xgboost = test_xgb_pred,
-  svm = test_svm_pred,
   neural_net = test_nn_pred,
   residual = test_y - ensemble_test_pred
 )
@@ -440,10 +407,6 @@ plot(test_y, test_xgb_pred, main = "XGBoost (OOF Avg)",
      xlab = "Actual", ylab = "Predicted", pch = 16, col = rgb(0, 0, 1, 0.5))
 abline(0, 1, col = "red", lwd = 2)
 
-plot(test_y, test_svm_pred, main = "GLM (OOF Avg)",
-     xlab = "Actual", ylab = "Predicted", pch = 16, col = rgb(0, 1, 0, 0.5))
-abline(0, 1, col = "red", lwd = 2)
-
 plot(test_y, test_nn_pred, main = "Neural Network (OOF Avg)",
      xlab = "Actual", ylab = "Predicted", pch = 16, col = rgb(1, 0, 0, 0.5))
 abline(0, 1, col = "red", lwd = 2)
@@ -452,21 +415,25 @@ plot(test_y, ensemble_test_pred, main = "Stacked Ensemble (OOF)",
      xlab = "Actual", ylab = "Predicted", pch = 16, col = rgb(0.5, 0, 0.5, 0.5))
 abline(0, 1, col = "red", lwd = 2)
 
+# Empty plot for layout
+plot.new()
+
 par(mfrow = c(1, 1))
 
 # ============================================================
 # Discriminative Power Analysis
 # ============================================================
 
+target = 0.08
+
 # Analyze correlation between predictions and actual values
 cat("\n--- Prediction-Actual Correlations ---\n")
 cat(sprintf("XGBoost:        %.4f\n", cor(test_xgb_pred, test_y)))
-cat(sprintf("GLM:            %.4f\n", cor(test_svm_pred, test_y)))
 cat(sprintf("Neural Network: %.4f\n", cor(test_nn_pred, test_y)))
 cat(sprintf("Ensemble:       %.4f\n", cor(ensemble_test_pred, test_y)))
 
 # Analyze how well predictions separate positive vs negative cases
-target_threshold <- 0.08
+target_threshold <- target
 positive_cases <- test_y > target_threshold
 negative_cases <- test_y <= target_threshold
 
@@ -499,7 +466,6 @@ if (sum(positive_cases) > 0 && sum(negative_cases) > 0) {
 
 cat(sprintf("\n=== Individual Model Performance (Test Set) ===
 XGBoost RMSE:        %.6f
-GLM RMSE:            %.6f
 Neural Network RMSE: %.6f
 
 === Stacked Ensemble Performance ===
@@ -509,7 +475,7 @@ Train MAE:  %.6f
 Test MAE:   %.6f
 Train R²:   %.6f
 Test R²:    %.6f\n",
-  xgb_test_rmse, svm_test_rmse, nn_test_rmse,
+  xgb_test_rmse, nn_test_rmse,
   ensemble_train_rmse, ensemble_test_rmse,
   ensemble_train_mae, ensemble_test_mae,
   ensemble_train_r2, ensemble_test_r2))

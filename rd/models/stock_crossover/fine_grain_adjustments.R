@@ -26,20 +26,3 @@ df %>% summarise(
     uniroot(function(p) quantile(y, p), c(0, 1))$root,
     NA_real_)
 )
-
-df %>%
-  filter(yhat > target) %>%
-  arrange(desc(yhat)) %>%
-  mutate(
-    rank = row_number(),
-    cum_above = cumsum(y > target),
-    precision = cum_above / rank
-  ) %>%
-  ggplot(aes(x = rank, y = precision)) +
-  geom_line() +
-  geom_hline(yintercept = 100 * sum(df$y > target) / nrow(df), linetype = "dashed", color = "red") +
-  labs(
-    title = "Precision at Different Ranks",
-    x = "Rank",
-    y = "Precision (%)"
-  )
