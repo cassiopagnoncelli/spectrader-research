@@ -159,34 +159,18 @@ print(results)
 # Plot 1: ROC Curve
 if (requireNamespace("pROC", quietly = TRUE)) {
   roc_obj <- pROC::roc(test_y, test_pred_prob, quiet = TRUE)
-  auc_value <- as.numeric(pROC::auc(roc_obj))
-
-  # Plot with proper ranges
+  
   plot(roc_obj,
-       main = sprintf("ROC Curve (AUC = %.4f)", auc_value),
+       main = "ROC Curve - Upside Classification",
        col = "darkgreen",
        lwd = 3,
+       print.auc = TRUE,
+       print.auc.x = 0.4,
+       print.auc.y = 0.2,
+       auc.polygon = TRUE,
+       auc.polygon.col = rgb(0, 0.8, 0, 0.2),
        legacy.axes = TRUE,
-       print.auc = FALSE,
-       xlim = c(0, 1),
-       ylim = c(0, 1))
-
-  # Fill area under curve
-  polygon(c(0, roc_obj$specificities, 1),
-          c(0, roc_obj$sensitivities, 0),
-          col = rgb(0, 0.6, 0, 0.3),
-          border = NA)
-
-  # Redraw ROC line on top
-  lines(1 - roc_obj$specificities, roc_obj$sensitivities,
-        col = "darkgreen", lwd = 3)
-
-  # Diagonal reference line
-  abline(a = 0, b = 1, lty = 2, col = "gray50", lwd = 2)
-
-  # AUC text
-  text(0.6, 0.3, sprintf("AUC = %.4f", auc_value), cex = 1.5, col = "darkgreen", font = 2)
-  grid()
+       grid = TRUE)
 } else {
   cat("Install pROC package for ROC curves: install.packages('pROC')\n")
 }
