@@ -260,7 +260,7 @@ if (requireNamespace("PRROC", quietly = TRUE)) {
 }
 
 # Plot 5: Probability vs Actual dfm_0
-par(mar = c(5, 4, 4, 2))
+par(mar = c(5, 4, 4, 8), xpd = TRUE)
 plot(test_data$dfm_0, test_pred_prob,
      main = "Predicted Probability vs Actual Returns",
      xlab = "Actual dfm_0",
@@ -270,16 +270,19 @@ plot(test_data$dfm_0, test_pred_prob,
      cex = 1.2)
 abline(v = downside, col = "darkred", lwd = 3, lty = 2)
 abline(h = decision_threshold, col = "black", lwd = 2, lty = 1)
-legend("topleft", 
-       legend = c("Downside Cases", "No Downside", 
-                  sprintf("Return Threshold (%.2f)", downside), 
+legend(par("usr")[2], par("usr")[4],
+       legend = c("Downside Cases", "No Downside",
+                  sprintf("Return Threshold (%.2f)", downside),
                   sprintf("Decision Threshold (%.2f)", decision_threshold)),
        col = c(rgb(0.8, 0, 0, 0.7), rgb(0.7, 0.7, 0.7, 0.4), "darkred", "black"),
        pch = c(16, 16, NA, NA),
        lty = c(NA, NA, 2, 1),
        lwd = c(NA, NA, 3, 2),
-       cex = 1.1)
+       cex = 0.9,
+       xjust = 0,
+       yjust = 1)
 grid()
+par(xpd = FALSE)
 
 # ============================================================
 # Results Summary
