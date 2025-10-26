@@ -26,3 +26,12 @@ df %>% summarise(
     uniroot(function(p) quantile(y, p), c(0, 1))$root,
     NA_real_)
 )
+
+df %>% ggplot(aes(x = yhat, y = y)) +
+  geom_point(alpha = 0.1) +
+  geom_smooth(formula = y ~ x, method = "loess") +
+  geom_hline(yintercept = target, color = "red", linetype = "dashed") +
+  geom_vline(xintercept = target, color = "red", linetype = "dashed") +
+  xlab("Predicted") +
+  ylab("Actual") +
+  ggtitle("Actual vs Predicted with Fine-Grain Adjustments")
