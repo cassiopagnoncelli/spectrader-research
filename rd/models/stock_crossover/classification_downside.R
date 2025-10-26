@@ -3,6 +3,17 @@ devtools::load_all()
 options(scipen = 999)
 
 # ============================================================
+# DATA LOADING
+# ============================================================
+
+source("rd/models/stock_crossover/features.R")
+
+fetl <- Fetl$new()
+features <- prepare_dfm(fetl)
+dfm <- features$dfm
+dfm_metadata <- features$dfm_metadata
+
+# ============================================================
 # HYPERPARAMETERS - Tune these for better performance
 # ============================================================
 
@@ -10,7 +21,7 @@ options(scipen = 999)
 downside <- -0.1
 
 # Decision threshold (probability cutoff for positive class)
-decision_threshold <- 0.65  # Increased from 0.5 to reduce false positives
+decision_threshold <- 0.95  # Increased from 0.5 to reduce false positives
 
 # XGBoost hyperparameters
 xgb_params <- list(
@@ -26,19 +37,12 @@ xgb_params <- list(
 )
 
 # Training parameters
-nrounds <- 500
+nrounds <- 300
 early_stopping_rounds <- 50
 
 # ============================================================
 # DATA PREPARATION
 # ============================================================
-
-source("rd/models/stock_crossover/features.R")
-
-fetl <- Fetl$new()
-features <- prepare_dfm(fetl)
-dfm <- features$dfm
-dfm_metadata <- features$dfm_metadata
 
 # Create binary target: 1 if dfm_0 < downside, 0 otherwise
 dfm$target <- as.numeric(dfm$dfm_0 < downside)
@@ -117,12 +121,12 @@ calc_metrics <- function(y_true, y_pred, y_prob) {
   tn <- sum(y_true == 0 & y_pred == 0)
   fp <- sum(y_true == 0 & y_pred == 1)
   fn <- sum(y_true == 1 & y_pred == 0)
-  
+
   accuracy <- (tp + tn) / (tp + tn + fp + fn)
   precision <- if (tp + fp > 0) tp / (tp + fp) else 0
   recall <- if (tp + fn > 0) tp / (tp + fn) else 0
   f1 <- if (precision + recall > 0) 2 * (precision * recall) / (precision + recall) else 0
-  
+
   list(accuracy = accuracy, precision = precision, recall = recall, f1 = f1,
        tp = tp, tn = tn, fp = fp, fn = fn)
 }
@@ -159,7 +163,7 @@ print(results)
 # Plot 1: ROC Curve
 if (requireNamespace("pROC", quietly = TRUE)) {
   roc_obj <- pROC::roc(test_y, test_pred_prob, quiet = TRUE)
-  
+
   plot(roc_obj,
        main = "ROC Curve - Downside Classification",
        col = "darkred",
@@ -170,6 +174,8 @@ if (requireNamespace("pROC", quietly = TRUE)) {
        auc.polygon = TRUE,
        auc.polygon.col = rgb(0.8, 0, 0, 0.2),
        legacy.axes = TRUE,
+       xlim = c(0, 1),
+       ylim = c(0, 1),
        grid = TRUE)
 } else {
   cat("Install pROC package for ROC curves: install.packages('pROC')\n")
@@ -213,21 +219,21 @@ text(2, 1.7, "TP", cex = 1, col = "darkgreen", font = 3)
 
 # Plot 3: Probability Distribution by Class
 par(mar = c(5, 4, 4, 2))
-hist(test_pred_prob[test_y == 0], breaks = 30, 
+hist(test_pred_prob[test_y == 0], breaks = 30,
      col = rgb(0.7, 0.7, 0.7, 0.6),
      main = "Predicted Probability Distribution - Downside",
      xlab = "Predicted Probability",
      ylab = "Frequency",
      xlim = c(0, 1))
-hist(test_pred_prob[test_y == 1], breaks = 30, 
+hist(test_pred_prob[test_y == 1], breaks = 30,
      col = rgb(0.8, 0, 0, 0.6), add = TRUE)
-legend("topright", 
-       legend = c(sprintf("No Downside (n=%d)", sum(test_y == 0)), 
+legend("topright",
+       legend = c(sprintf("No Downside (n=%d)", sum(test_y == 0)),
                   sprintf("Downside (n=%d)", sum(test_y == 1))),
        fill = c(rgb(0.7, 0.7, 0.7, 0.6), rgb(0.8, 0, 0, 0.6)),
        cex = 1.2)
 abline(v = decision_threshold, col = "black", lwd = 2, lty = 2)
-text(decision_threshold, par("usr")[4] * 0.95, 
+text(decision_threshold, par("usr")[4] * 0.95,
      sprintf("Threshold = %.2f", decision_threshold), pos = 4, cex = 1.2)
 grid()
 
@@ -286,3 +292,25 @@ Test Set (Threshold = %.2f):
   False Negatives: %d
 ", downside, test_metrics$accuracy, test_metrics$precision, test_metrics$recall, test_metrics$f1,
 test_metrics$tp, test_metrics$fp, test_metrics$tn, test_metrics$fn))
+
+# ============================================================
+# Trading Signals Dataset
+# ============================================================
+
+# Filter for predicted downside cases only and label as TP or FP
+signals <- results %>%
+  filter(y_pred == 1) %>%
+  mutate(
+    signal_type = ifelse(y_true == 1, "TP", "FP")
+  ) %>%
+  arrange(desc(y_prob))
+
+cat(sprintf("\n=== Trading Signals ===
+Total signals: %d
+True Positives (TP): %d (%.1f%%)
+False Positives (FP): %d (%.1f%%)
+", nrow(signals),
+sum(signals$signal_type == "TP"), 100 * mean(signals$signal_type == "TP"),
+sum(signals$signal_type == "FP"), 100 * mean(signals$signal_type == "FP")))
+
+signals

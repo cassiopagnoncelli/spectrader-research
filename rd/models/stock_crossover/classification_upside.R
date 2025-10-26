@@ -3,6 +3,17 @@ devtools::load_all()
 options(scipen = 999)
 
 # ============================================================
+# DATA LOADING
+# ============================================================
+
+source("rd/models/stock_crossover/features.R")
+
+fetl <- Fetl$new()
+features <- prepare_dfm(fetl)
+dfm <- features$dfm
+dfm_metadata <- features$dfm_metadata
+
+# ============================================================
 # HYPERPARAMETERS - Tune these for better performance
 # ============================================================
 
@@ -10,7 +21,7 @@ options(scipen = 999)
 upside <- 0.2
 
 # Decision threshold (probability cutoff for positive class)
-decision_threshold <- 0.95  # Increased from 0.5 to reduce false positives
+decision_threshold <- 0.96
 
 # XGBoost hyperparameters
 xgb_params <- list(
@@ -26,19 +37,12 @@ xgb_params <- list(
 )
 
 # Training parameters
-nrounds <- 500
+nrounds <- 3000
 early_stopping_rounds <- 50
 
 # ============================================================
 # DATA PREPARATION
 # ============================================================
-
-source("rd/models/stock_crossover/features.R")
-
-fetl <- Fetl$new()
-features <- prepare_dfm(fetl)
-dfm <- features$dfm
-dfm_metadata <- features$dfm_metadata
 
 # Create binary target: 1 if dfm_0 > upside, 0 otherwise
 dfm$target <- as.numeric(dfm$dfm_0 > upside)
@@ -159,7 +163,7 @@ print(results)
 # Plot 1: ROC Curve
 if (requireNamespace("pROC", quietly = TRUE)) {
   roc_obj <- pROC::roc(test_y, test_pred_prob, quiet = TRUE)
-  
+
   plot(roc_obj,
        main = "ROC Curve - Upside Classification",
        col = "darkgreen",
@@ -170,6 +174,8 @@ if (requireNamespace("pROC", quietly = TRUE)) {
        auc.polygon = TRUE,
        auc.polygon.col = rgb(0, 0.8, 0, 0.2),
        legacy.axes = TRUE,
+       xlim = c(0, 1),
+       ylim = c(0, 1),
        grid = TRUE)
 } else {
   cat("Install pROC package for ROC curves: install.packages('pROC')\n")
@@ -286,3 +292,25 @@ Test Set (Threshold = %.2f):
   False Negatives: %d
 ", upside, test_metrics$accuracy, test_metrics$precision, test_metrics$recall, test_metrics$f1,
 test_metrics$tp, test_metrics$fp, test_metrics$tn, test_metrics$fn))
+
+# ============================================================
+# Trading Signals Dataset
+# ============================================================
+
+# Filter for predicted upside cases only and label as TP or FP
+signals <- results %>%
+  filter(y_pred == 1) %>%
+  mutate(
+    signal_type = ifelse(y_true == 1, "TP", "FP")
+  ) %>%
+  arrange(desc(y_prob))
+
+cat(sprintf("\n=== Trading Signals ===
+Total signals: %d
+True Positives (TP): %d (%.1f%%)
+False Positives (FP): %d (%.1f%%)
+", nrow(signals),
+sum(signals$signal_type == "TP"), 100 * mean(signals$signal_type == "TP"),
+sum(signals$signal_type == "FP"), 100 * mean(signals$signal_type == "FP")))
+
+signals

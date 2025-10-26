@@ -8,7 +8,7 @@ prepare_dfm <- function(fetl) {
       c.symbol,
       q.date,
       q.close,
-      differential_forward_mass(c.symbol, q.date, 15) AS dfm_0
+      differential_forward_mass(c.symbol, q.date, 14) AS dfm_0
     FROM quotes q
     JOIN companies c ON q.company_id = c.id
     JOIN company_screener_ids(
@@ -16,7 +16,7 @@ prepare_dfm <- function(fetl) {
       min_market_cap => 1.5e10,
       -- max_market_cap => 9.0e11,
       random_sample => TRUE,
-      max_companies => 1000
+      max_companies => 500
     ) c2 ON c.id = c2.id
     WHERE
       q.date BETWEEN '2021-01-01' AND '2025-09-30'
