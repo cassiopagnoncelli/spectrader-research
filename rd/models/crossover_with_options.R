@@ -91,7 +91,9 @@ dfm <- dfm_raw %>%
 
 dfm
 
+#
 # Model.
+#
 
 # Split data into train and test sets (80/20 split)
 set.seed(42)
@@ -151,13 +153,14 @@ test_mae <- mean(abs(test_y - test_pred))
 train_r2 <- cor(train_y, train_pred)^2
 test_r2 <- cor(test_y, test_pred)^2
 
-cat("\n=== Model Performance ===\n")
-cat(sprintf("Train RMSE: %.6f\n", train_rmse))
-cat(sprintf("Test RMSE:  %.6f\n", test_rmse))
-cat(sprintf("Train MAE:  %.6f\n", train_mae))
-cat(sprintf("Test MAE:   %.6f\n", test_mae))
-cat(sprintf("Train R²:   %.6f\n", train_r2))
-cat(sprintf("Test R²:    %.6f\n", test_r2))
+cat(sprintf("\n=== Model Performance ===
+Train RMSE: %.6f
+Test RMSE:  %.6f
+Train MAE:  %.6f
+Test MAE:   %.6f
+Train R²:   %.6f
+Test R²:    %.6f\n",
+  train_rmse, test_rmse, train_mae, test_mae, train_r2, test_r2))
 
 # Feature importance
 importance_matrix <- xgboost::xgb.importance(
