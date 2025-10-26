@@ -9,11 +9,17 @@ features <- prepare_dfm(fetl)
 dfm <- features$dfm
 dfm_metadata <- features$dfm_metadata
 
-# Model
-train_indices <- which(dfm_metadata$date <= as.Date('2024-12-31'))
+# Model - Split into train, validation, and test sets
+train_indices <- which(dfm_metadata$date <= as.Date('2024-06-30'))
+val_indices <- which(dfm_metadata$date > as.Date('2024-06-30') & dfm_metadata$date <= as.Date('2024-12-31'))
 test_indices <- which(dfm_metadata$date >= as.Date('2025-01-20'))
 
+cat(sprintf("Train samples: %d (dates <= 2024-06-30)\n", length(train_indices)))
+cat(sprintf("Validation samples: %d (2024-06-30 < dates <= 2024-12-31)\n", length(val_indices)))
+cat(sprintf("Test samples: %d (dates >= 2025-01-20)\n", length(test_indices)))
+
 train_data <- dfm[train_indices, ]
+val_data <- dfm[val_indices, ]
 test_data <- dfm[test_indices, ]
 
 # Prepare feature matrix and target variable
@@ -21,6 +27,9 @@ feature_cols <- setdiff(names(dfm), "dfm_0")
 
 train_x <- as.matrix(train_data[, feature_cols])
 train_y <- train_data$dfm_0
+
+val_x <- as.matrix(val_data[, feature_cols])
+val_y <- val_data$dfm_0
 
 test_x <- as.matrix(test_data[, feature_cols])
 test_y <- test_data$dfm_0
@@ -36,31 +45,36 @@ xgb_params <- list(
   gamma = 0
 )
 
-dtrain_full <- xgboost::xgb.DMatrix(data = train_x, label = train_y)
-dtest_full <- xgboost::xgb.DMatrix(data = test_x, label = test_y)
+dtrain <- xgboost::xgb.DMatrix(data = train_x, label = train_y)
+dval <- xgboost::xgb.DMatrix(data = val_x, label = val_y)
+dtest <- xgboost::xgb.DMatrix(data = test_x, label = test_y)
 
 xgb_model <- xgboost::xgb.train(
   params = xgb_params,
-  data = dtrain_full,
+  data = dtrain,
   nrounds = 300,
-  watchlist = list(train = dtrain_full, test = dtest_full),
+  watchlist = list(train = dtrain, validation = dval),
   early_stopping_rounds = 30,
   verbose = 1
 )
 
 # Get predictions
-train_pred <- predict(xgb_model, dtrain_full)
-test_pred <- predict(xgb_model, dtest_full)
+train_pred <- predict(xgb_model, dtrain)
+val_pred <- predict(xgb_model, dval)
+test_pred <- predict(xgb_model, dtest)
 
 # ============================================================
 # Evaluate Performance
 # ============================================================
 
 train_rmse <- sqrt(mean((train_y - train_pred)^2))
+val_rmse <- sqrt(mean((val_y - val_pred)^2))
 test_rmse <- sqrt(mean((test_y - test_pred)^2))
 train_mae <- mean(abs(train_y - train_pred))
+val_mae <- mean(abs(val_y - val_pred))
 test_mae <- mean(abs(test_y - test_pred))
 train_r2 <- cor(train_y, train_pred)^2
+val_r2 <- cor(val_y, val_pred)^2
 test_r2 <- cor(test_y, test_pred)^2
 
 # ============================================================
@@ -151,12 +165,17 @@ if (sum(positive_cases) > 0 && sum(negative_cases) > 0) {
 # ============================================================
 
 cat(sprintf("\n=== XGBoost Model Performance ===
-Train RMSE: %.6f
-Test RMSE:  %.6f
-Train MAE:  %.6f
-Test MAE:   %.6f
-Train R²:   %.6f
-Test R²:    %.6f\n",
-  train_rmse, test_rmse,
-  train_mae, test_mae,
-  train_r2, test_r2))
+Train RMSE:      %.6f
+Validation RMSE: %.6f
+Test RMSE:       %.6f
+
+Train MAE:       %.6f
+Validation MAE:  %.6f
+Test MAE:        %.6f
+
+Train R²:        %.6f
+Validation R²:   %.6f
+Test R²:         %.6f\n",
+  train_rmse, val_rmse, test_rmse,
+  train_mae, val_mae, test_mae,
+  train_r2, val_r2, test_r2))
