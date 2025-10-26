@@ -92,14 +92,19 @@ dfm <- dfm_raw %>%
 dfm
 
 #
-# Model.
+# Stacked Ensemble Model with Out-of-Fold Predictions
+# XGBoost + SVM + Deep Learning
 #
 
-# Split data into train and test sets (80/20 split)
+cat("\n=== Building Stacked Ensemble with Out-of-Fold (OOF) Predictions ===\n")
+
+# Split data into train and test sets
 set.seed(42)
-train_size <- floor(0.3 * nrow(dfm))
+n <- nrow(dfm)
+train_size <- floor(0.75 * n)
+
 train_indices <- 1:train_size
-test_indices <- (train_size + 1):nrow(dfm)
+test_indices <- (train_size + 1):n
 
 train_data <- dfm[train_indices, ]
 test_data <- dfm[test_indices, ]
@@ -113,63 +118,290 @@ train_y <- train_data$dfm_0
 test_x <- as.matrix(test_data[, feature_cols])
 test_y <- test_data$dfm_0
 
-# Create DMatrix for XGBoost
-dtrain <- xgboost::xgb.DMatrix(data = train_x, label = train_y)
-dtest <- xgboost::xgb.DMatrix(data = test_x, label = test_y)
+# ============================================================
+# Out-of-Fold Predictions for Stacking
+# ============================================================
+cat("\n--- Generating Out-of-Fold Predictions ---\n")
 
-# Set XGBoost parameters
-params <- list(
+n_folds <- 5
+set.seed(42)
+fold_ids <- sample(rep(1:n_folds, length.out = nrow(train_data)))
+
+# Initialize OOF prediction matrices
+oof_xgb <- numeric(nrow(train_data))
+oof_svm <- numeric(nrow(train_data))
+oof_nn <- numeric(nrow(train_data))
+
+# Initialize test prediction matrices (will average across folds)
+test_xgb <- matrix(0, nrow = nrow(test_data), ncol = n_folds)
+test_svm <- matrix(0, nrow = nrow(test_data), ncol = n_folds)
+test_nn <- matrix(0, nrow = nrow(test_data), ncol = n_folds)
+
+xgb_params <- list(
   objective = "reg:squarederror",
   eval_metric = "rmse",
-  eta = 0.1,              # learning rate
-  max_depth = 6,          # maximum depth of trees
-  subsample = 0.8,        # subsample ratio of training data
-  colsample_bytree = 0.8, # subsample ratio of columns
+  eta = 0.05,
+  max_depth = 6,
+  subsample = 0.8,
+  colsample_bytree = 0.8,
   min_child_weight = 1,
   gamma = 0
 )
 
-# Train the model with cross-validation monitoring
-watchlist <- list(train = dtrain, test = dtest)
+cat(sprintf("\nTraining base models with %d-fold cross-validation...\n", n_folds))
 
-xgb_model <- xgboost::xgb.train(
-  params = params,
-  data = dtrain,
-  nrounds = 500,
-  watchlist = watchlist,
-  early_stopping_rounds = 50,
-  verbose = 1
+for (fold in 1:n_folds) {
+  cat(sprintf("\n--- Fold %d/%d ---\n", fold, n_folds))
+  
+  # Split into train and validation for this fold
+  val_idx <- which(fold_ids == fold)
+  trn_idx <- which(fold_ids != fold)
+  
+  fold_train_x <- train_x[trn_idx, ]
+  fold_train_y <- train_y[trn_idx]
+  fold_val_x <- train_x[val_idx, ]
+  fold_val_y <- train_y[val_idx]
+  
+  # Scale data for neural network
+  fold_train_x_scaled <- scale(fold_train_x)
+  fold_val_x_scaled <- scale(fold_val_x, 
+                              center = attr(fold_train_x_scaled, "scaled:center"),
+                              scale = attr(fold_train_x_scaled, "scaled:scale"))
+  test_x_scaled <- scale(test_x,
+                         center = attr(fold_train_x_scaled, "scaled:center"),
+                         scale = attr(fold_train_x_scaled, "scaled:scale"))
+  
+  # ============================================================
+  # Model 1: XGBoost
+  # ============================================================
+  cat("[1/3] XGBoost... ")
+  
+  dtrain_fold <- xgboost::xgb.DMatrix(data = fold_train_x, label = fold_train_y)
+  dval_fold <- xgboost::xgb.DMatrix(data = fold_val_x, label = fold_val_y)
+  
+  xgb_fold <- xgboost::xgb.train(
+    params = xgb_params,
+    data = dtrain_fold,
+    nrounds = 300,
+    watchlist = list(train = dtrain_fold, val = dval_fold),
+    early_stopping_rounds = 30,
+    verbose = 0
+  )
+  
+  oof_xgb[val_idx] <- predict(xgb_fold, dval_fold)
+  test_xgb[, fold] <- predict(xgb_fold, xgboost::xgb.DMatrix(data = test_x))
+  
+  cat(sprintf("RMSE: %.6f\n", sqrt(mean((fold_val_y - oof_xgb[val_idx])^2))))
+  
+  # ============================================================
+  # Model 2: SVM
+  # ============================================================
+  cat("[2/3] SVM... ")
+  
+  svm_fold <- e1071::svm(
+    x = fold_train_x,
+    y = fold_train_y,
+    type = "eps-regression",
+    kernel = "radial",
+    cost = 1,
+    epsilon = 0.1,
+    gamma = 1 / ncol(fold_train_x)
+  )
+  
+  oof_svm[val_idx] <- predict(svm_fold, fold_val_x)
+  test_svm[, fold] <- predict(svm_fold, test_x)
+  
+  cat(sprintf("RMSE: %.6f\n", sqrt(mean((fold_val_y - oof_svm[val_idx])^2))))
+  
+  # ============================================================
+  # Model 3: Neural Network
+  # ============================================================
+  cat("[3/3] Neural Network... ")
+  
+  nn_fold <- keras::keras_model_sequential() %>%
+    keras::layer_dense(units = 128, activation = "relu", input_shape = ncol(fold_train_x)) %>%
+    keras::layer_dropout(rate = 0.3) %>%
+    keras::layer_dense(units = 64, activation = "relu") %>%
+    keras::layer_dropout(rate = 0.2) %>%
+    keras::layer_dense(units = 32, activation = "relu") %>%
+    keras::layer_dense(units = 1)
+  
+  nn_fold %>% keras::compile(
+    loss = "mse",
+    optimizer = keras::optimizer_adam(learning_rate = 0.001),
+    metrics = c("mae")
+  )
+  
+  nn_fold %>% keras::fit(
+    x = fold_train_x_scaled,
+    y = fold_train_y,
+    epochs = 100,
+    batch_size = 32,
+    validation_split = 0.2,
+    callbacks = list(
+      keras::callback_early_stopping(patience = 15, restore_best_weights = TRUE)
+    ),
+    verbose = 0
+  )
+  
+  oof_nn[val_idx] <- as.vector(predict(nn_fold, fold_val_x_scaled))
+  test_nn[, fold] <- as.vector(predict(nn_fold, test_x_scaled))
+  
+  cat(sprintf("RMSE: %.6f\n", sqrt(mean((fold_val_y - oof_nn[val_idx])^2))))
+}
+
+# Average test predictions across folds
+test_xgb_pred <- rowMeans(test_xgb)
+test_svm_pred <- rowMeans(test_svm)
+test_nn_pred <- rowMeans(test_nn)
+
+# Calculate OOF scores
+oof_xgb_rmse <- sqrt(mean((train_y - oof_xgb)^2))
+oof_svm_rmse <- sqrt(mean((train_y - oof_svm)^2))
+oof_nn_rmse <- sqrt(mean((train_y - oof_nn)^2))
+
+cat(sprintf("\n--- Out-of-Fold Performance ---
+XGBoost OOF RMSE:        %.6f
+SVM OOF RMSE:            %.6f
+Neural Network OOF RMSE: %.6f\n",
+  oof_xgb_rmse, oof_svm_rmse, oof_nn_rmse))
+
+# ============================================================
+# Train Meta-Model on Out-of-Fold Predictions
+# ============================================================
+cat("\n--- Training Meta-Model (SVM) on OOF Predictions ---\n")
+
+# Create meta-features from OOF predictions
+meta_train_x <- as.matrix(data.frame(
+  xgb = oof_xgb,
+  svm = oof_svm,
+  nn = oof_nn
+))
+
+# Train SVM meta-model with optimized parameters
+meta_model <- e1071::svm(
+  x = meta_train_x,
+  y = train_y,
+  type = "eps-regression",
+  kernel = "radial",
+  cost = 10,
+  epsilon = 0.01,
+  gamma = 0.5
 )
 
-# Make predictions
-train_pred <- predict(xgb_model, dtrain)
-test_pred <- predict(xgb_model, dtest)
+cat("Meta-model (SVM) trained successfully\n")
 
-# Calculate performance metrics
-train_rmse <- sqrt(mean((train_y - train_pred)^2))
-test_rmse <- sqrt(mean((test_y - test_pred)^2))
-train_mae <- mean(abs(train_y - train_pred))
-test_mae <- mean(abs(test_y - test_pred))
-train_r2 <- cor(train_y, train_pred)^2
-test_r2 <- cor(test_y, test_pred)^2
+# ============================================================
+# Train Final Models on Full Training Set
+# ============================================================
+cat("\n--- Training Final Models on Full Training Set ---\n")
 
-cat(sprintf("\n=== Model Performance ===
-Train RMSE: %.6f
-Test RMSE:  %.6f
-Train MAE:  %.6f
-Test MAE:   %.6f
-Train R²:   %.6f
-Test R²:    %.6f\n",
-  train_rmse, test_rmse, train_mae, test_mae, train_r2, test_r2))
+# Scale full training data for neural network
+train_x_scaled <- scale(train_x)
+test_x_scaled_final <- scale(test_x, 
+                              center = attr(train_x_scaled, "scaled:center"),
+                              scale = attr(train_x_scaled, "scaled:scale"))
 
-# Feature importance
+# Final XGBoost
+cat("[1/3] Final XGBoost...\n")
+dtrain_full <- xgboost::xgb.DMatrix(data = train_x, label = train_y)
+xgb_final <- xgboost::xgb.train(
+  params = xgb_params,
+  data = dtrain_full,
+  nrounds = xgb_fold$best_iteration,
+  verbose = 0
+)
+
+# Final SVM
+cat("[2/3] Final SVM...\n")
+svm_final <- e1071::svm(
+  x = train_x,
+  y = train_y,
+  type = "eps-regression",
+  kernel = "radial",
+  cost = 1,
+  epsilon = 0.1,
+  gamma = 1 / ncol(train_x)
+)
+
+# Final Neural Network
+cat("[3/3] Final Neural Network...\n")
+nn_final <- keras::keras_model_sequential() %>%
+  keras::layer_dense(units = 128, activation = "relu", input_shape = ncol(train_x)) %>%
+  keras::layer_dropout(rate = 0.3) %>%
+  keras::layer_dense(units = 64, activation = "relu") %>%
+  keras::layer_dropout(rate = 0.2) %>%
+  keras::layer_dense(units = 32, activation = "relu") %>%
+  keras::layer_dense(units = 1)
+
+nn_final %>% keras::compile(
+  loss = "mse",
+  optimizer = keras::optimizer_adam(learning_rate = 0.001),
+  metrics = c("mae")
+)
+
+nn_final %>% keras::fit(
+  x = train_x_scaled,
+  y = train_y,
+  epochs = 100,
+  batch_size = 32,
+  validation_split = 0.2,
+  callbacks = list(
+    keras::callback_early_stopping(patience = 15, restore_best_weights = TRUE)
+  ),
+  verbose = 0
+)
+
+# ============================================================
+# Make Final Ensemble Predictions
+# ============================================================
+cat("\n--- Generating Final Ensemble Predictions ---\n")
+
+# Get predictions from final models
+xgb_test_pred_final <- predict(xgb_final, xgboost::xgb.DMatrix(data = test_x))
+svm_test_pred_final <- predict(svm_final, test_x)
+nn_test_pred_final <- as.vector(predict(nn_final, test_x_scaled_final))
+
+# Create meta-features for test set
+meta_test_x <- data.frame(
+  xgb = xgb_test_pred_final,
+  svm = svm_test_pred_final,
+  nn = nn_test_pred_final
+)
+
+# Ensemble predictions
+ensemble_train_pred <- predict(meta_model, meta_train_x)
+ensemble_test_pred <- predict(meta_model, as.matrix(meta_test_x))
+
+# ============================================================
+# Evaluate Performance
+# ============================================================
+
+# Individual model performance on test set (averaged OOF predictions)
+xgb_test_rmse <- sqrt(mean((test_y - test_xgb_pred)^2))
+svm_test_rmse <- sqrt(mean((test_y - test_svm_pred)^2))
+nn_test_rmse <- sqrt(mean((test_y - test_nn_pred)^2))
+
+# Ensemble performance
+ensemble_train_rmse <- sqrt(mean((train_y - ensemble_train_pred)^2))
+ensemble_test_rmse <- sqrt(mean((test_y - ensemble_test_pred)^2))
+ensemble_train_mae <- mean(abs(train_y - ensemble_train_pred))
+ensemble_test_mae <- mean(abs(test_y - ensemble_test_pred))
+ensemble_train_r2 <- cor(train_y, ensemble_train_pred)^2
+ensemble_test_r2 <- cor(test_y, ensemble_test_pred)^2
+
+# ============================================================
+# Visualizations
+# ============================================================
+
+# Feature importance from final XGBoost model
 importance_matrix <- xgboost::xgb.importance(
   feature_names = feature_cols,
-  model = xgb_model
+  model = xgb_final
 )
-print(importance_matrix)
+cat("\nTop 10 Features (from XGBoost):\n")
+print(head(importance_matrix, 10))
 
-# Plot feature importance
 xgboost::xgb.plot.importance(
   importance_matrix = importance_matrix,
   top_n = 10
@@ -178,13 +410,16 @@ xgboost::xgb.plot.importance(
 # Create results dataframe
 results <- data.frame(
   actual = test_y,
-  predicted = test_pred,
-  residual = test_y - test_pred
+  ensemble = ensemble_test_pred,
+  xgboost = test_xgb_pred,
+  svm = test_svm_pred,
+  neural_net = test_nn_pred,
+  residual = test_y - ensemble_test_pred
 )
 
-# Plot predictions vs actuals
-plot(test_y, test_pred,
-     main = "XGBoost: Predicted vs Actual dfm_0",
+# Plot 1: Ensemble predictions vs actuals
+plot(test_y, ensemble_test_pred,
+     main = "Stacked Ensemble: Predicted vs Actual dfm_0",
      xlab = "Actual dfm_0",
      ylab = "Predicted dfm_0",
      pch = 16,
@@ -192,12 +427,54 @@ plot(test_y, test_pred,
 abline(0, 1, col = "red", lwd = 2)
 grid()
 
-# Plot residuals
-plot(test_pred, results$residual,
-     main = "Residual Plot",
+# Plot 2: Residuals
+plot(ensemble_test_pred, results$residual,
+     main = "Ensemble Residual Plot",
      xlab = "Predicted dfm_0",
      ylab = "Residuals",
      pch = 16,
      col = rgb(0, 0, 1, 0.5))
 abline(h = 0, col = "red", lwd = 2)
 grid()
+
+# Plot 3: Compare all models
+par(mfrow = c(2, 2))
+
+plot(test_y, test_xgb_pred, main = "XGBoost (OOF Avg)",
+     xlab = "Actual", ylab = "Predicted", pch = 16, col = rgb(0, 0, 1, 0.5))
+abline(0, 1, col = "red", lwd = 2)
+
+plot(test_y, test_svm_pred, main = "SVM (OOF Avg)",
+     xlab = "Actual", ylab = "Predicted", pch = 16, col = rgb(0, 1, 0, 0.5))
+abline(0, 1, col = "red", lwd = 2)
+
+plot(test_y, test_nn_pred, main = "Neural Network (OOF Avg)",
+     xlab = "Actual", ylab = "Predicted", pch = 16, col = rgb(1, 0, 0, 0.5))
+abline(0, 1, col = "red", lwd = 2)
+
+plot(test_y, ensemble_test_pred, main = "Stacked Ensemble (OOF)",
+     xlab = "Actual", ylab = "Predicted", pch = 16, col = rgb(0.5, 0, 0.5, 0.5))
+abline(0, 1, col = "red", lwd = 2)
+
+par(mfrow = c(1, 1))
+
+# ============================================================
+# Final Results Summary
+# ============================================================
+
+cat(sprintf("\n=== Individual Model Performance (Test Set) ===
+XGBoost RMSE:        %.6f
+SVM RMSE:            %.6f
+Neural Network RMSE: %.6f
+
+=== Stacked Ensemble Performance ===
+Train RMSE: %.6f
+Test RMSE:  %.6f
+Train MAE:  %.6f
+Test MAE:   %.6f
+Train R²:   %.6f
+Test R²:    %.6f\n",
+  xgb_test_rmse, svm_test_rmse, nn_test_rmse,
+  ensemble_train_rmse, ensemble_test_rmse,
+  ensemble_train_mae, ensemble_test_mae,
+  ensemble_train_r2, ensemble_test_r2))
