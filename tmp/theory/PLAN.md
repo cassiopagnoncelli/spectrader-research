@@ -1,7 +1,7 @@
 ## Models
 
 - [x] ~~K-means classfication~~
-- [ ] [**Gaussian Mixture Model**](https://campus.datacamp.com/courses/mixture-models-in-r) (clustering)
+- [ ] [**Gaussian Mixture Model**](https://campus.datacamp.com/courses/mixture-models-in-r) (clustering: mixtools, bayesmix, EMCluster, flexmix)
 - [ ] [**Extreme Gradient Boosting**](https://app.datacamp.com/learn/courses/extreme-gradient-boosting-with-xgboost)
 - [x] ~~Markov Model~~
 - [ ] Hidden Markov Model
