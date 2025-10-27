@@ -7,7 +7,7 @@ source("rd/models/stock_crossover/features.R")
 source("rd/models/stock_crossover/plots.R")
 
 fetl <- Fetl$new()
-features <- prepare_fwd(fetl, 'extreme_high_identity', days = 30, companies = 200)
+features <- prepare_fwd(fetl, 'extreme_high_identity', days = 30, companies = 8000)
 fwd <- features$fwd
 fwd_metadata <- features$fwd_metadata
 
@@ -19,7 +19,7 @@ fwd_metadata <- features$fwd_metadata
 upside <- 1.4
 
 # Decision threshold (probability cutoff for positive class)
-decision_threshold <- 0.8
+decision_threshold <- 0.82
 
 # XGBoost hyperparameters
 xgb_params <- list(
@@ -35,7 +35,7 @@ xgb_params <- list(
 )
 
 # Training parameters
-nrounds <- 500
+nrounds <- 300
 early_stopping_rounds <- 50
 
 # ============================================================
@@ -159,7 +159,7 @@ results <- tibble(
 print(results)
 
 # Plot 1: ROC Curve
-plot_roc_curve(test_y, test_pred_prob, 
+plot_roc_curve(test_y, test_pred_prob,
                title = "ROC Curve - Upside Classification",
                color = "darkgreen",
                polygon_color = rgb(0, 0.8, 0, 0.2))
@@ -229,9 +229,9 @@ sum(signals$signal_type == "TP"), 100 * mean(signals$signal_type == "TP"),
 sum(signals$signal_type == "FP"), 100 * mean(signals$signal_type == "FP")))
 
 # Plot 6: Density of Actual Returns for Signals
-plot_signal_density(signals$y, 
+plot_signal_density(signals$y,
                    threshold = upside,
-                   title = "Distribution of Actual Returns for Trading Signals",
+                   title = "Distribution of y",
                    threshold_label = "Upside Threshold",
                    color = "darkgreen",
                    polygon_color = rgb(0, 0.8, 0, 0.3),

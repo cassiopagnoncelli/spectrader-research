@@ -231,7 +231,7 @@ sum(signals$signal_type == "FP"), 100 * mean(signals$signal_type == "FP")))
 # Plot 6: Density of Actual Returns for Signals
 plot_signal_density(signals$y, 
                    threshold = downside,
-                   title = "Distribution of Actual Returns for Trading Signals",
+                   title = "Distribution of y",
                    threshold_label = "Downside Threshold",
                    color = "darkred",
                    polygon_color = rgb(0.8, 0, 0, 0.3),

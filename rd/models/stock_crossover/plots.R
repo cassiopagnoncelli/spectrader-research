@@ -186,14 +186,22 @@ plot_signal_density <- function(signals_y, threshold, title, threshold_label,
   # Calculate density
   density_obj <- density(signals_y, adjust = 1.5)
   
-  # Create the plot
-  plot(density_obj,
+  # Create histogram first (in background) with transparent bars
+  hist(signals_y, 
+       breaks = 20,
+       col = rgb(0.5, 0.5, 0.5, 0.2),
+       border = rgb(0.5, 0.5, 0.5, 0.3),
        main = title,
-       xlab = "Actual Return (y)",
+       xlab = "Actual (y)",
        ylab = "Density",
-       col = color,
-       lwd = 3,
-       las = 1)
+       freq = FALSE,
+       las = 1,
+       ylim = c(0, max(density_obj$y) * 1.1))
+  
+  # Add density curve on top
+  lines(density_obj,
+        col = color,
+        lwd = 3)
   
   # Fill area under curve
   polygon(density_obj, col = polygon_color, border = NA)
@@ -207,8 +215,8 @@ plot_signal_density <- function(signals_y, threshold, title, threshold_label,
   # Add legend
   legend("topright",
          legend = c(sprintf("%s (%.2f)", threshold_label, threshold),
-                    sprintf("Median Return (%.2f)", median(signals_y)),
-                    sprintf("Mean Return (%.2f)", mean(signals_y)),
+                    sprintf("Median (%.2f)", median(signals_y)),
+                    sprintf("Mean (%.2f)", mean(signals_y)),
                     sprintf("SD = %.2f", sd(signals_y))),
          col = c(threshold_color, "darkblue", NA, NA),
          lty = c(2, 3, NA, NA),
@@ -219,7 +227,7 @@ plot_signal_density <- function(signals_y, threshold, title, threshold_label,
   # Add grid
   grid()
   
-  cat(sprintf("\nSignals Return Statistics:
+  cat(sprintf("\nSignals Statistics:
   Mean: %.2f
   Median: %.2f
   SD: %.2f
