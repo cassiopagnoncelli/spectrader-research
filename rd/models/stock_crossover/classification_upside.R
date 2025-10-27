@@ -2,26 +2,23 @@ devtools::load_all()
 
 options(scipen = 999)
 
-# ============================================================
-# DATA LOADING
-# ============================================================
-
+# ETL
 source("rd/models/stock_crossover/features.R")
 
 fetl <- Fetl$new()
-features <- prepare_dfm(fetl)
-dfm <- features$dfm
-dfm_metadata <- features$dfm_metadata
+features <- prepare_fwd(fetl, 'extreme_high_identity', days = 30, companies = 200)
+fwd <- features$fwd
+fwd_metadata <- features$fwd_metadata
 
 # ============================================================
 # HYPERPARAMETERS - Tune these for better performance
 # ============================================================
 
 # Classification threshold
-upside <- 0.2
+upside <- 1.4
 
 # Decision threshold (probability cutoff for positive class)
-decision_threshold <- 0.96
+decision_threshold <- 0.8
 
 # XGBoost hyperparameters
 xgb_params <- list(
@@ -33,41 +30,41 @@ xgb_params <- list(
   colsample_bytree = 0.7,  # More feature sampling
   min_child_weight = 5,    # Increased to reduce overfitting
   gamma = 1,               # Added regularization
-  scale_pos_weight = 15    # Heavily increased to combat class imbalance
+  scale_pos_weight = 30    # Heavily increased to combat class imbalance
 )
 
 # Training parameters
-nrounds <- 3000
+nrounds <- 500
 early_stopping_rounds <- 50
 
 # ============================================================
 # DATA PREPARATION
 # ============================================================
 
-# Create binary target: 1 if dfm_0 > upside, 0 otherwise
-dfm$target <- as.numeric(dfm$dfm_0 > upside)
+# Create binary target: 1 if y > upside, 0 otherwise
+fwd$target <- as.numeric(fwd$y > upside)
 
 cat(sprintf("\n=== Upside Classification ===
-Threshold: dfm_0 > %.2f
+Threshold: y > %.2f
 Positive cases: %d (%.1f%%)
-", upside, sum(dfm$target == 1), 100 * mean(dfm$target == 1)))
+", upside, sum(fwd$target == 1), 100 * mean(fwd$target == 1)))
 
 # Model - Split into train, validation, and test sets
-train_indices <- which(dfm_metadata$date <= as.Date('2024-06-30'))
-val_indices <- which(dfm_metadata$date > as.Date('2024-06-30') & dfm_metadata$date <= as.Date('2024-12-31'))
-test_indices <- which(dfm_metadata$date >= as.Date('2025-01-20'))
+train_indices <- which(fwd_metadata$date <= as.Date('2024-06-30'))
+val_indices <- which(fwd_metadata$date > as.Date('2024-06-30') & fwd_metadata$date <= as.Date('2024-12-31'))
+test_indices <- which(fwd_metadata$date >= as.Date('2025-01-20'))
 
 cat(sprintf("Train samples: %d
 Validation samples: %d
 Test samples: %d
 ", length(train_indices), length(val_indices), length(test_indices)))
 
-train_data <- dfm[train_indices, ]
-val_data <- dfm[val_indices, ]
-test_data <- dfm[test_indices, ]
+train_data <- fwd[train_indices, ]
+val_data <- fwd[val_indices, ]
+test_data <- fwd[test_indices, ]
 
 # Prepare feature matrix and target variable
-feature_cols <- setdiff(names(dfm), c("dfm_0", "target"))
+feature_cols <- setdiff(names(fwd), c("y", "target"))
 
 train_x <- as.matrix(train_data[, feature_cols])
 train_y <- train_data$target
@@ -151,9 +148,9 @@ xgboost::xgb.plot.importance(
 )
 
 results <- tibble(
-  symbol = dfm_metadata$symbol[test_indices],
-  date = dfm_metadata$date[test_indices],
-  dfm_0 = test_data$dfm_0,
+  symbol = fwd_metadata$symbol[test_indices],
+  date = fwd_metadata$date[test_indices],
+  y = test_data$y,
   y_true = test_y,
   y_pred = test_pred,
   y_prob = test_pred_prob
@@ -164,19 +161,17 @@ print(results)
 if (requireNamespace("pROC", quietly = TRUE)) {
   roc_obj <- pROC::roc(test_y, test_pred_prob, quiet = TRUE)
 
+  # Create a default ROC plot that fills the entire plotting area
   plot(roc_obj,
        main = "ROC Curve - Upside Classification",
        col = "darkgreen",
        lwd = 3,
        print.auc = TRUE,
-       print.auc.x = 0.4,
-       print.auc.y = 0.2,
        auc.polygon = TRUE,
-       auc.polygon.col = rgb(0, 0.8, 0, 0.2),
-       legacy.axes = TRUE,
-       xlim = c(0, 1),
-       ylim = c(0, 1),
-       grid = TRUE)
+       auc.polygon.col = rgb(0, 0.8, 0, 0.2))
+
+  # Add diagonal reference line
+  abline(a = 0, b = 1, lty = 2, col = "gray50")
 } else {
   cat("Install pROC package for ROC curves: install.packages('pROC')\n")
 }
@@ -249,11 +244,11 @@ if (requireNamespace("PRROC", quietly = TRUE)) {
   cat("Install PRROC package for PR curves: install.packages('PRROC')\n")
 }
 
-# Plot 5: Probability vs Actual dfm_0
+# Plot 5: Probability vs Actual y
 par(mar = c(5, 4, 4, 8), xpd = TRUE)
-plot(test_data$dfm_0, test_pred_prob,
+plot(test_data$y, test_pred_prob,
      main = "Predicted Probability vs Actual Returns",
-     xlab = "Actual dfm_0",
+     xlab = "Actual y",
      ylab = "Predicted Probability of Upside",
      pch = 16,
      col = ifelse(test_y == 1, rgb(0, 0.8, 0, 0.7), rgb(0.7, 0.7, 0.7, 0.4)),
@@ -303,7 +298,7 @@ signals <- results %>%
   mutate(
     signal_type = ifelse(y_true == 1, "TP", "FP")
   ) %>%
-  arrange(desc(y_prob))
+  arrange(date)
 
 cat(sprintf("\n=== Trading Signals ===
 Total signals: %d

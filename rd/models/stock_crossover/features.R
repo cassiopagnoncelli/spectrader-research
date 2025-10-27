@@ -1,29 +1,28 @@
 # Feature Engineering for Stock Crossover Model
-# This script builds the feature matrix (dfm) and metadata
+# This script builds the feature matrix (fwd) and metadata
 
-prepare_dfm <- function(fetl) {
+prepare_fwd <- function(fetl, method, days = 15, companies = 300) {
   # Load and prepare data
-  dfm_raw <- fetl$send_query("
+  fwd_raw <- fetl$send_query(sprintf("
     SELECT
       c.symbol,
       q.date,
       q.close,
-      differential_forward_mass(c.symbol, q.date, 14) AS dfm_0
+      fwd('%s', c.symbol, q.date, %d) AS y
     FROM quotes q
     JOIN companies c ON q.company_id = c.id
     JOIN company_screener_ids(
       min_trade_date => '2021-01-01'::DATE,
       min_market_cap => 1.5e10,
-      -- max_market_cap => 9.0e11,
       random_sample => TRUE,
-      max_companies => 500
+      max_companies => %d
     ) c2 ON c.id = c2.id
     WHERE
       q.date BETWEEN '2021-01-01' AND '2025-09-30'
-  ") %>%
+  ", method, days, companies)) %>%
     tibble
 
-  dfm <- dfm_raw %>%
+  fwd <- fwd_raw %>%
     group_by(symbol) %>%
     # Preprocessing
     dplyr::mutate(
@@ -66,11 +65,11 @@ prepare_dfm <- function(fetl) {
     na.omit()
 
   # Store symbol and date before removing them
-  dfm_metadata <- dfm %>%
+  fwd_metadata <- fwd %>%
     select(symbol, date)
 
   # Remove marker columns for training
-  dfm <- dfm %>%
+  fwd <- fwd %>%
     select(-c(
       symbol,
       date,
@@ -82,7 +81,7 @@ prepare_dfm <- function(fetl) {
 
   # Return both the feature matrix and metadata
   list(
-    dfm = dfm,
-    dfm_metadata = dfm_metadata
+    fwd = fwd,
+    fwd_metadata = fwd_metadata
   )
 }
