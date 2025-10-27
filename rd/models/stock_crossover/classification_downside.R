@@ -4,6 +4,7 @@ options(scipen = 999)
 
 # ETL
 source("rd/models/stock_crossover/features.R")
+source("rd/models/stock_crossover/plots.R")
 
 fetl <- Fetl$new()
 features <- prepare_fwd(fetl, 'extreme_low_identity', days = 30, companies = 200)
@@ -158,116 +159,35 @@ results <- tibble(
 print(results)
 
 # Plot 1: ROC Curve
-if (requireNamespace("pROC", quietly = TRUE)) {
-  roc_obj <- pROC::roc(test_y, test_pred_prob, quiet = TRUE)
-
-  # Create a default ROC plot that fills the entire plotting area
-  plot(roc_obj,
-       main = "ROC Curve - Downside Classification",
-       col = "darkred",
-       lwd = 3,
-       print.auc = TRUE,
-       auc.polygon = TRUE,
-       auc.polygon.col = rgb(0.8, 0, 0, 0.2))
-
-  # Add diagonal reference line
-  abline(a = 0, b = 1, lty = 2, col = "gray50")
-} else {
-  cat("Install pROC package for ROC curves: install.packages('pROC')\n")
-}
+plot_roc_curve(test_y, test_pred_prob, 
+               title = "ROC Curve - Downside Classification",
+               color = "darkred",
+               polygon_color = rgb(0.8, 0, 0, 0.2))
 
 # Plot 2: Confusion Matrix Heatmap
-conf_matrix <- matrix(c(test_metrics$tn, test_metrics$fp,
-                        test_metrics$fn, test_metrics$tp),
-                      nrow = 2, byrow = TRUE)
-par(mar = c(5, 5, 4, 2))
-
-# Create color matrix: green for correct predictions, red for errors
-color_matrix <- matrix(c("lightgreen", "lightcoral",
-                         "lightcoral", "lightgreen"),
-                       nrow = 2, byrow = TRUE)
-
-plot(1, type = "n", xlim = c(0.5, 2.5), ylim = c(0.5, 2.5),
-     xlab = "Predicted", ylab = "Actual",
-     main = "Confusion Matrix",
-     xaxt = "n", yaxt = "n")
-axis(1, at = 1:2, labels = c("No Downside", "Downside"))
-axis(2, at = 1:2, labels = c("No Downside", "Downside"))
-
-# Draw colored rectangles
-rect(0.5, 0.5, 1.5, 1.5, col = color_matrix[1, 1], border = "black", lwd = 2)
-rect(1.5, 0.5, 2.5, 1.5, col = color_matrix[1, 2], border = "black", lwd = 2)
-rect(0.5, 1.5, 1.5, 2.5, col = color_matrix[2, 1], border = "black", lwd = 2)
-rect(1.5, 1.5, 2.5, 2.5, col = color_matrix[2, 2], border = "black", lwd = 2)
-
-# Add text values
-text(1, 1, conf_matrix[1, 1], cex = 2.5, font = 2)
-text(2, 1, conf_matrix[1, 2], cex = 2.5, font = 2)
-text(1, 2, conf_matrix[2, 1], cex = 2.5, font = 2)
-text(2, 2, conf_matrix[2, 2], cex = 2.5, font = 2)
-
-# Add labels inside cells
-text(1, 0.7, "TN", cex = 1, col = "darkgreen", font = 3)
-text(2, 0.7, "FP", cex = 1, col = "darkred", font = 3)
-text(1, 1.7, "FN", cex = 1, col = "darkred", font = 3)
-text(2, 1.7, "TP", cex = 1, col = "darkgreen", font = 3)
+plot_confusion_matrix(test_metrics, "No Downside", "Downside")
 
 # Plot 3: Probability Distribution by Class
-par(mar = c(5, 4, 4, 2))
-hist(test_pred_prob[test_y == 0], breaks = 30,
-     col = rgb(0.7, 0.7, 0.7, 0.6),
-     main = "Predicted Probability Distribution - Downside",
-     xlab = "Predicted Probability",
-     ylab = "Frequency",
-     xlim = c(0, 1))
-hist(test_pred_prob[test_y == 1], breaks = 30,
-     col = rgb(0.8, 0, 0, 0.6), add = TRUE)
-legend("topright",
-       legend = c(sprintf("No Downside (n=%d)", sum(test_y == 0)),
-                  sprintf("Downside (n=%d)", sum(test_y == 1))),
-       fill = c(rgb(0.7, 0.7, 0.7, 0.6), rgb(0.8, 0, 0, 0.6)),
-       cex = 1.2)
-abline(v = decision_threshold, col = "black", lwd = 2, lty = 2)
-text(decision_threshold, par("usr")[4] * 0.95,
-     sprintf("Threshold = %.2f", decision_threshold), pos = 4, cex = 1.2)
-grid()
+plot_probability_distribution(test_pred_prob, test_y, decision_threshold,
+                             title = "Predicted Probability Distribution - Downside",
+                             label_negative = "No Downside",
+                             label_positive = "Downside",
+                             positive_color = rgb(0.8, 0, 0, 0.6))
 
 # Plot 4: Precision-Recall Curve
-if (requireNamespace("PRROC", quietly = TRUE)) {
-  pr_obj <- PRROC::pr.curve(scores.class0 = test_pred_prob[test_y == 1],
-                            scores.class1 = test_pred_prob[test_y == 0],
-                            curve = TRUE)
-  plot(pr_obj, main = sprintf("Precision-Recall Curve (AUC = %.4f)", pr_obj$auc.integral),
-       col = "darkred", lwd = 3, auc.main = FALSE)
-  grid()
-} else {
-  cat("Install PRROC package for PR curves: install.packages('PRROC')\n")
-}
+plot_precision_recall(test_pred_prob, test_y, color = "darkred")
 
 # Plot 5: Probability vs Actual y
-par(mar = c(5, 4, 4, 8), xpd = TRUE)
-plot(test_data$y, test_pred_prob,
-     main = "Predicted Probability vs Actual Returns",
-     xlab = "Actual y",
-     ylab = "Predicted Probability of Downside",
-     pch = 16,
-     col = ifelse(test_y == 1, rgb(0.8, 0, 0, 0.7), rgb(0.7, 0.7, 0.7, 0.4)),
-     cex = 1.2)
-abline(v = downside, col = "darkred", lwd = 3, lty = 2)
-abline(h = decision_threshold, col = "black", lwd = 2, lty = 1)
-legend(par("usr")[2], par("usr")[4],
-       legend = c("Downside Cases", "No Downside",
-                  sprintf("Return Threshold (%.2f)", downside),
-                  sprintf("Decision Threshold (%.2f)", decision_threshold)),
-       col = c(rgb(0.8, 0, 0, 0.7), rgb(0.7, 0.7, 0.7, 0.4), "darkred", "black"),
-       pch = c(16, 16, NA, NA),
-       lty = c(NA, NA, 2, 1),
-       lwd = c(NA, NA, 3, 2),
-       cex = 0.9,
-       xjust = 0,
-       yjust = 1)
-grid()
-par(xpd = FALSE)
+plot_probability_vs_actual(test_data$y, test_pred_prob, test_y,
+                          threshold = downside,
+                          decision_threshold = decision_threshold,
+                          title = "Predicted Probability vs Actual Returns",
+                          ylab = "Predicted Probability of Downside",
+                          label_positive = "Downside Cases",
+                          label_negative = "No Downside",
+                          threshold_label = "Return Threshold",
+                          positive_color = rgb(0.8, 0, 0, 0.7),
+                          threshold_color = "darkred")
 
 # ============================================================
 # Results Summary
@@ -309,52 +229,12 @@ sum(signals$signal_type == "TP"), 100 * mean(signals$signal_type == "TP"),
 sum(signals$signal_type == "FP"), 100 * mean(signals$signal_type == "FP")))
 
 # Plot 6: Density of Actual Returns for Signals
-if (nrow(signals) >= 3) {
-  par(mar = c(5, 4, 4, 2))
-  
-  # Calculate density
-  density_obj <- density(signals$y, adjust = 1.5)
-  
-  # Create the plot
-  plot(density_obj,
-       main = "Distribution of Actual Returns for Trading Signals",
-       xlab = "Actual Return (y)",
-       ylab = "Density",
-       col = "darkred",
-       lwd = 3,
-       las = 1)
-  
-  # Fill area under curve
-  polygon(density_obj, col = rgb(0.8, 0, 0, 0.3), border = NA)
-  
-  # Add vertical line at threshold
-  abline(v = downside, col = "darkred", lwd = 2, lty = 2)
-  
-  # Add vertical line at median
-  abline(v = median(signals$y), col = "darkblue", lwd = 2, lty = 3)
-  
-  # Add legend
-  legend("topright",
-         legend = c(sprintf("Downside Threshold (%.2f)", downside),
-                    sprintf("Median Return (%.2f)", median(signals$y)),
-                    sprintf("Mean Return (%.2f)", mean(signals$y)),
-                    sprintf("SD = %.2f", sd(signals$y))),
-         col = c("darkred", "darkblue", NA, NA),
-         lty = c(2, 3, NA, NA),
-         lwd = c(2, 2, NA, NA),
-         cex = 0.9,
-         bg = "white")
-  
-  # Add grid
-  grid()
-  
-  cat(sprintf("\nSignals Return Statistics:
-  Mean: %.2f
-  Median: %.2f
-  SD: %.2f
-  Min: %.2f
-  Max: %.2f
-", mean(signals$y), median(signals$y), sd(signals$y), min(signals$y), max(signals$y)))
-}
+plot_signal_density(signals$y, 
+                   threshold = downside,
+                   title = "Distribution of Actual Returns for Trading Signals",
+                   threshold_label = "Downside Threshold",
+                   color = "darkred",
+                   polygon_color = rgb(0.8, 0, 0, 0.3),
+                   threshold_color = "darkred")
 
 signals
