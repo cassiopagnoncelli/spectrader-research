@@ -1,14 +1,32 @@
 # Feature Engineering for Stock Crossover Model
 # This script builds the feature matrix (fwd) and metadata
 
-prepare_fwd <- function(fetl, method, days = 15, companies = 300) {
+prepare_fwd <- function(fetl, methods, days = 15, companies = 300) {
+  # Ensure methods is an array
+  if (!is.vector(methods)) {
+    methods <- c(methods)
+  }
+  
+  # Generate dynamic SQL lines for each method
+  fwd_lines <- sapply(seq_along(methods), function(i) {
+    method <- methods[i]
+    if (i == 1) {
+      sprintf("      fwd('%s', c.symbol, q.date, %d) AS y", method, days)
+    } else {
+      sprintf("      fwd('%s', c.symbol, q.date, %d) AS y_%d", method, days, i - 1)
+    }
+  })
+  
+  # Join lines with comma
+  fwd_sql <- paste(fwd_lines, collapse = ",\n")
+  
   # Load and prepare data
   fwd_raw <- fetl$send_query(sprintf("
     SELECT
       c.symbol,
       q.date,
       q.close,
-      fwd('%s', c.symbol, q.date, %d) AS y
+%s
     FROM quotes q
     JOIN companies c ON q.company_id = c.id
     JOIN company_screener_ids(
@@ -19,7 +37,7 @@ prepare_fwd <- function(fetl, method, days = 15, companies = 300) {
     ) c2 ON c.id = c2.id
     WHERE
       q.date BETWEEN '2021-01-01' AND '2025-09-30'
-  ", method, days, companies)) %>%
+  ", fwd_sql, companies)) %>%
     tibble
 
   fwd <- fwd_raw %>%

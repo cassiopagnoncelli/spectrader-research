@@ -5,34 +5,39 @@ options(scipen = 999)
 source("rd/models/stock_crossover/features.R")
 
 fetl <- Fetl$new()
-features <- prepare_dfm(fetl)
-dfm <- features$dfm
-dfm_metadata <- features$dfm_metadata
+features <- prepare_fwd(
+  fetl,
+  methods = c("extreme_high_identity", "mass_low_log"),
+  days = 20,
+  companies = 500
+)
+fwd <- features$fwd
+fwd_metadata <- features$fwd_metadata
 
 # Model - Split into train, validation, and test sets
-train_indices <- which(dfm_metadata$date <= as.Date('2024-06-30'))
-val_indices <- which(dfm_metadata$date > as.Date('2024-06-30') & dfm_metadata$date <= as.Date('2024-12-31'))
-test_indices <- which(dfm_metadata$date >= as.Date('2025-01-20'))
+train_indices <- which(fwd_metadata$date <= as.Date('2024-06-30'))
+val_indices <- which(fwd_metadata$date > as.Date('2024-06-30') & fwd_metadata$date <= as.Date('2024-12-31'))
+test_indices <- which(fwd_metadata$date >= as.Date('2025-01-20'))
 
 cat(sprintf("Train samples: %d (dates <= 2024-06-30)\n", length(train_indices)))
 cat(sprintf("Validation samples: %d (2024-06-30 < dates <= 2024-12-31)\n", length(val_indices)))
 cat(sprintf("Test samples: %d (dates >= 2025-01-20)\n", length(test_indices)))
 
-train_data <- dfm[train_indices, ]
-val_data <- dfm[val_indices, ]
-test_data <- dfm[test_indices, ]
+train_data <- fwd[train_indices, ]
+val_data <- fwd[val_indices, ]
+test_data <- fwd[test_indices, ]
 
 # Prepare feature matrix and target variable
-feature_cols <- setdiff(names(dfm), "dfm_0")
+feature_cols <- setdiff(names(fwd), "y")
 
 train_x <- as.matrix(train_data[, feature_cols])
-train_y <- train_data$dfm_0
+train_y <- train_data$y
 
 val_x <- as.matrix(val_data[, feature_cols])
-val_y <- val_data$dfm_0
+val_y <- val_data$y
 
 test_x <- as.matrix(test_data[, feature_cols])
-test_y <- test_data$dfm_0
+test_y <- test_data$y
 
 xgb_params <- list(
   objective = "reg:squarederror",
@@ -94,8 +99,8 @@ xgboost::xgb.plot.importance(
 )
 
 results <- tibble(
-  symbol = dfm_metadata$symbol[test_indices],
-  date = dfm_metadata$date[test_indices],
+  symbol = fwd_metadata$symbol[test_indices],
+  date = fwd_metadata$date[test_indices],
   y = test_y,
   yhat = test_pred,
   residual = test_y - test_pred
@@ -104,9 +109,9 @@ results
 
 # Plot 1: XGBoost predictions vs actuals
 plot(test_y, test_pred,
-     main = "XGBoost: Predicted vs Actual dfm_0",
-     xlab = "Actual dfm_0",
-     ylab = "Predicted dfm_0",
+     main = "XGBoost: Predicted vs Actual y",
+     xlab = "Actual y",
+     ylab = "Predicted y",
      pch = 16,
      col = rgb(0, 0, 1, 0.5))
 abline(0, 1, col = "red", lwd = 2)
@@ -115,7 +120,7 @@ grid()
 # Plot 2: Residuals
 plot(test_pred, results$residual,
      main = "XGBoost Residual Plot",
-     xlab = "Predicted dfm_0",
+     xlab = "Predicted y",
      ylab = "Residuals",
      pch = 16,
      col = rgb(0, 0, 1, 0.5))
@@ -126,7 +131,7 @@ grid()
 # Discriminative Power Analysis
 # ============================================================
 
-target = 0.15
+target = 1.25
 
 # Analyze correlation between predictions and actual values
 cat("\n--- Prediction-Actual Correlation ---\n")
@@ -179,3 +184,10 @@ Test R²:         %.6f\n",
   train_rmse, val_rmse, test_rmse,
   train_mae, val_mae, test_mae,
   train_r2, val_r2, test_r2))
+
+# -----------------------------------
+# Test
+# -------------------
+df <- tibble(y = test_y, yhat = test_pred)
+
+
