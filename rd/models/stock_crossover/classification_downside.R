@@ -308,4 +308,53 @@ False Positives (FP): %d (%.1f%%)
 sum(signals$signal_type == "TP"), 100 * mean(signals$signal_type == "TP"),
 sum(signals$signal_type == "FP"), 100 * mean(signals$signal_type == "FP")))
 
+# Plot 6: Density of Actual Returns for Signals
+if (nrow(signals) >= 3) {
+  par(mar = c(5, 4, 4, 2))
+  
+  # Calculate density
+  density_obj <- density(signals$y, adjust = 1.5)
+  
+  # Create the plot
+  plot(density_obj,
+       main = "Distribution of Actual Returns for Trading Signals",
+       xlab = "Actual Return (y)",
+       ylab = "Density",
+       col = "darkred",
+       lwd = 3,
+       las = 1)
+  
+  # Fill area under curve
+  polygon(density_obj, col = rgb(0.8, 0, 0, 0.3), border = NA)
+  
+  # Add vertical line at threshold
+  abline(v = downside, col = "darkred", lwd = 2, lty = 2)
+  
+  # Add vertical line at median
+  abline(v = median(signals$y), col = "darkblue", lwd = 2, lty = 3)
+  
+  # Add legend
+  legend("topright",
+         legend = c(sprintf("Downside Threshold (%.2f)", downside),
+                    sprintf("Median Return (%.2f)", median(signals$y)),
+                    sprintf("Mean Return (%.2f)", mean(signals$y)),
+                    sprintf("SD = %.2f", sd(signals$y))),
+         col = c("darkred", "darkblue", NA, NA),
+         lty = c(2, 3, NA, NA),
+         lwd = c(2, 2, NA, NA),
+         cex = 0.9,
+         bg = "white")
+  
+  # Add grid
+  grid()
+  
+  cat(sprintf("\nSignals Return Statistics:
+  Mean: %.2f
+  Median: %.2f
+  SD: %.2f
+  Min: %.2f
+  Max: %.2f
+", mean(signals$y), median(signals$y), sd(signals$y), min(signals$y), max(signals$y)))
+}
+
 signals
