@@ -49,7 +49,6 @@ val_data <- fwd[val_indices, ]
 test_data <- fwd[test_indices, ]
 
 # TRAIN STACKED MODEL
-# Load model training function
 source("rd/models/stock_crossover/regression_model.R")
 
 # Train model with caching support
@@ -71,7 +70,6 @@ results <- train_stacked_model(
 )
 
 # GENERATE PLOTS
-# Load plotting functions
 source("rd/models/stock_crossover/regression_plots.R")
 
 # Display individual plots
@@ -86,4 +84,3 @@ plot_residuals(results, "val")
 plot_predictions_vs_actuals(results, "train")
 plot_residuals(results, "train")
 
-cat("\n=== Complete ===\n")
