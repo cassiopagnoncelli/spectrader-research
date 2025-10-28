@@ -39,7 +39,7 @@ Xy4 <- cbind(y = fwd$y_4, X)
 Xy5 <- cbind(y = fwd$y_5, X)
 Xy6 <- cbind(y = fwd$y_6, X)
 
-# Preprocessing: split data into train, validation, test.
+# Preprocessing - split data into train, validation, test.
 train_indices <- which(fwd_metadata$date <= as.Date('2024-06-30'))
 val_indices <- which(fwd_metadata$date > as.Date('2024-06-30') & fwd_metadata$date <= as.Date('2024-12-31'))
 test_indices <- which(fwd_metadata$date >= as.Date('2025-01-20'))
@@ -48,9 +48,12 @@ train_data <- fwd[train_indices, ]
 val_data <- fwd[val_indices, ]
 test_data <- fwd[test_indices, ]
 
-# Model: Stacked XGBoost Regression
+# TRAIN STACKED MODEL
+# Load model training function
 source("rd/models/stock_crossover/regression_model.R")
 
+# Train model with caching support
+# Set cache = TRUE to load from saved results, FALSE to retrain
 results <- train_stacked_model(
   X = X,
   fwd = fwd,
@@ -67,4 +70,20 @@ results <- train_stacked_model(
   cache_file = "rd/models/stock_crossover/stacked_xgboost_results.rds"
 )
 
+# GENERATE PLOTS
+# Load plotting functions
+source("rd/models/stock_crossover/regression_plots.R")
 
+# Display individual plots
+plot_metrics_comparison(results)
+plot_feature_importance(results, top_n = 20)
+plot_all_predictions(results)
+plot_predictions_vs_actuals(results, "test")
+plot_residuals(results, "test")
+plot_residual_distribution(results, "test")
+plot_predictions_vs_actuals(results, "val")
+plot_residuals(results, "val")
+plot_predictions_vs_actuals(results, "train")
+plot_residuals(results, "train")
+
+cat("\n=== Complete ===\n")
