@@ -1,5 +1,7 @@
 devtools::load_all()
 
+library(xgboost)
+
 options(scipen = 999)
 
 # ETL.
@@ -37,7 +39,7 @@ Xy4 <- cbind(y = fwd$y_4, X)
 Xy5 <- cbind(y = fwd$y_5, X)
 Xy6 <- cbind(y = fwd$y_6, X)
 
-# Preprocessing - split data into train, validation, test.
+# Preprocessing: split data into train, validation, test.
 train_indices <- which(fwd_metadata$date <= as.Date('2024-06-30'))
 val_indices <- which(fwd_metadata$date > as.Date('2024-06-30') & fwd_metadata$date <= as.Date('2024-12-31'))
 test_indices <- which(fwd_metadata$date >= as.Date('2025-01-20'))
@@ -45,3 +47,24 @@ test_indices <- which(fwd_metadata$date >= as.Date('2025-01-20'))
 train_data <- fwd[train_indices, ]
 val_data <- fwd[val_indices, ]
 test_data <- fwd[test_indices, ]
+
+# Model: Stacked XGBoost Regression
+source("rd/models/stock_crossover/regression_model.R")
+
+results <- train_stacked_model(
+  X = X,
+  fwd = fwd,
+  train_indices = train_indices,
+  val_indices = val_indices,
+  test_indices = test_indices,
+  Xy1 = Xy1,
+  Xy2 = Xy2,
+  Xy3 = Xy3,
+  Xy4 = Xy4,
+  Xy5 = Xy5,
+  Xy6 = Xy6,
+  cache = TRUE,
+  cache_file = "rd/models/stock_crossover/stacked_xgboost_results.rds"
+)
+
+
