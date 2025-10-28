@@ -24,10 +24,19 @@ features <- prepare_fwd(
 )
 fwd <- features$fwd
 fwd_metadata <- features$fwd_metadata
-glimpse(fwd)
 
+# PREPROCESSING.
+glimpse(fwd)
 X <- fwd %>%
   select(-y, -y_1, -y_2, -y_3, -y_4, -y_5, -y_6, -y_7)
+
+Xy <- cbind(X, y = fwd$y)
+Xy1 <- cbind(X, y = fwd$y_1)
+Xy2 <- cbind(X, y = fwd$y_2)
+Xy3 <- cbind(X, y = fwd$y_3)
+Xy4 <- cbind(X, y = fwd$y_4)
+Xy5 <- cbind(X, y = fwd$y_5)
+Xy6 <- cbind(X, y = fwd$y_6)
 
 # Preprocessing - split data into train, validation, test.
 train_indices <- which(fwd_metadata$date <= as.Date('2024-06-30'))
