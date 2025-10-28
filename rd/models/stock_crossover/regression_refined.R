@@ -2,26 +2,37 @@ devtools::load_all()
 
 options(scipen = 999)
 
+# ETL.
 source("rd/models/stock_crossover/features.R")
 
 fetl <- Fetl$new()
 features <- prepare_fwd(
   fetl,
-  methods = c("extreme_high_identity", "mass_low_log", "close_identity"),
-  days = 20,
-  companies = 500
+  methods = c(
+    "extreme_high_identity",  # y
+    "extreme_low_identity",   # y_1
+    "mass_high_log",          # y_2
+    "mass_low_log",           # y_3
+    "dm_log",                 # y_4
+    "sharpe_high",            # y_5
+    "sharpe_low",             # y_6
+    "close_identity"          # y_7
+  ),
+  days = 42,                  # Cached: 20, 42
+  companies = 500,            # Cached: 500
+  cache = TRUE
 )
 fwd <- features$fwd
 fwd_metadata <- features$fwd_metadata
+glimpse(fwd)
 
-# Model - Split into train, validation, and test sets
+X <- fwd %>%
+  select(-y, -y_1, -y_2, -y_3, -y_4, -y_5, -y_6, -y_7)
+
+# Preprocessing - split data into train, validation, test.
 train_indices <- which(fwd_metadata$date <= as.Date('2024-06-30'))
 val_indices <- which(fwd_metadata$date > as.Date('2024-06-30') & fwd_metadata$date <= as.Date('2024-12-31'))
 test_indices <- which(fwd_metadata$date >= as.Date('2025-01-20'))
-
-cat(sprintf("Train samples: %d (dates <= 2024-06-30)\n", length(train_indices)))
-cat(sprintf("Validation samples: %d (2024-06-30 < dates <= 2024-12-31)\n", length(val_indices)))
-cat(sprintf("Test samples: %d (dates >= 2025-01-20)\n", length(test_indices)))
 
 train_data <- fwd[train_indices, ]
 val_data <- fwd[val_indices, ]
@@ -33,8 +44,9 @@ test_data <- fwd[test_indices, ]
 
 cat("\n=== Training y_1 Predictor ===\n")
 
-# Prepare feature matrix for y_1 prediction (excluding y and y_1)
-y1_feature_cols <- setdiff(names(fwd), c("y", "y_1"))
+# Prepare feature matrix for y_1 prediction (excluding ALL y* variables)
+y_cols <- grep("^y($|_)", names(fwd), value = TRUE)
+y1_feature_cols <- setdiff(names(fwd), y_cols)
 
 train_x_y1 <- as.matrix(train_data[, y1_feature_cols])
 train_y1 <- train_data$y_1
@@ -64,7 +76,7 @@ dtest_y1 <- xgboost::xgb.DMatrix(data = test_x_y1, label = test_y1)
 xgb_model_y1 <- xgboost::xgb.train(
   params = xgb_params_y1,
   data = dtrain_y1,
-  nrounds = 300,
+  nrounds = 150,
   watchlist = list(train = dtrain_y1, validation = dval_y1),
   early_stopping_rounds = 30,
   verbose = 1
@@ -97,19 +109,23 @@ Test RMSE:  %.6f, R²: %.6f\n",
 
 cat("\n=== Creating Enriched Features ===\n")
 
-# Add y_1_pred to the datasets
+# Add y_1_pred to the datasets and remove ALL y* variables (which are response variables)
+# Keep only y_1_pred as the predicted feature
 train_data_enriched <- train_data %>%
-  mutate(y_1_pred = train_y1_pred)
+  mutate(y_1_pred = train_y1_pred) %>%
+  select(-all_of(y_cols))
 
 val_data_enriched <- val_data %>%
-  mutate(y_1_pred = val_y1_pred)
+  mutate(y_1_pred = val_y1_pred) %>%
+  select(-all_of(y_cols))
 
 test_data_enriched <- test_data %>%
-  mutate(y_1_pred = test_y1_pred)
+  mutate(y_1_pred = test_y1_pred) %>%
+  select(-all_of(y_cols))
 
 # Prepare feature matrix and target variable for main model
-# Use y_1_pred instead of y_1
-feature_cols <- setdiff(names(train_data_enriched), c("y", "y_1"))
+# Features include y_1_pred but exclude the target variable y
+feature_cols <- setdiff(names(train_data_enriched), c("y"))
 
 train_x <- as.matrix(train_data_enriched[, feature_cols])
 train_y <- train_data_enriched$y
@@ -147,7 +163,7 @@ dtest <- xgboost::xgb.DMatrix(data = test_x, label = test_y)
 xgb_model <- xgboost::xgb.train(
   params = xgb_params,
   data = dtrain,
-  nrounds = 300,
+  nrounds = 150,
   watchlist = list(train = dtrain, validation = dval),
   early_stopping_rounds = 30,
   verbose = 1
