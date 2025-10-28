@@ -1,13 +1,13 @@
 ## Models
 
 - [x] ~~K-means classfication~~
-- [ ] [**Gaussian Mixture Model**](https://campus.datacamp.com/courses/mixture-models-in-r) (clustering: mixtools, bayesmix, EMCluster, flexmix)
+- [x] ~~[Gaussian Mixture Model](https://campus.datacamp.com/courses/mixture-models-in-r) (clustering: mixtools, bayesmix, EMCluster, flexmix)~~
 - [ ] [**Extreme Gradient Boosting**](https://app.datacamp.com/learn/courses/extreme-gradient-boosting-with-xgboost)
 - [x] ~~Markov Model~~
 - [ ] Hidden Markov Model
 - [ ] Kalman Filter
 - [-] Temporal Convolutional Network (~~CNN, RNN~~)
-- [ ] SVM classification & regression
+- [-] SVM classification & regression
 - [-] [Generalized Linear Models](https://app.datacamp.com/learn/courses/generalized-linear-models-in-r) (glmnet)
 - [-] Kohonen's SOM
 
@@ -22,7 +22,7 @@ Homogeneous
 Heterogeneous
 - [x] ~~Voting: each classifier votes for a class~~
 - [x] ~~Cascading: when model is not so sure about the result, cascades to another model recursively~~
-- [x] Stacking: meta-learner like genderguess, a model orchestrating based on underyling models predictions; trains on OOF
+- [x] ~~Stacking: meta-learner like genderguess, a model orchestrating based on underyling models predictions; trains on OOF~~
 
 ## Simulation, Optimization
 
