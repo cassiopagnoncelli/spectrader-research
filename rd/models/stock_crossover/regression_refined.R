@@ -7,7 +7,7 @@ source("rd/models/stock_crossover/features.R")
 fetl <- Fetl$new()
 features <- prepare_fwd(
   fetl,
-  methods = c("extreme_high_identity", "mass_low_log"),
+  methods = c("extreme_high_identity", "mass_low_log", "close_identity"),
   days = 20,
   companies = 500
 )
@@ -27,17 +27,107 @@ train_data <- fwd[train_indices, ]
 val_data <- fwd[val_indices, ]
 test_data <- fwd[test_indices, ]
 
-# Prepare feature matrix and target variable
-feature_cols <- setdiff(names(fwd), "y")
+# ============================================================
+# Step 1: Train XGBoost model to predict y_1
+# ============================================================
 
-train_x <- as.matrix(train_data[, feature_cols])
-train_y <- train_data$y
+cat("\n=== Training y_1 Predictor ===\n")
 
-val_x <- as.matrix(val_data[, feature_cols])
-val_y <- val_data$y
+# Prepare feature matrix for y_1 prediction (excluding y and y_1)
+y1_feature_cols <- setdiff(names(fwd), c("y", "y_1"))
 
-test_x <- as.matrix(test_data[, feature_cols])
-test_y <- test_data$y
+train_x_y1 <- as.matrix(train_data[, y1_feature_cols])
+train_y1 <- train_data$y_1
+
+val_x_y1 <- as.matrix(val_data[, y1_feature_cols])
+val_y1 <- val_data$y_1
+
+test_x_y1 <- as.matrix(test_data[, y1_feature_cols])
+test_y1 <- test_data$y_1
+
+# XGBoost parameters for y_1 prediction
+xgb_params_y1 <- list(
+  objective = "reg:squarederror",
+  eval_metric = "rmse",
+  eta = 0.05,
+  max_depth = 6,
+  subsample = 0.8,
+  colsample_bytree = 0.8,
+  min_child_weight = 1,
+  gamma = 0
+)
+
+dtrain_y1 <- xgboost::xgb.DMatrix(data = train_x_y1, label = train_y1)
+dval_y1 <- xgboost::xgb.DMatrix(data = val_x_y1, label = val_y1)
+dtest_y1 <- xgboost::xgb.DMatrix(data = test_x_y1, label = test_y1)
+
+xgb_model_y1 <- xgboost::xgb.train(
+  params = xgb_params_y1,
+  data = dtrain_y1,
+  nrounds = 300,
+  watchlist = list(train = dtrain_y1, validation = dval_y1),
+  early_stopping_rounds = 30,
+  verbose = 1
+)
+
+# Get y_1 predictions
+train_y1_pred <- predict(xgb_model_y1, dtrain_y1)
+val_y1_pred <- predict(xgb_model_y1, dval_y1)
+test_y1_pred <- predict(xgb_model_y1, dtest_y1)
+
+# Evaluate y_1 predictor performance
+train_y1_rmse <- sqrt(mean((train_y1 - train_y1_pred)^2))
+val_y1_rmse <- sqrt(mean((val_y1 - val_y1_pred)^2))
+test_y1_rmse <- sqrt(mean((test_y1 - test_y1_pred)^2))
+train_y1_r2 <- cor(train_y1, train_y1_pred)^2
+val_y1_r2 <- cor(val_y1, val_y1_pred)^2
+test_y1_r2 <- cor(test_y1, test_y1_pred)^2
+
+cat(sprintf("\n=== y_1 Predictor Performance ===
+Train RMSE: %.6f, R²: %.6f
+Val RMSE:   %.6f, R²: %.6f
+Test RMSE:  %.6f, R²: %.6f\n",
+  train_y1_rmse, train_y1_r2,
+  val_y1_rmse, val_y1_r2,
+  test_y1_rmse, test_y1_r2))
+
+# ============================================================
+# Step 2: Create features_enriched with y_1_pred
+# ============================================================
+
+cat("\n=== Creating Enriched Features ===\n")
+
+# Add y_1_pred to the datasets
+train_data_enriched <- train_data %>%
+  mutate(y_1_pred = train_y1_pred)
+
+val_data_enriched <- val_data %>%
+  mutate(y_1_pred = val_y1_pred)
+
+test_data_enriched <- test_data %>%
+  mutate(y_1_pred = test_y1_pred)
+
+# Prepare feature matrix and target variable for main model
+# Use y_1_pred instead of y_1
+feature_cols <- setdiff(names(train_data_enriched), c("y", "y_1"))
+
+train_x <- as.matrix(train_data_enriched[, feature_cols])
+train_y <- train_data_enriched$y
+
+val_x <- as.matrix(val_data_enriched[, feature_cols])
+val_y <- val_data_enriched$y
+
+test_x <- as.matrix(test_data_enriched[, feature_cols])
+test_y <- test_data_enriched$y
+
+cat(sprintf("Features used: %d (including y_1_pred)\n", length(feature_cols)))
+cat(sprintf("Original feature count: %d\n", length(y1_feature_cols)))
+
+# ============================================================
+# Step 3: Train Main XGBoost Model
+# ============================================================
+
+cat("\n=== Training Main Model ===\n")
 
 xgb_params <- list(
   objective = "reg:squarederror",
@@ -190,7 +280,7 @@ Test R²:         %.6f\n",
 # -------------------
 df <- tibble(y = test_y, yhat = test_pred)
 
-df_filtered <- df %>% filter(yhat > 1.2)
+df_filtered <- df %>% filter(yhat > 1.5)
 df_filtered %>%
   ggplot(aes(x = y)) +
   geom_histogram(aes(y = after_stat(density)), binwidth = 0.02) +
@@ -198,11 +288,10 @@ df_filtered %>%
   geom_density() +
   theme_minimal()
 
-df %>%
-  filter(yhat > 1.3) %>%
+df_filtered %>%
   ggplot(aes(x = y - yhat)) +
   geom_histogram(aes(y = after_stat(density)), binwidth = 0.02) +
   geom_density() +
   theme_minimal()
 
-df %>% mutate(x = y - yhat) %>% skimr::skim(x)
+df_filtered %>% mutate(x = y - yhat) %>% skimr::skim(x)
