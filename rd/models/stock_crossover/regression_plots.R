@@ -3,6 +3,8 @@
 library(ggplot2)
 library(gridExtra)
 library(dplyr)
+library(xgboost)
+library(DiagrammeR)
 
 # Plot predicted vs actual values
 plot_predictions_vs_actuals <- function(results, split = "test", max_points = 10000) {
@@ -191,6 +193,49 @@ plot_split_analysis <- function(results, split = "test") {
   return(combined)
 }
 
+# Plot XGBoost trees
+plot_xgboost_trees <- function(results, tree_indices = c(0, 1, 2)) {
+  # Check if model exists in results (support both 'model' and 'model_final')
+  model <- NULL
+  if (!is.null(results$model)) {
+    model <- results$model
+  } else if (!is.null(results$model_final)) {
+    model <- results$model_final
+  }
+  
+  if (is.null(model)) {
+    warning("No model found in results. Cannot plot trees.")
+    return(NULL)
+  }
+  
+  # Get feature names from importance data if available
+  feature_names <- NULL
+  if (!is.null(results$importance)) {
+    feature_names <- results$importance$Feature
+  }
+  
+  # Plot each tree to the RStudio viewer
+  for (tree_idx in tree_indices) {
+    cat(sprintf("\n=== Displaying Tree %d ===\n", tree_idx))
+    
+    tryCatch({
+      # Generate and display tree plot using xgb.plot.tree
+      xgb.plot.tree(
+        model = model,
+        trees = tree_idx,
+        feature_names = feature_names,
+        render = TRUE
+      )
+      
+    }, error = function(e) {
+      warning(sprintf("Failed to plot tree %d: %s", tree_idx, e$message))
+    })
+  }
+  
+  cat("\n✓ Tree visualizations displayed\n")
+  return(invisible(NULL))
+}
+
 # Plot all predictions vs actuals in one figure
 plot_all_predictions <- function(results, max_points_per_split = 5000) {
   # Sample each split separately to maintain balance
@@ -285,6 +330,14 @@ generate_all_plots <- function(results, output_dir = "rd/models/stock_crossover/
   
   p_train_resid <- plot_residuals(results, "train")
   ggsave(file.path(output_dir, "train_residuals.png"), p_train_resid, width = 8, height = 6, dpi = 300)
+  
+  # 7. Tree visualizations (if model exists) - displayed in viewer, not saved
+  if (!is.null(results$model) || !is.null(results$model_final)) {
+    cat("Displaying XGBoost tree visualizations in viewer...\n")
+    plot_xgboost_trees(results, tree_indices = c(0, 1, 2, 3, 4))
+  } else {
+    cat("Skipping tree visualizations (no model found in results)...\n")
+  }
   
   cat(sprintf("✓ All plots saved to: %s\n", output_dir))
   

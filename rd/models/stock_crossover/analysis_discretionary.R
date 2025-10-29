@@ -3,7 +3,7 @@ df <- tibble(
   date = fwd_metadata$date[test_indices],
   y = results$actuals$test,
   yhat = results$predictions$test,
-  close_id = fwd$y_7[test_indices]
+  close = fwd$y_7[test_indices]
 )
 
 df_signals <- df %>%
@@ -12,7 +12,7 @@ df_signals %>% print(n = 50)
 
 df_signals %>%
   { print(skimr::skim(.)); . } %>%
-  ggplot(aes(x = close_id)) +
+  ggplot(aes(x = close)) +
   geom_histogram(
     aes(y = ..density..),
     bins = 30,

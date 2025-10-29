@@ -83,4 +83,4 @@ plot_predictions_vs_actuals(results, "val")
 plot_residuals(results, "val")
 plot_predictions_vs_actuals(results, "train")
 plot_residuals(results, "train")
-
+plot_xgboost_trees(results, tree_indices = c(0, 1, 2, 3, 4))

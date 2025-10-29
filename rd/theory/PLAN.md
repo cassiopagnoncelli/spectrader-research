@@ -2,12 +2,11 @@
 
 - [x] ~~K-means classfication~~
 - [x] ~~[Gaussian Mixture Model](https://campus.datacamp.com/courses/mixture-models-in-r) (clustering: mixtools, bayesmix, EMCluster, flexmix)~~
-- [ ] [**Extreme Gradient Boosting**](https://app.datacamp.com/learn/courses/extreme-gradient-boosting-with-xgboost)
+- [x] [~~Extreme Gradient Boosting~~](https://app.datacamp.com/learn/courses/extreme-gradient-boosting-with-xgboost)
 - [x] ~~Markov Model~~
-- [ ] Hidden Markov Model
-- [ ] Kalman Filter
+- [ ] [Markov models](https://app.datacamp.com/learn/courses/bayesian-modeling-with-rjags): HMM, Kalman Filter
 - [-] Temporal Convolutional Network (~~CNN, RNN~~)
-- [-] SVM classification & regression
+- [-] [SVM](https://app.datacamp.com/learn/courses/support-vector-machines-in-r)
 - [-] [Generalized Linear Models](https://app.datacamp.com/learn/courses/generalized-linear-models-in-r) (glmnet)
 - [-] Kohonen's SOM
 
@@ -27,6 +26,8 @@ Heterogeneous
 ## Simulation, Optimization
 
 - [x] ~~Monte Carlo simulation~~
+- [ ] [t-SNE](https://www.appsilon.com/post/r-tsne): [Python](https://app.datacamp.com/learn/courses/dimensionality-reduction-in-python)
+- [ ] [Feature Engineering](https://app.datacamp.com/learn/courses/feature-engineering-in-r)
 
 **Packages**: ~~[x] optim, [x] pso, [x] simmulated annealing~~
 
