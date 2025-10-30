@@ -8,7 +8,7 @@ set.seed(123)
 n_trades_total <- 50000
 path_length    <- 100
 n_paths        <- n_trades_total / path_length
-mu             <- 0.0005      # drift (set 0 for Brownian)
+mu             <- 0.0008      # drift (set 0 for Brownian)
 sigma          <- 0.02
 S0             <- 1
 n_vol          <- 20

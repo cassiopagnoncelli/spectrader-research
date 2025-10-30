@@ -66,32 +66,38 @@ Fetl <- R6::R6Class( # nolint: object_name_linter
       return(self$pool)
     },
     disconnect = function() {
-      if (!is.null(self$pool)) {
-        tryCatch(
-          {
-            if (inherits(self$pool, "Pool")) {
-              pool::poolClose(self$pool)
-            }
-          },
-          error = function(e) {
-            warning("Error closing connection pool: ", e$message)
-          }
-        )
-        self$pool <- NULL
+      # Only close the pool once since self$pool and .spectrader_env$pool 
+      # reference the same object
+      pool_to_close <- NULL
+      
+      if (!is.null(self$pool) && inherits(self$pool, "Pool")) {
+        pool_to_close <- self$pool
+      } else if (exists(".spectrader_env", envir = .GlobalEnv) &&
+                 !is.null(.spectrader_env$pool) &&
+                 inherits(.spectrader_env$pool, "Pool")) {
+        pool_to_close <- .spectrader_env$pool
       }
-      # Also clean up the global pool
-      if (exists(".spectrader_env", envir = .GlobalEnv) &&
-        !is.null(.spectrader_env$pool)) {
+      
+      if (!is.null(pool_to_close)) {
         tryCatch(
           {
-            if (inherits(.spectrader_env$pool, "Pool")) {
-              pool::poolClose(.spectrader_env$pool)
+            # Check if pool is still valid before closing
+            if (pool::dbIsValid(pool_to_close)) {
+              pool::poolClose(pool_to_close)
             }
           },
           error = function(e) {
-            warning("Error closing global connection pool: ", e$message)
+            # Only warn if it's not an "already closed" error
+            if (!grepl("closed", e$message, ignore.case = TRUE)) {
+              warning("Error closing connection pool: ", e$message)
+            }
           }
         )
+      }
+      
+      # Clean up references
+      self$pool <- NULL
+      if (exists(".spectrader_env", envir = .GlobalEnv)) {
         .spectrader_env$pool <- NULL
       }
     },
@@ -100,17 +106,9 @@ Fetl <- R6::R6Class( # nolint: object_name_linter
         self$connect()
       }
       
-      # Use poolCheckout/poolReturn explicitly
-      conn <- pool::poolCheckout(self$pool)
-      result <- tryCatch(
-        {
-          RPostgreSQL::dbGetQuery(conn, query)
-        },
-        finally = {
-          RPostgreSQL::dbDisconnect(conn)
-          pool::poolReturn(conn)
-        }
-      )
+      # Use the pool directly - it handles connection checkout/return automatically
+      result <- DBI::dbGetQuery(self$pool, query)
+      
       if (timeseries) {
         df <- result[, -1, drop = FALSE]
         rownames(df) <- result$ts
@@ -127,17 +125,8 @@ Fetl <- R6::R6Class( # nolint: object_name_linter
         self$connect()
       }
       
-      # Use poolCheckout/poolReturn explicitly
-      conn <- pool::poolCheckout(self$pool)
-      result <- tryCatch(
-        {
-          RPostgreSQL::dbGetQuery(conn, query)
-        },
-        finally = {
-          RPostgreSQL::dbDisconnect(conn)
-          pool::poolReturn(conn)
-        }
-      )
+      # Use the pool directly - it handles connection checkout/return automatically
+      result <- DBI::dbGetQuery(self$pool, query)
       return(result)
     },
     #
@@ -282,17 +271,8 @@ Fetl <- R6::R6Class( # nolint: object_name_linter
         self$connect()
       }
       
-      # Use poolCheckout/poolReturn explicitly
-      conn <- pool::poolCheckout(self$pool)
-      result <- tryCatch(
-        {
-          RPostgreSQL::dbGetQuery(conn, query)
-        },
-        finally = {
-          RPostgreSQL::dbDisconnect(conn)
-          pool::poolReturn(conn)
-        }
-      )
+      # Use the pool directly - it handles connection checkout/return automatically
+      result <- DBI::dbGetQuery(self$pool, query)
       return(result)
     }
   ),

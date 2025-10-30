@@ -214,29 +214,29 @@ plot_xgboost_trees <- function(results, tree_indices = c(0, 1, 2)) {
     feature_names <- results$importance$Feature
   }
   
-  # Plot each tree to the RStudio viewer
+  # Create list to store plots
+  plots <- list()
+  
+  # Plot each tree
   for (tree_idx in tree_indices) {
-    cat(sprintf("\n=== Displaying Tree %d ===\n", tree_idx))
+    cat(sprintf("\n=== Tree %d ===\n", tree_idx))
     
     tryCatch({
-      # Generate tree plot and explicitly print it
+      # Generate and display tree plot
       tree_plot <- xgb.plot.tree(
         model = model,
         trees = tree_idx,
-        feature_names = feature_names,
-        render = FALSE
+        feature_names = feature_names
       )
       
-      # Explicitly print to viewer
-      print(tree_plot)
+      plots[[as.character(tree_idx)]] <- tree_plot
       
     }, error = function(e) {
       warning(sprintf("Failed to plot tree %d: %s", tree_idx, e$message))
     })
   }
   
-  cat("\n✓ Tree visualizations displayed\n")
-  return(invisible(NULL))
+  return(plots)
 }
 
 # Plot all predictions vs actuals in one figure
@@ -281,79 +281,4 @@ plot_all_predictions <- function(results, max_points_per_split = 5000) {
     )
   
   return(p)
-}
-
-# Main function to generate all plots
-generate_all_plots <- function(results, output_dir = "rd/models/stock_crossover/plots") {
-  # Create output directory if it doesn't exist
-  if (!dir.exists(output_dir)) {
-    dir.create(output_dir, recursive = TRUE)
-  }
-  
-  cat("\n=== Generating Plots ===\n")
-  
-  # 1. Metrics comparison
-  cat("Creating metrics comparison plot...\n")
-  p_metrics <- plot_metrics_comparison(results)
-  ggsave(file.path(output_dir, "metrics_comparison.png"), p_metrics, width = 12, height = 4, dpi = 300)
-  
-  # 2. Feature importance
-  cat("Creating feature importance plot...\n")
-  p_importance <- plot_feature_importance(results, top_n = 20)
-  ggsave(file.path(output_dir, "feature_importance.png"), p_importance, width = 10, height = 8, dpi = 300)
-  
-  # 3. All predictions
-  cat("Creating combined predictions plot...\n")
-  p_all_pred <- plot_all_predictions(results)
-  ggsave(file.path(output_dir, "all_predictions.png"), p_all_pred, width = 15, height = 5, dpi = 300)
-  
-  # 4. Test set analysis
-  cat("Creating test set analysis plots...\n")
-  p_test_pred <- plot_predictions_vs_actuals(results, "test")
-  ggsave(file.path(output_dir, "test_predictions_vs_actuals.png"), p_test_pred, width = 8, height = 6, dpi = 300)
-  
-  p_test_resid <- plot_residuals(results, "test")
-  ggsave(file.path(output_dir, "test_residuals.png"), p_test_resid, width = 8, height = 6, dpi = 300)
-  
-  p_test_dist <- plot_residual_distribution(results, "test")
-  ggsave(file.path(output_dir, "test_residual_distribution.png"), p_test_dist, width = 8, height = 6, dpi = 300)
-  
-  # 5. Validation set analysis
-  cat("Creating validation set analysis plots...\n")
-  p_val_pred <- plot_predictions_vs_actuals(results, "val")
-  ggsave(file.path(output_dir, "val_predictions_vs_actuals.png"), p_val_pred, width = 8, height = 6, dpi = 300)
-  
-  p_val_resid <- plot_residuals(results, "val")
-  ggsave(file.path(output_dir, "val_residuals.png"), p_val_resid, width = 8, height = 6, dpi = 300)
-  
-  # 6. Training set analysis
-  cat("Creating training set analysis plots...\n")
-  p_train_pred <- plot_predictions_vs_actuals(results, "train")
-  ggsave(file.path(output_dir, "train_predictions_vs_actuals.png"), p_train_pred, width = 8, height = 6, dpi = 300)
-  
-  p_train_resid <- plot_residuals(results, "train")
-  ggsave(file.path(output_dir, "train_residuals.png"), p_train_resid, width = 8, height = 6, dpi = 300)
-  
-  # 7. Tree visualizations (if model exists) - displayed in viewer, not saved
-  if (!is.null(results$model) || !is.null(results$model_final)) {
-    cat("Displaying XGBoost tree visualizations in viewer...\n")
-    plot_xgboost_trees(results, tree_indices = c(0, 1, 2, 3, 4))
-  } else {
-    cat("Skipping tree visualizations (no model found in results)...\n")
-  }
-  
-  cat(sprintf("✓ All plots saved to: %s\n", output_dir))
-  
-  return(list(
-    metrics = p_metrics,
-    importance = p_importance,
-    all_predictions = p_all_pred,
-    test_pred = p_test_pred,
-    test_resid = p_test_resid,
-    test_dist = p_test_dist,
-    val_pred = p_val_pred,
-    val_resid = p_val_resid,
-    train_pred = p_train_pred,
-    train_resid = p_train_resid
-  ))
 }

@@ -14,7 +14,7 @@ df_signals %>%
   { print(skimr::skim(.)); . } %>%
   ggplot(aes(x = close)) +
   geom_histogram(
-    aes(y = ..density..),
+    aes(y = after_stat(density)),
     bins = 30,
     fill = "lightblue",
     color = "white",
@@ -22,7 +22,7 @@ df_signals %>%
   ) +
   geom_density(
     color = "#2C3E50",
-    size = 1.2,
+    linewidth = 1.2,
     alpha = 0.9
   ) +
   labs(
