@@ -219,13 +219,16 @@ plot_xgboost_trees <- function(results, tree_indices = c(0, 1, 2)) {
     cat(sprintf("\n=== Displaying Tree %d ===\n", tree_idx))
     
     tryCatch({
-      # Generate and display tree plot using xgb.plot.tree
-      xgb.plot.tree(
+      # Generate tree plot and explicitly print it
+      tree_plot <- xgb.plot.tree(
         model = model,
         trees = tree_idx,
         feature_names = feature_names,
-        render = TRUE
+        render = FALSE
       )
+      
+      # Explicitly print to viewer
+      print(tree_plot)
       
     }, error = function(e) {
       warning(sprintf("Failed to plot tree %d: %s", tree_idx, e$message))

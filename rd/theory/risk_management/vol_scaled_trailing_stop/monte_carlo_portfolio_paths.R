@@ -8,11 +8,11 @@ set.seed(123)
 n_trades_total <- 50000
 path_length    <- 100
 n_paths        <- n_trades_total / path_length
-mu             <- 0.0005 * 7      # drift (set 0 for Brownian)
+mu             <- 0.0005      # drift (set 0 for Brownian)
 sigma          <- 0.02
 S0             <- 1
 n_vol          <- 20
-secretary_cut  <- 37
+secretary_cut  <- 60
 segment_len    <- 100
 warmup         <- max(n_vol, secretary_cut) + 1
 n_steps        <- warmup + segment_len
@@ -33,7 +33,9 @@ simulate_trade <- function() {
     )
 
   trade_window <- df[warmup:(warmup + segment_len - 1), ]
-  exit_idx <- which(trade_window$exit)[1]
+  min_exit_idx <- round((secretary_cut / (secretary_cut + path_length)))
+  min_exit_idx <- 37
+  exit_idx <- with(trade_window, which(exit & seq_along(exit) >= min_exit_idx))[1]
   exit_price <- if (is.na(exit_idx)) tail(trade_window$S, 1) else trade_window$S[exit_idx]
   R_p <- exit_price / trade_window$S[1] - 1
   return(R_p)
@@ -58,7 +60,7 @@ df_plot <- data.frame(
 median_curve <- apply(paths, 1, median, na.rm = TRUE)
 df_median <- data.frame(t = 1:path_length, median_value = median_curve)
 
-y_max <- 5 * tail(df_median$median_value, 1)
+y_max <- 3 * tail(df_median$median_value, 1)
 
 # --- PLOT -------------------------------------------------------------------
 ggplot() +
@@ -70,11 +72,14 @@ ggplot() +
             color = "red", linewidth = 1.2) +
   coord_cartesian(ylim = c(0, y_max)) +
   labs(
-    title = "VATSES Monte Carlo Simulation",
+    title = "Volatility-Adjusted Trailing Stop - Monte Carlo Simulation",
     subtitle = "Gray: 500 portfolio paths | Red: median portfolio curve",
     x = "Trade number within path", y = "Portfolio value"
   ) +
   theme_minimal()
 
 # Median curve
+paths[path_length, ] %>% quantile(c(
+  0.00, 0.01, 0.05, 0.32, 0.5, 0.68, 0.95, 0.99, 1.00
+))
 median_curve
