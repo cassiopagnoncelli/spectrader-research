@@ -4,7 +4,7 @@ options(scipen = 999)
 
 # ETL
 source("rd/models/stock_crossover/features.R")
-source("rd/models/stock_crossover/plots.R")
+source("rd/models/stock_crossover/classification_plots.R")
 
 fetl <- Fetl$new()
 features <- prepare_fwd(fetl, 'extreme_high_identity', days = 30, companies = 8000)

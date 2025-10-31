@@ -4,7 +4,7 @@
 prepare_fwd <- function(fetl, methods, days = 15, companies = 300, cache = FALSE) {
   # Start timing
   start_time <- Sys.time()
-  
+
   # Cache management
   if (cache) {
     # Create cache directory if it doesn't exist
@@ -12,7 +12,7 @@ prepare_fwd <- function(fetl, methods, days = 15, companies = 300, cache = FALSE
     if (!dir.exists(cache_dir)) {
       dir.create(cache_dir, recursive = TRUE)
     }
-    
+
     # Generate cache key based on parameters
     cache_params <- list(
       methods = sort(methods),  # Sort to ensure consistent ordering
@@ -21,7 +21,7 @@ prepare_fwd <- function(fetl, methods, days = 15, companies = 300, cache = FALSE
     )
     cache_key <- digest::digest(cache_params, algo = "md5")
     cache_file <- file.path(cache_dir, sprintf("prepare_fwd_%s.rds", cache_key))
-    
+
     # Try to load from cache
     if (file.exists(cache_file)) {
       cat(sprintf("Loading cached data from: %s\n", cache_file))
@@ -34,12 +34,12 @@ prepare_fwd <- function(fetl, methods, days = 15, companies = 300, cache = FALSE
       cat(sprintf("Cache miss. Computing features...\n"))
     }
   }
-  
+
   # Ensure methods is an array
   if (!is.vector(methods)) {
     methods <- c(methods)
   }
-  
+
   # Generate dynamic SQL lines for each method
   fwd_lines <- sapply(seq_along(methods), function(i) {
     method <- methods[i]
@@ -49,10 +49,10 @@ prepare_fwd <- function(fetl, methods, days = 15, companies = 300, cache = FALSE
       sprintf("      fwd('%s', c.symbol, q.date, %d) AS y_%d", method, days, i - 1)
     }
   })
-  
+
   # Join lines with comma
   fwd_sql <- paste(fwd_lines, collapse = ",\n")
-  
+
   # Load and prepare data
   fwd_raw <- fetl$send_query(sprintf("
     SELECT
@@ -77,40 +77,66 @@ prepare_fwd <- function(fetl, methods, days = 15, companies = 300, cache = FALSE
     group_by(symbol) %>%
     # Preprocessing
     dplyr::mutate(
+      r_t = log(close / lag(close)),
+
+      # Raw indicators: technical, volatility, entropy
       rsi_0 = TTR::RSI(close, n = 14),
-      rsi_1 = lag(TTR::RSI(close, n = 14)),
-      rsi_2 = lag(TTR::RSI(close, n = 14), 2),
+      rsi_1 = lag(rsi_0),
+      rsi_2 = lag(rsi_0, 2),
       vol_0 = TTR::runSD(close, n = 10),
-      vol_1 = lag(TTR::runSD(close, n = 10)),
-      vol_2 = lag(TTR::runSD(close, n = 10), 2),
-      vol_9 = lag(TTR::runSD(close, n = 10), 9),
-      vol_22 = lag(TTR::runSD(close, n = 10), 22),
+      vol_1 = lag(vol_0),
+      vol_2 = lag(vol_0, 2),
+      vol_9 = lag(vol_0, 9),
+      vol_22 = lag(vol_0, 22),
       sig_0 = TTR::SMA(close, n = 5),
-      sig_1 = lag(TTR::SMA(close, n = 5)),
-      sig_2 = lag(TTR::SMA(close, n = 5), 2),
+      sig_1 = lag(sig_0),
+      sig_2 = lag(sig_0, 2),
       fast_0 = TTR::SMA(close, n = 20),
-      fast_1 = lag(TTR::SMA(close, n = 20)),
-      fast_2 = lag(TTR::SMA(close, n = 20), 2),
+      fast_1 = lag(fast_0),
+      fast_2 = lag(fast_0, 2),
       slow_0 = TTR::SMA(close, n = 80),
-      slow_1 = lag(TTR::SMA(close, n = 80)),
-      slow_2 = lag(TTR::SMA(close, n = 80), 2)
-    ) %>%
-    # Calculated indicators
-    mutate(
+      slow_1 = lag(slow_0),
+      slow_2 = lag(slow_0, 2),
+      entropy_0 = runH(log(close / lag(close)), 6),
+      entropy_1 = lag(entropy_0),
+      entropy_2 = lag(entropy_0, 2),
+
+      # Ratios
+      close_to_sig_0 = log(close / sig_0),
+      close_to_sig_1 = lag(close_to_sig_0),
+      close_to_sig_2 = lag(close_to_sig_0, 2),
+      close_to_fast_0 = log(close / fast_0),
+      sig_fast_0 = log(sig_0 / fast_0),
+      sig_fast_1 = lag(sig_fast_0),
+      sig_fast_2 = lag(sig_fast_0, 2),
+      fast_slow_0 = log(fast_0 / slow_0),
+      fast_slow_1 = lag(fast_slow_0),
+      fast_slow_2 = lag(fast_slow_0, 2),
+      vol_ratio = pmax(1e-3, pmin(20,
+        vol_9 / pmax(vol_22, quantile(vol_22, 0.05, na.rm = T))
+      )),
+
+      # Motion indicators
       rsi_vel = rsi_0 - rsi_1,
       rsi_accel = rsi_0 - 2 * rsi_1 + rsi_2,
       vol_vel = vol_0 - vol_1,
       vol_accel = vol_0 - 2 * vol_1 + vol_2,
-      close_to_sig = close / sig_0,
-      close_to_fast = close / fast_0,
-      sig_fast_0 = sig_0 / fast_0,
-      fast_slow_0 = fast_0 / slow_0,
       sig_vel = sig_0 - sig_1,
       sig_accel = sig_0 - 2 * sig_1 + sig_2,
       fast_vel = fast_0 - fast_1,
       fast_accel = fast_0 - 2 * fast_1 + fast_2,
       slow_vel = slow_0 - slow_1,
-      slow_accel = slow_0 - 2 * slow_1 + slow_2
+      slow_accel = slow_0 - 2 * slow_1 + slow_2,
+      entropy_vel = entropy_0 - entropy_1,
+      entropy_accel = entropy_0 - 2 * entropy_1 + entropy_2,
+
+      # Ratios motion indicators
+      close_to_sig_vel = close_to_sig_0 - close_to_sig_1,
+      close_to_sig_accel = close_to_sig_0 - 2 * close_to_sig_1 + close_to_sig_2,
+      sig_fast_vel = sig_fast_0 - sig_fast_1,
+      sig_fast_accel = sig_fast_0 - 2 * sig_fast_1 + sig_fast_2,
+      fast_slow_vel = fast_slow_0 - fast_slow_1,
+      fast_slow_accel = fast_slow_0 - 2 * fast_slow_1 + fast_slow_2
     ) %>%
     ungroup() %>%
     na.omit()
@@ -124,7 +150,7 @@ prepare_fwd <- function(fetl, methods, days = 15, companies = 300, cache = FALSE
     select(-c(
       symbol,
       date,
-      close,
+      close, r_t,
       sig_0, sig_1, sig_2,
       fast_0, fast_1, fast_2,
       slow_0, slow_1, slow_2
@@ -135,19 +161,20 @@ prepare_fwd <- function(fetl, methods, days = 15, companies = 300, cache = FALSE
     fwd = fwd,
     fwd_metadata = fwd_metadata
   )
-  
+
   # Calculate elapsed time
   end_time <- Sys.time()
   elapsed <- difftime(end_time, start_time, units = "secs")
-  
+
   # Save to cache if enabled
   if (cache) {
     cat(sprintf("Saving to cache: %s\n", cache_file))
     saveRDS(result, cache_file)
-    cat(sprintf("✓ Computation completed in %.2f seconds (cached for future use)\n", as.numeric(elapsed)))
+    cat(sprintf("✓ Computation completed in %.2f seconds (cached for future use)\n",
+                as.numeric(elapsed)))
   } else {
     cat(sprintf("✓ Computation completed in %.2f seconds\n", as.numeric(elapsed)))
   }
-  
+
   return(result)
 }

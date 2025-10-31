@@ -7,7 +7,7 @@ df <- tibble(
 )
 
 df_signals <- df %>%
-  filter(yhat > 1.31)
+  filter(yhat > 1.35)
 df_signals %>% print(n = 50)
 
 df_signals %>%
