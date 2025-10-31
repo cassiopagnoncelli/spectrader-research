@@ -97,9 +97,12 @@ prepare_fwd <- function(fetl, methods, days = 15, companies = 300, cache = FALSE
       slow_0 = TTR::SMA(close, n = 80),
       slow_1 = lag(slow_0),
       slow_2 = lag(slow_0, 2),
-      entropy_0 = runH(log(close / lag(close)), 6),
-      entropy_1 = lag(entropy_0),
-      entropy_2 = lag(entropy_0, 2),
+      h_sig_0 = runH(log(close / lag(close)), 9),
+      h_sig_1 = lag(h_sig_0),
+      h_sig_2 = lag(h_sig_0, 2),
+      h_slow_0 = runH(log(close / lag(close)), 60),
+      h_slow_1 = lag(h_slow_0),
+      h_slow_2 = lag(h_slow_0, 2),
 
       # Ratios
       close_to_sig_0 = log(close / sig_0),
@@ -115,6 +118,11 @@ prepare_fwd <- function(fetl, methods, days = 15, companies = 300, cache = FALSE
       vol_ratio = pmax(1e-3, pmin(20,
         vol_9 / pmax(vol_22, quantile(vol_22, 0.05, na.rm = T))
       )),
+      h_ratio_0 = pmax(1e-3, pmin(1e3,
+        h_sig_0 / pmax(h_slow_0, quantile(h_slow_0, 0.05, na.rm = T))
+      )),
+      h_ratio_1 = lag(h_ratio_0),
+      h_ratio_2 = lag(h_ratio_0, 2),
 
       # Motion indicators
       rsi_vel = rsi_0 - rsi_1,
@@ -127,8 +135,10 @@ prepare_fwd <- function(fetl, methods, days = 15, companies = 300, cache = FALSE
       fast_accel = fast_0 - 2 * fast_1 + fast_2,
       slow_vel = slow_0 - slow_1,
       slow_accel = slow_0 - 2 * slow_1 + slow_2,
-      entropy_vel = entropy_0 - entropy_1,
-      entropy_accel = entropy_0 - 2 * entropy_1 + entropy_2,
+      h_sig_vel = h_sig_0 - h_sig_1,
+      h_sig_accel = h_sig_0 - 2 * h_sig_1 + h_sig_2,
+      h_slow_vel = h_slow_0 - h_slow_1,
+      h_slow_accel = h_slow_0 - 2 * h_slow_1 + h_slow_2,
 
       # Ratios motion indicators
       close_to_sig_vel = close_to_sig_0 - close_to_sig_1,
@@ -136,7 +146,9 @@ prepare_fwd <- function(fetl, methods, days = 15, companies = 300, cache = FALSE
       sig_fast_vel = sig_fast_0 - sig_fast_1,
       sig_fast_accel = sig_fast_0 - 2 * sig_fast_1 + sig_fast_2,
       fast_slow_vel = fast_slow_0 - fast_slow_1,
-      fast_slow_accel = fast_slow_0 - 2 * fast_slow_1 + fast_slow_2
+      fast_slow_accel = fast_slow_0 - 2 * fast_slow_1 + fast_slow_2,
+      h_ratio_vel = h_ratio_0 - h_ratio_1,
+      h_ratio_accel = h_ratio_0 - 2 * h_ratio_1 + h_ratio_2
     ) %>%
     ungroup() %>%
     na.omit()
