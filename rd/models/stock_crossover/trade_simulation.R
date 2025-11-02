@@ -14,8 +14,8 @@ posl <- position_cohort(
   df_signals,
   before_days = 30,
   after_days = 60,
-  # fun = function(data) exit_thres(data, k=.15)
-  fun = exit_enrich
+  # fun = exit_thres(k=.15)
+  fun = exit_fpt()
 )
 
 rets = sapply(posl, position_cohort_return)
