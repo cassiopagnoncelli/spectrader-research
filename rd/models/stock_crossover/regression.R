@@ -30,6 +30,7 @@ fwd_joint <- tibble(fwd_metadata, fwd)
 
 # PREPROCESSING.
 glimpse(fwd)
+
 X <- fwd %>%
   select(-y, -y_1, -y_2, -y_3, -y_4, -y_5, -y_6, -y_7)
 

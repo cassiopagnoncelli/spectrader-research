@@ -1,6 +1,7 @@
+# set.seed(123)
+
 # Stacked XGBoost Model for Stock Crossover Prediction
 # This file contains the model training logic with caching support
-
 train_stacked_model <- function(X, fwd, train_indices, val_indices, test_indices,
                                  Xy1, Xy2, Xy3, Xy4, Xy5, Xy6,
                                  cache = FALSE,
@@ -58,8 +59,7 @@ train_stacked_model <- function(X, fwd, train_indices, val_indices, test_indices
       max_depth = 6,
       min_child_weight = 3,
       subsample = 0.8,
-      colsample_bytree = 0.8,
-      seed = 123
+      colsample_bytree = 0.8
     )
 
     # Train with early stopping
@@ -134,8 +134,7 @@ train_stacked_model <- function(X, fwd, train_indices, val_indices, test_indices
     max_depth = 6,
     min_child_weight = 3,
     subsample = 0.8,
-    colsample_bytree = 0.8,
-    seed = 123
+    colsample_bytree = 0.8
   )
 
   watchlist_final <- list(train = dtrain_final, val = dval_final)

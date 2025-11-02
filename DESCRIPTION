@@ -34,7 +34,8 @@ Imports:
     tidyr,
     stringr,
     purrr,
-    lubridate
+    lubridate,
+    RQuantLib
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.1
 Suggests: 
