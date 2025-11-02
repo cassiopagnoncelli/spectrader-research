@@ -1,6 +1,4 @@
-library("devtools")
-
-load_all()
+devtools::load_all()
 
 library("tidyquant")
 library("dplyr")
@@ -24,8 +22,7 @@ signals <- joint[complete.cases(joint), ] %>%
     vol_regime_past = as.integer(vol_regime_past)
   ) %>%
   mutate(
-    signal = trend_regime_past != 1 &
-             trend_regime == 1
+    signal = trend_regime_past != 1 & trend_regime == 1
   ) %>%
   filter(signal == TRUE) %>%
   dplyr::select(timestamp)
