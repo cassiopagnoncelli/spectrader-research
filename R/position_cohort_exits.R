@@ -25,6 +25,7 @@ exit_thres <- function(data, k = .2) {
     )
 }
 
+# TODO: Draft.
 exit_enrich <- function(data, sd_short = 6, sd_long = 20, ent_short = 9, ent_long = 20) {
   data %>%
     mutate(
@@ -41,4 +42,16 @@ exit_enrich <- function(data, sd_short = 6, sd_long = 20, ent_short = 9, ent_lon
 
     )
     # select(-c(sd_short, sd_long, h_short, h_long))
+}
+
+# TODO: Draft.
+exit_thres <- function(data, sd_period = 20) {
+  data %>%
+    mutate(
+      sd = zoo::rollapply(logret, sd_period, sd, fill = NA, align = "right")
+    ) %>%
+    filter(t >= 0) %>%
+    mutate(
+      exit = S > 1.2
+    )
 }

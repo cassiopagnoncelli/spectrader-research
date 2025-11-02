@@ -27,8 +27,8 @@ position_cohort <- function(symbol_dates,
     event_idx <- which(data$date == event_date)
     range <- (event_idx - before_days):(event_idx + after_days)
     data <- data[range, ] %>%
-      mutate(S = close) %>%
-      arrange(date)
+      dplyr::mutate(S = close) %>%
+      dplyr::arrange(date)
 
     data$date <- Reduce(
       function(prev, curr)
@@ -38,12 +38,24 @@ position_cohort <- function(symbol_dates,
 
     data$S <- data$S / data$S[before_days + 1]
     data %>%
-      arrange(date) %>%
-      mutate(
-        t = row_number() - before_days - 1,
+      dplyr::arrange(date) %>%
+      dplyr::mutate(
+        t = dplyr::row_number() - before_days - 1,
         logS = log(S),
         logret = c(NA, diff(log(S)))
       ) %>%
       fun()
   })
+}
+
+position_cohort_return <- function(df, log.transform = FALSE) {
+  if (!tibble::is_tibble(df) && !is.data.frame(df)) {
+    stop("Input must be a tibble or data frame.")
+  }
+  idx <- dplyr::coalesce(which(na.omit(df$exit))[1], dplyr::last(na.omit(df)$t))
+  ret <- df$S[idx] - 1
+  if (log.transform) {
+    ret <- log(ret + 1)
+  }
+  ret
 }

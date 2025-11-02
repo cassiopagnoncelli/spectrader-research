@@ -20,26 +20,30 @@ plot_distribution <- function(data, bins = NULL, vline = 0, title = "Distributio
   }
 
   # Create histogram with density scale and smoothing curve
-  ggplot(data, aes(x = value)) +
-    geom_histogram(aes(y = after_stat(density)),
-                   bins = bins,
-                   fill = "pink",
-                   color = "pink",
-                   alpha = 0.4) +
-    geom_density(aes(y = after_stat(density)),
-                 fill = "lightblue",
-                 alpha = 0.7,
-                 color = "lightblue",
-                 linewidth = .2) +
-    geom_vline(xintercept = vline,
-               color = "grey70",
-               linetype = "solid",
-               linewidth = .4) +
-    labs(title = title,
-         x = "Value",
-         y = "Density") +
-    theme_minimal() +
-    theme(panel.grid = element_blank())
+  ggplot2::ggplot(data, ggplot2::aes(x = value)) +
+    ggplot2::geom_histogram(
+      aes(y = ggplot2::after_stat(density)),
+      bins = bins,
+      fill = "pink",
+      color = "pink",
+      alpha = 0.4
+    ) +
+    ggplot2::geom_density(
+      aes(y = ggplot2::after_stat(density)),
+      fill = "lightblue",
+      alpha = 0.7,
+      color = "lightblue",
+      linewidth = .2
+    ) +
+    ggplot2::geom_vline(
+      xintercept = vline,
+      color = "grey70",
+      linetype = "solid",
+      linewidth = .4
+    ) +
+    ggplot2::labs(title = title, x = "Value", y = "Density") +
+    ggplot2::theme_minimal() +
+    ggplot2::theme(panel.grid = ggplot2::element_blank())
 }
 
 analyse_distribution <- function(data, groups = c(0)) {
@@ -100,15 +104,13 @@ analyse_distribution <- function(data, groups = c(0)) {
       prob = dplyr::n() / total_n,
       mean = mean(value, na.rm = TRUE),
       expected = prob * mean,
+      median = quantile(value, probs = 0.5, na.rm = TRUE),
       sd = sd(value, na.rm = TRUE),
       min = quantile(value, probs = 0, na.rm = TRUE),
-      q_0.01 = quantile(value, probs = 0.01, na.rm = TRUE),
       q_0.05 = quantile(value, probs = 0.05, na.rm = TRUE),
       q_0.32 = quantile(value, probs = 0.32, na.rm = TRUE),
-      q_0.50 = quantile(value, probs = 0.5, na.rm = TRUE),
       q_0.68 = quantile(value, probs = 0.68, na.rm = TRUE),
       q_0.95 = quantile(value, probs = 0.95, na.rm = TRUE),
-      q_0.99 = quantile(value, probs = 0.99, na.rm = TRUE),
       max = quantile(value, probs = 1, na.rm = TRUE),
       .groups = "drop"
     ) %>%
@@ -120,6 +122,7 @@ analyse_distribution <- function(data, groups = c(0)) {
     dplyr::summarise(
       expected_value = group_results$expected |> sum(na.rm = TRUE),
       mean = mean(value, na.rm = TRUE),
+      median = quantile(value, probs = 0.5, na.rm = TRUE),
       sd = sd(value, na.rm = TRUE),
       n = nrow(data)
     )
