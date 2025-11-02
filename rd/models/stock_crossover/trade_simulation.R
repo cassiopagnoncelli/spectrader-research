@@ -7,14 +7,14 @@ df <- tibble(
 )
 
 df_signals <- df %>%
-  filter(yhat > 1.45)
+  filter(yhat > 1.30)
 df_signals %>% print(n = 50)
 
 posl <- position_cohort(
   df_signals,
   before_days = 30,
   after_days = 60,
-  fun = exit_vats
+  fun = function(data) exit_thres(data, k=.15)
 )
 
 if (FALSE) {
@@ -76,26 +76,8 @@ rets = sapply(posl, function(l)
   ]) - 1
 
 # Returns distribution
-MASS::truehist(rets,
-               nbins = 20,
-               xlab = "Return",
-               main = "Event Profiler Returns Distribution")
-
-summary(rets)
-
-# Kelly for simple returns
-kelly_fraction <- function(rets) {
-  rets <- rets[is.finite(rets)]
-  p <- mean(rets > 0)
-  q <- 1 - p
-  win <- rets[rets > 0]
-  loss <- rets[rets < 0]
-  if (length(win) == 0) return(0)
-  if (length(loss) == 0) return(1)
-  b <- mean(win) / abs(mean(loss))
-  f <- (b * p - q) / b
-  max(0, min(1, f))
-}
+plot_distribution(rets, title = "Returns distribution")
+analyse_distribution(rets, groups = c(0))
 
 # --- Compute Kelly fraction ---
 f <- kelly_fraction(rets)
@@ -103,19 +85,21 @@ cat("Kelly fraction f* =", round(f, 4), "\n")
 
 # --- Simulate portfolio growth from $1 ---
 wealth <- 1 * cumprod(c(1, 1 + f * rets)) # %>% log(base = 10)
-df_pg <- data.frame(trade = seq_along(wealth) - 1, wealth = wealth) %>% na.omit
+df_pg <- data.frame(trade = seq_along(wealth) - 1, wealth = wealth) %>%
+  na.omit %>%
+  filter(trade <= 120)
 
 # --- Plot ---
-ggplot(df_pg[,], aes(trade, wealth)) +
+ggplot(df_pg, aes(trade, wealth)) +
   geom_area(fill = "blue", alpha = 0.35) +
   geom_line(linewidth = 0.9, color = "steelblue4") +
   geom_hline(yintercept = 1, linetype = "dotted", color = "gray50") +
   labs(
     title = "Portfolio Growth Using Kelly Criterion",
     subtitle = paste0("f* = ", round(f, 3),
-                      " | start = $1 | ", length(rets), " trades"),
+                      " | start = $1 | ", nrow(df_pg), " trades"),
     x = "Trade #",
     y = "Wealth"
   ) +
-  coord_cartesian(ylim = c(0, max(wealth, na.rm = TRUE))) +
+  coord_cartesian(ylim = c(0, NA)) +
   theme_minimal()

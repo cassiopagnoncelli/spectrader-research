@@ -2,7 +2,7 @@ library("RQuantLib")
 library("plotly")
 
 # Function to compute American option price.
-option_fun <- function(T, S, K = 120) {
+option_roi <- function(T, S, K = 90) {
   AmericanOption(
     "call",
     underlying = S,
@@ -25,13 +25,16 @@ option_fun <- function(T, S, K = 120) {
 # Grid.
 maturities <- seq(1, 90, by = 1)
 prices     <- seq(70, 140, by = 1)
-opt_profit <- outer(maturities, prices, Vectorize(option_fun))
+roi <- outer(maturities, prices, Vectorize(option_roi))
 
 # Plot.
+plot_negative_roi <- FALSE
+zrange <- c(ifelse(plot_negative_roi, min(roi), 0), max(roi))
+
 plot_ly(
   x = prices,
   y = maturities,
-  z = opt_profit,
+  z = roi,
   type = "surface",
   colorscale = "Viridis",
   contours = list(
@@ -40,9 +43,9 @@ plot_ly(
 ) %>%
   layout(
     scene = list(
-      xaxis = list(title = "Strike", tickvals = seq(70, 130, 10)),
-      yaxis = list(title = "Maturity (days)", tickvals = seq(0, 90, 15)),
-      zaxis = list(title = "Option Price", range = c(0, max(opt_profit))),
+      xaxis = list(title = "Underlying Stock Price (S)", tickvals = seq(70, 130, 10)),
+      yaxis = list(title = "Maturity in days (T/365)", tickvals = seq(0, 90, 15)),
+      zaxis = list(title = "Option ROI", range = zrange),
       aspectmode = "manual",
       aspectratio = list(x = 1, y = 1, z = 0.5),   # 👈 balance proportions
       camera = list(eye = list(x = 1.5, y = 1.5, z = 0.8)) # 👁️ better viewing angle
