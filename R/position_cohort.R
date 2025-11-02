@@ -18,17 +18,14 @@ position_cohort <- function(symbol_dates,
       WHERE symbol = '%s'
         AND date BETWEEN '%s' AND '%s'
       ORDER BY date
-      ",
-      symbol, start_date, end_date)
+      ", symbol, start_date, end_date)
     data <- fetl$send_query(query)
     fetl$disconnect()
 
     # Transform: filter, fill, normalize.
     event_idx <- which(data$date == event_date)
     range <- (event_idx - before_days):(event_idx + after_days)
-    data <- data[range, ] %>%
-      dplyr::mutate(S = close) %>%
-      dplyr::arrange(date)
+    data <- data[range, ] %>% dplyr::arrange(date)
 
     data$date <- Reduce(
       function(prev, curr)
@@ -36,13 +33,14 @@ position_cohort <- function(symbol_dates,
       data$date, accumulate = TRUE) %>% as.Date
     row.names(data) <- data$date
 
-    data$S <- data$S / data$S[before_days + 1]
     data %>%
       dplyr::arrange(date) %>%
       dplyr::mutate(
         t = dplyr::row_number() - before_days - 1,
-        logS = log(S),
-        logret = c(NA, diff(log(S)))
+        S = close / close[before_days + 1],
+        s = log(S),
+        R = S / lag(S, default = first(S)) - 1,
+        r = c(NA, diff(log(close)))
       ) %>%
       fun()
   })
