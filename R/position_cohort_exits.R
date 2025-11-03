@@ -71,6 +71,46 @@ exit_fpt <- function(interest_rate = 0.0425, maturity = 15 / 365, side = "long")
   }
 }
 
+# Quantile Regression Exit
+exit_qr_fit <- function(data, tau = 0.92) {
+  form <- S ~ S_1 + S_2 + sd_short + sd_long + sd_ratio + h_short + h_long + h_ratio +
+    sd_short_1 + sd_long_1 + sd_ratio_1 + h_short_1 + h_long_1 + h_ratio_1
+  quantreg::rq(form, tau = tau, data = data)
+}
+
+exit_qr <- function(tau = 0.92, qrfit = NULL, skip = 7, sigma_short = 6, sigma_long = 20, ent_short = 9, ent_long = 20) {
+  function(data) {
+    result <- data %>%
+      dplyr::mutate(
+        sd_short = zoo::rollapply(r, sigma_short, sd, fill = NA, align = "right"),
+        sd_long = zoo::rollapply(r, sigma_long, sd, fill = NA, align = "right"),
+        sd_ratio = sd_short / sd_long,
+        h_short = runH(r, ent_short),
+        h_long = runH(r, ent_long),
+        h_ratio = h_short / h_long,
+        S_1 = dplyr::lag(S, 1),
+        S_2 = dplyr::lag(S, 2),
+        sd_short_1 = dplyr::lag(sd_short, 1),
+        sd_long_1 = dplyr::lag(sd_long, 1),
+        sd_ratio_1 = dplyr::lag(sd_ratio, 1),
+        h_short_1 = dplyr::lag(h_short, 1),
+        h_long_1 = dplyr::lag(h_long, 1),
+        h_ratio_1 = dplyr::lag(h_ratio, 1)
+      ) %>%
+      dplyr::filter(t >= 0)
+    
+    if (is.null(qrfit))
+      qrfit <- exit_qr_fit(result, tau = tau)
+
+    qr_preds <- predict(qrfit, result)
+    result$exit <- result$S >= qr_preds
+    result$exit[1:skip] <- FALSE  # avoid early exits
+
+    result
+  }
+}
+
+
 exit_enrich <- function(sd_short = 6, sd_long = 20, ent_short = 9, ent_long = 20) {
   function(data) {
     data %>%

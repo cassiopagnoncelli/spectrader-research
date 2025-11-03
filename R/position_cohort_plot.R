@@ -148,6 +148,42 @@ plot_position_cohort_exit_fpt <- function(position, side = c("long", "short"), p
   p
 }
 
+plot_position_cohort_exit_qr <- function(position, plot = TRUE) {
+  if (!tibble::is_tibble(position) && !is.data.frame(position)) {
+    stop("Input must be a tibble or data frame.")
+  }
+
+  p <- ggplot2::ggplot(na.omit(position), ggplot2::aes(x = t)) +
+    ggplot2::geom_line(
+      ggplot2::aes(y = S),
+      color = "black",
+      linewidth = 0.8
+    ) +
+    ggplot2::geom_point(
+      data = subset(position, exit),
+      aes(y = S),
+      color = "blue",
+      size = 2
+    ) +
+    ggplot2::geom_hline(
+      yintercept = 1,
+      color = "gray",
+      linetype = "dashed",
+      linewidth = 0.5
+    ) +
+    ggplot2::theme_minimal() +
+    ggplot2::labs(
+      x = "t",
+      y = "Value",
+      title = "Quantile Regression Exit - Position"
+    )
+
+  if (plot) {
+    print(p)
+  }
+  p
+}
+
 plot_position_cohort_exit_draft <- function(position, plot = TRUE) {
   if (!tibble::is_tibble(position) && !is.data.frame(position)) {
     stop("Input must be a tibble or data frame.")
