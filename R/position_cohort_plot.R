@@ -54,6 +54,44 @@ plot_position_cohort_exit_vats <- function(position, plot = TRUE) {
   p
 }
 
+plot_position_cohort_exit_thres <- function(position, plot = TRUE) {
+  if (!tibble::is_tibble(position) && !is.data.frame(position)) {
+    stop("Input must be a tibble or data frame.")
+  }
+
+  p <- ggplot2::ggplot(position, ggplot2::aes(x = t)) +
+    ggplot2::geom_line(
+      ggplot2::aes(y = S),
+      color = "black",
+      linewidth = 0.2,
+      alpha = 0.8
+    ) +
+    ggplot2::geom_hline(
+      yintercept = 1,
+      color = "gray",
+      linetype = "dashed",
+      linewidth = 0.5
+    ) +
+    ggplot2::geom_point(
+      data = subset(position, exit),
+      aes(y = S),
+      color = "blue",
+      size = 2
+    ) +
+    ggplot2::theme_minimal() +
+    ggplot2::labs(
+      x = "t",
+      y = "Value",
+      title = "Threshold cutoff Exit - Position",
+      subtitle = "Exit position in blue"
+    )
+
+  if (plot) {
+    print(p)
+  }
+  p
+}
+
 plot_position_cohort_exit_fpt <- function(position, side = c("long", "short"), plot = TRUE) {
   if (!tibble::is_tibble(position) && !is.data.frame(position)) {
     stop("Input must be a tibble or data frame.")
@@ -102,6 +140,49 @@ plot_position_cohort_exit_fpt <- function(position, side = c("long", "short"), p
       y = "Value",
       title = "First-Passage Time (FPT) Optimal Stop - Position",
       subtitle = "Exit long position in blue, short in red"
+    )
+
+  if (plot) {
+    print(p)
+  }
+  p
+}
+
+plot_position_cohort_exit_draft <- function(position, plot = TRUE) {
+  if (!tibble::is_tibble(position) && !is.data.frame(position)) {
+    stop("Input must be a tibble or data frame.")
+  }
+
+  p <- ggplot2::ggplot(pos, ggplot2::aes(x = t)) +
+    ggplot2::geom_line(
+      ggplot2::aes(y = X),
+      color = "black",
+      linewidth = 0.8
+    ) +
+    ggplot2::geom_line(
+      ggplot2::aes(y = sd_ratio),
+      color = "purple",
+      linetype = "dotted",
+      linewidth = 0.4,
+      alpha = 0.3
+    ) +
+    ggplot2::geom_line(
+      ggplot2::aes(y = h_ratio),
+      color = "orange",
+      linewidth = 0.4,
+      alpha = 0.3
+    ) +
+    ggplot2::geom_hline(
+      yintercept = 1,
+      color = "gray",
+      linetype = "dashed",
+      linewidth = 0.5
+    ) +
+    ggplot2::theme_minimal() +
+    ggplot2::labs(
+      x = "t",
+      y = "Value",
+      title = "Draft Plot - Position"
     )
 
   if (plot) {

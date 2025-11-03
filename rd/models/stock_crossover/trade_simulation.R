@@ -43,6 +43,7 @@ if (F) {
   sampled <- sample(seq_along(posl), 10)
   for (i in sampled) {
     # plot_position_cohort_exit_fpt(posl[[i]], side = "long")
-    plot_position_cohort_exit_vats(posl[[i]])
+    # plot_position_cohort_exit_vats(posl[[i]])
+    # plot_position_cohort_exit_thres(posl[[i]])
   }
 }

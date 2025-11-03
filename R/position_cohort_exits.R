@@ -18,6 +18,7 @@ exit_vats <- function(sd_short = 6, sd_long = 20, k = 2.5) {
   }
 }
 
+# Threshold Cutoff Exit
 exit_thres <- function(k = .2) {
   function(data) {
     data %>%
@@ -51,6 +52,7 @@ exit_fpt_boundary <- function(mu, sigma, r, K, t, side = c("long", "short")) {
   }
 }
 
+# FPT
 exit_fpt <- function(interest_rate = 0.0425, maturity = 15 / 365, side = "long") {
   function(data) {
     data %>%
@@ -77,7 +79,8 @@ exit_enrich <- function(sd_short = 6, sd_long = 20, ent_short = 9, ent_long = 20
         sd_long = zoo::rollapply(r, sd_long, sd, fill = NA, align = "right"),
         sd_ratio = sd_short / sd_long,
         h_short = runH(r, ent_short),
-        h_long = runH(r, ent_long)
+        h_long = runH(r, ent_long),
+        h_ratio = h_short / h_long
       ) %>%
       dplyr::filter(t >= 0) %>%
       dplyr::mutate()
