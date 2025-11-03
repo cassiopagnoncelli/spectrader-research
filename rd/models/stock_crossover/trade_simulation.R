@@ -24,7 +24,8 @@ posl <- position_cohort(
   #
   # fun = exit_fpt(side = "long")
   # fun = exit_vats()
-  fun = exit_thres(k = .55)
+  # fun = exit_thres(k = .55)
+  fun = exit_enrich()
 )
 
 # Calculate returns for each position
@@ -39,11 +40,12 @@ f_star <- kelly_fraction(rets)
 plot_kelly_trades(rets[1:50], f_star, log.transform = F)
 
 # Plot individual positions exits
-if (F) {
+if (T) {
   sampled <- sample(seq_along(posl), 10)
   for (i in sampled) {
     # plot_position_cohort_exit_fpt(posl[[i]], side = "long")
     # plot_position_cohort_exit_vats(posl[[i]])
     # plot_position_cohort_exit_thres(posl[[i]])
+    plot_position_cohort_exit_draft(posl[[i]])
   }
 }

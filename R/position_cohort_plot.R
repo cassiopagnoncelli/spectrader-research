@@ -153,24 +153,25 @@ plot_position_cohort_exit_draft <- function(position, plot = TRUE) {
     stop("Input must be a tibble or data frame.")
   }
 
-  p <- ggplot2::ggplot(pos, ggplot2::aes(x = t)) +
+  p <- ggplot2::ggplot(position %>% na.omit(), ggplot2::aes(x = t)) +
     ggplot2::geom_line(
-      ggplot2::aes(y = X),
+      ggplot2::aes(y = S),
       color = "black",
       linewidth = 0.8
     ) +
     ggplot2::geom_line(
       ggplot2::aes(y = sd_ratio),
       color = "purple",
-      linetype = "dotted",
+      linetype = "solid",
       linewidth = 0.4,
-      alpha = 0.3
+      alpha = 0.8
     ) +
     ggplot2::geom_line(
       ggplot2::aes(y = h_ratio),
       color = "orange",
+      linetype = "solid",
       linewidth = 0.4,
-      alpha = 0.3
+      alpha = 0.8
     ) +
     ggplot2::geom_hline(
       yintercept = 1,
