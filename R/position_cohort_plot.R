@@ -1,28 +1,28 @@
-plot_position_cohort <- function(dat) {
-  if (!tibble::is_tibble(dat) && !is.data.frame(dat)) {
+plot_position_cohort_exit_vats <- function(position, plot = TRUE) {
+  if (!tibble::is_tibble(position) && !is.data.frame(position)) {
     stop("Input must be a tibble or data frame.")
   }
 
   scale_to_plot <- function(x) {
-    rng_S  <- range(dat$S, na.rm = TRUE)
-    rng_sd <- range(c(0, dat$sd_ratio), na.rm = TRUE)
+    rng_S  <- range(position$S, na.rm = TRUE)
+    rng_sd <- range(c(0, position$sd_ratio), na.rm = TRUE)
     (x - rng_sd[1]) / diff(rng_sd) * diff(rng_S) + rng_S[1]
   }
 
   inv_scale <- function(y) {
-    rng_S  <- range(dat$S, na.rm = TRUE)
-    rng_sd <- range(c(0, dat$sd_ratio), na.rm = TRUE)
+    rng_S  <- range(position$S, na.rm = TRUE)
+    rng_sd <- range(c(0, position$sd_ratio), na.rm = TRUE)
     (y - rng_S[1]) / diff(rng_S) * diff(rng_sd) + rng_sd[1]
   }
 
-  p <- ggplot(dat, aes(x = date)) +
+  p <- ggplot2::ggplot(position, ggplot2::aes(x = date)) +
     # Baseline at S = 1 (slightly darker)
     ggplot2::geom_hline(yintercept = 1, color = "grey40", linewidth = 0.4) +
-    ggplot2::geom_line(aes(y = S), color = "black", linewidth = 0.8) +
-    ggplot2::geom_line(aes(y = stop), color = "red", linetype = "dashed") +
-    ggplot2::geom_point(data = subset(dat, exit), aes(y = S), color = "red", size = 2) +
+    ggplot2::geom_line(ggplot2::aes(y = S), color = "black", linewidth = 0.8) +
+    ggplot2::geom_line(ggplot2::aes(y = stop), color = "red", linetype = "dashed") +
+    ggplot2::geom_point(data = subset(position, exit), ggplot2::aes(y = S), color = "red", size = 2) +
     ggplot2::geom_line(
-      aes(y = scale_to_plot(sd_ratio)),
+      ggplot2::aes(y = scale_to_plot(sd_ratio)),
       color = adjustcolor("magenta", alpha.f = 0.3),
       linewidth = 0.4
     ) +
@@ -32,7 +32,7 @@ plot_position_cohort <- function(dat) {
     ) +
     ggplot2::labs(
       title = "Volatility-Adjusted Trailing Stop (VATSES)",
-      subtitle = sprintf("%s at %s", dat$symbol[1], format(dat$date[1])),
+      subtitle = sprintf("%s at %s", position$symbol[1], format(position$date[1])),
       x = "Date"
     ) +
     ggplot2::theme_minimal(base_size = 11) +
@@ -48,5 +48,64 @@ plot_position_cohort <- function(dat) {
       plot.title = ggplot2::element_text(face = "bold")
     )
 
+  if (plot) {
+    print(p)
+  }
+  p
+}
+
+plot_position_cohort_exit_fpt <- function(position, side = c("long", "short"), plot = TRUE) {
+  if (!tibble::is_tibble(position) && !is.data.frame(position)) {
+    stop("Input must be a tibble or data frame.")
+  }
+
+  pos <- position %>%
+    dplyr::mutate(
+      up_cross = lag(X < boundary, default = FALSE) & (X >= boundary),
+      down_cross = lag(X > boundary, default = FALSE) & (X <= boundary),
+    ) %>%
+    na.omit()
+
+  p <- ggplot2::ggplot(pos, ggplot2::aes(x = t)) +
+    ggplot2::geom_line(
+      ggplot2::aes(y = X),
+      color = "black",
+      linewidth = 0.8
+    ) +
+    ggplot2::geom_line(
+      ggplot2::aes(y = boundary),
+      color = "purple",
+      linetype = "dotted",
+      linewidth = 0.8
+    ) +
+    ggplot2::geom_line(
+      ggplot2::aes(y = S),
+      color = "black",
+      linewidth = 0.2,
+      alpha = 0.3
+    ) +
+    ggplot2::geom_hline(
+      yintercept = 1,
+      color = "gray",
+      linetype = "dashed",
+      linewidth = 0.5
+    ) +
+    ggplot2::geom_point(
+      data = subset(pos, if (side == "long") up_cross else down_cross),
+      aes(y = X),
+      color = if (side == "long") "blue" else "red",
+      size = 2
+    ) +
+    ggplot2::theme_minimal() +
+    ggplot2::labs(
+      x = "t",
+      y = "Value",
+      title = "First-Passage Time (FPT) Optimal Stop - Position",
+      subtitle = "Exit long position in blue, short in red"
+    )
+
+  if (plot) {
+    print(p)
+  }
   p
 }

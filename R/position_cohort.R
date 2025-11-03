@@ -42,7 +42,7 @@ position_cohort <- function(symbol_dates,
         sd_hat = zoo::rollapply(r, before_days, sd, fill = NA, align = "right"),
         mu_hat = zoo::rollapply(r, before_days, mean, fill = NA, align = "right") + 0.5 * sd_hat^2,
         x = r / sd_hat,
-        X = exp(cumsum(x * sd_hat + mu_hat * (1 / dplyr::n()))),
+        X = exp(cumsum(tidyr::replace_na(x * sd_hat + mu_hat * (1 / dplyr::n()), 0))),
       ) %>%
       fun()
   })

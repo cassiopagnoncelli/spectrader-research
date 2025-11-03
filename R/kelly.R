@@ -18,7 +18,7 @@ plot_kelly_trades <- function(returns, kelly_p = NULL, log.transform = FALSE) {
 
   portfolio <- cumprod(c(1, 1 + returns * kelly_p))
   if (log.transform) {
-    portfolio <- log(portfolio)
+    portfolio <- log10(portfolio)
   }
   df <- data.frame(
     trade = seq_along(portfolio),
@@ -32,7 +32,7 @@ plot_kelly_trades <- function(returns, kelly_p = NULL, log.transform = FALSE) {
     ggplot2::labs(
       title = "Kelly Portfolio Growth",
       subtitle = sprintf("%s, %d trades, f* = %.3f",
-        ifelse(log.transform, "log(W_n)", "W_n"),
+        ifelse(log.transform, "log10(P_n)", "P_n"),
         nrow(df),
         kelly_p
       ),
