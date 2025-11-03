@@ -7,9 +7,8 @@ df_test <- tibble(
 )
 
 # Generate trading signals, discarding the ones within a month apart
-df_signals_raw <- df_test %>% filter(yhat > 1.45)
+df_signals_raw <- df_test %>% filter(yhat > 1.25)
 df_signals <- filter_signals(df_signals_raw, within_days = 30) %>% arrange(date)
-df_signals
 
 # Build list of positions from signals, each position is a tibble
 posl <- position_cohort(
@@ -23,15 +22,33 @@ posl <- position_cohort(
   # - exit_fpt(interest_rate = 0.0425, maturity = 15/365)
   # - exit_qr(tau = 0.92, qrfit = NULL)
   #
-  # fun = exit_fpt(side = "long")
+  fun = exit_fpt(side = "long")
   # fun = exit_vats()
   # fun = exit_thres(k = .55)
   # fun = exit_enrich()
-  fun = exit_qr(tau = 0.92, skip = 7)
+  # fun = exit_qr(tau = 0.92, skip = 7) # Should use train/val data instead.
 )
 
 # Calculate returns for each position
-rets = sapply(posl, position_cohort_return)
+rets <- sapply(posl, position_cohort_return)
+
+# Combine signals with returns and calculate accuracy
+# (Combine multiple plots into one chart.)
+df_signals_rets <- tibble(df_signals, rets)
+df_signals_rets %>% print(n = Inf)
+accuracy <- df_signals_rets %>%
+  mutate(
+    mae = sqrt((y - rets - 1)^2),
+    alpha_captured = rets / (y - 1)
+  ) %>%
+  select(y, rets, mae, alpha_captured)
+accuracy %>% print(n = Inf)
+plot_distribution(accuracy$mae, title = "MAE distribution")
+plot_distribution(
+  accuracy %>%
+    filter(alpha_captured >= 0 & alpha_captured <= 1) %>%
+    select(alpha_captured),
+  title = "Alpha-captured distribution", bins = 25)
 
 # Returns distribution
 plot_distribution(rets, title = "Returns distribution")
@@ -39,17 +56,17 @@ analyse_distribution(rets, groups = c(0))
 
 # Kelly - sequential
 f_star <- kelly_fraction(rets)
-plot_kelly_trades(rets[1:50], f_star, log.transform = F)
+pk <- plot_kelly_trades(rets, f_star, log.transform = T)
 
 # Plot individual positions exits
 if (F) {
   sampled <- sample(seq_along(posl), 10) %>% sort
   for (i in sampled) {
-    # plot_position_cohort_exit_fpt(posl[[i]], side = "long")
+    plot_position_cohort_exit_fpt(posl[[i]], side = "long")
     # plot_position_cohort_exit_vats(posl[[i]])
     # plot_position_cohort_exit_thres(posl[[i]])
     # plot_position_cohort_exit_draft(posl[[i]])
-    plot_position_cohort_exit_qr(posl[[i]])
+    # plot_position_cohort_exit_qr(posl[[i]])
   }
   sampled
 }

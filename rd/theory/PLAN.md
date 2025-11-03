@@ -47,6 +47,7 @@ Heterogeneous
 
 ## Theory
 
+- t-SDE
 - [Survival analysis](https://app.datacamp.com/learn/courses/survival-analysis-in-r)
 - [Feature Engineering](https://app.datacamp.com/learn/courses/feature-engineering-in-r)
 - [Hypothesis Testing](https://app.datacamp.com/learn/courses/hypothesis-testing-in-r)
