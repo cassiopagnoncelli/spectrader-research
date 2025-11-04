@@ -1,5 +1,19 @@
-load("rd/models/stock_crossover/qrfit.RData")
+# Train subset for qrfit with train subset
+df_train <- tibble(
+  symbol = fwd_metadata$symbol[train_indices],
+  date = fwd_metadata$date[train_indices],
+  y = results$actuals$train,
+  yhat = results$predictions$train,
+  close = fwd$y_7[train_indices]
+)
 
+qrfits <- df_train %>%
+  filter(yhat > 1.35) %>%
+  filter_signals(within_days = 30) %>%
+  arrange(date) %>%
+  train_qr(tau_aggr = .92, tau_cons = 0.80)
+
+# Test subset
 df_test <- tibble(
   symbol = fwd_metadata$symbol[test_indices],
   date = fwd_metadata$date[test_indices],
@@ -9,8 +23,10 @@ df_test <- tibble(
 )
 
 # Generate trading signals, discarding the ones within a month apart
-df_signals_raw <- df_test %>% filter(yhat > 1.25)
-df_signals <- filter_signals(df_signals_raw, within_days = 30) %>% arrange(date)
+df_signals <- df_test %>%
+  filter(yhat > 1.45) %>%
+  filter_signals(within_days = 30) %>%
+  arrange(date)
 
 # Build list of positions from signals, each position is a tibble
 posl <- position_cohort(
@@ -29,7 +45,7 @@ posl <- position_cohort(
   # fun = exit_vats()
   # fun = exit_thres(k = .55)
   # fun = exit_enrich()
-  fun = exit_qr(qrfit_aggr, qrfit_cons)
+  fun = exit_qr(qrfits$qrfit_aggr, qrfits$qrfit_cons)
 )
 
 # Calculate returns for each position
@@ -62,7 +78,7 @@ f_star <- kelly_fraction(rets)
 pk <- plot_kelly_trades(rets, f_star, log.transform = T)
 
 # Plot individual positions exits
-if (F) {
+if (T) {
   sampled <- sample(seq_along(posl), 10) %>% sort
   for (i in sampled) {
     # plot_position_cohort_exit_fpt(posl[[i]], side = "long")

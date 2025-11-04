@@ -1,12 +1,12 @@
 filter_signals <- function(df_signals, within_days = 30) {
-  df_signals_raw %>%
-    group_by(symbol) %>%
-    arrange(date, .by_group = TRUE) %>%
-    mutate(
-      keep = date >= lag(date, default = first(date) - within_days) + within_days |
-        row_number() == 1
+  df_signals %>%
+    dplyr::group_by(symbol) %>%
+    dplyr::arrange(date, .by_group = TRUE) %>%
+    dplyr::mutate(
+      keep = date >= lag(date, default = dplyr::first(date) - within_days) +
+        within_days | dplyr::row_number() == 1
     ) %>%
-    filter(keep) %>%
-    select(-keep) %>%
-    ungroup()
+    dplyr::filter(keep) %>%
+    dplyr::select(-keep) %>%
+    dplyr::ungroup()
 }

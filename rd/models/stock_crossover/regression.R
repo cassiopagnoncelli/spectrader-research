@@ -76,14 +76,16 @@ results <- train_stacked_model(
 source("rd/models/stock_crossover/regression_plots.R")
 
 # Display individual plots
-plot_metrics_comparison(results)
-plot_feature_importance(results, top_n = 20)
-plot_all_predictions(results)
-plot_predictions_vs_actuals(results, "test")
-plot_residuals(results, "test")
-plot_residual_distribution(results, "test")
-plot_predictions_vs_actuals(results, "val")
-plot_residuals(results, "val")
-plot_predictions_vs_actuals(results, "train")
-plot_residuals(results, "train")
-# plot_xgboost_trees(results, tree_indices = c(0, 1, 2, 3, 4))
+if (F) {
+  plot_metrics_comparison(results)
+  plot_feature_importance(results, top_n = 20)
+  plot_all_predictions(results)
+  plot_predictions_vs_actuals(results, "test")
+  plot_residuals(results, "test")
+  plot_residual_distribution(results, "test")
+  plot_predictions_vs_actuals(results, "val")
+  plot_residuals(results, "val")
+  plot_predictions_vs_actuals(results, "train")
+  plot_residuals(results, "train")
+  plot_xgboost_trees(results, tree_indices = c(0, 1, 2, 3, 4))
+}
