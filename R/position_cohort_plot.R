@@ -162,13 +162,19 @@ plot_position_cohort_exit_qr <- function(position, plot = TRUE) {
     ggplot2::geom_point(
       data = subset(position, exit_qr_cons),
       aes(y = S),
-      color = "orange",
+      color = "#cfec2e",
       size = 2
     ) +
     ggplot2::geom_point(
       data = subset(position, exit_qr_aggr),
       aes(y = S),
-      color = "red",
+      color = "#fc8d0e",
+      size = 2
+    ) +
+    ggplot2::geom_point(
+      data = subset(position, exit_qr_extreme),
+      aes(y = S),
+      color = "#ff4314",
       size = 2
     ) +
     ggplot2::geom_hline(

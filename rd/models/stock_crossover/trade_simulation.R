@@ -72,6 +72,8 @@ if (F) {
 
 # Signal accuracy analysis
 accuracy <- exit_accuracy(dfsr)
+accuracy_take_profit <- accuracy %>% filter(t < max(t)) %>% select(r)
+accuracy_open_positions <- accuracy %>% filter(t == max(t)) %>% select(r)
 
-analyse_distribution(accuracy %>% filter(t < max(t)) %>% select(r), groups = c(0))
-analyse_distribution(accuracy %>% filter(t == max(t)) %>% select(r), groups = c(0))
+analyse_distribution(accuracy_take_profit, groups = c(0))
+analyse_distribution(accuracy_open_positions, groups = c(0))

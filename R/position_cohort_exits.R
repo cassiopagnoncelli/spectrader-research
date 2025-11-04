@@ -71,18 +71,8 @@ exit_fpt <- function(interest_rate = 0.0425, maturity = 15 / 365, side = "long")
 }
 
 # Quantile Regression Exit
-exit_qr_fit <- function(data, tau = 0.92) {
-  form <- S ~ r + S_1 + S_2 +
-    sd_short + sd_long + sd_ratio +
-    h_short + h_long + h_ratio +
-    sd_short_1 + sd_long_1 + sd_ratio_1 +
-    h_short_1 + h_long_1 + h_ratio_1 +
-    vix + vol_vix
-  # Model.
-  quantreg::rq(form, tau = tau, data = data)
-}
-
 exit_qr <- function(qrfit_extreme = NULL, qrfit_aggr = NULL, qrfit_cons = NULL,
+                    extreme_t = 2, aggr_t = 5, cons_t = 15,
                     sigma_short = 6, sigma_long = 20,
                     ent_short = 9, ent_long = 20) {
   function(data, history = FALSE) {
@@ -117,15 +107,16 @@ exit_qr <- function(qrfit_extreme = NULL, qrfit_aggr = NULL, qrfit_cons = NULL,
 
     result %>%
       dplyr::mutate(
-        exit_qr_aggr = S >= qhat_aggr & t > 5,
-        exit_qr_cons = S >= qhat_cons & t > 13,
-        exit = exit_qr_aggr | exit_qr_cons
+        exit_qr_extreme = S >= qhat_extreme & t > extreme_t,
+        exit_qr_aggr = S >= qhat_aggr & t > aggr_t,
+        exit_qr_cons = S >= qhat_cons & t > cons_t,
+        exit = exit_qr_extreme | exit_qr_aggr | exit_qr_cons
       )
   }
 }
 
-
-exit_enrich <- function(sd_short = 6, sd_long = 20, ent_short = 9, ent_long = 20) {
+# Draft.
+exit_draft <- function(sd_short = 6, sd_long = 20, ent_short = 9, ent_long = 20) {
   function(data, history = FALSE) {
     data %>%
       dplyr::mutate(
