@@ -51,15 +51,14 @@ prepare_fwd <- function(fetl, methods, days = 15, companies = 300, cache = FALSE
   })
 
   # Join lines with comma
-  fwd_sql <- paste(fwd_lines, collapse = ",\n")
-
-  # Load and prepare data
-  fwd_raw <- fetl$send_query(sprintf("
+  fwd_cols_sql <- paste(fwd_lines, collapse = ",\n")
+  fwd_sql <- sprintf("
     SELECT
       c.symbol,
       q.date,
       q.close,
-%s
+%s,
+      fredu.vix
     FROM quotes q
     JOIN companies c ON q.company_id = c.id
     JOIN company_screener_ids(
@@ -68,11 +67,21 @@ prepare_fwd <- function(fetl, methods, days = 15, companies = 300, cache = FALSE
       random_sample => TRUE,
       max_companies => %d
     ) c2 ON c.id = c2.id
+    JOIN LATERAL (
+      SELECT fu.value AS vix
+      FROM fred_univariates fu
+      WHERE fu.code = 'VIXCLS'
+        AND fu.freq = 'D'
+        AND fu.date <= q.date
+      ORDER BY fu.date DESC
+      LIMIT 1
+    ) fredu ON TRUE
     WHERE
       q.date BETWEEN '2021-01-01' AND '2025-09-30'
-  ", fwd_sql, companies)) %>%
-    tibble
+  ", fwd_cols_sql, companies)
 
+  # Load and prepare data
+  fwd_raw <- fetl$send_query(fwd_sql) %>% tibble::tibble()
   fwd <- fwd_raw %>%
     dplyr::group_by(symbol) %>%
     # Preprocessing
@@ -182,6 +191,8 @@ prepare_fwd <- function(fetl, methods, days = 15, companies = 300, cache = FALSE
   if (cache) {
     cat(sprintf("Saving to cache: %s\n", cache_file))
     saveRDS(result, cache_file)
+    sql_file <- file.path(cache_dir, sprintf("prepare_fwd_%s.sql", cache_key))
+    writeLines(fwd_sql, sql_file)
     cat(sprintf("✓ Computation completed in %.2f seconds (cached for future use)\n",
                 as.numeric(elapsed)))
   } else {
