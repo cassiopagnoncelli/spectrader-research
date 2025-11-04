@@ -1,7 +1,7 @@
 #' @importFrom magrittr %>%
 NULL
 
-train_qr <- function(signals, tau_aggr = .92, tau_cons = 0.80) {
+train_qr <- function(signals, tau_extreme = .95, tau_aggr = .92, tau_cons = 0.80) {
   posl <- position_cohort(
     signals,
     before_days = 30,
@@ -28,10 +28,15 @@ train_qr <- function(signals, tau_aggr = .92, tau_cons = 0.80) {
     cr_3 + cr_8
 
   # Formulas for aggresive and conservative models
+  form_extreme <- S ~ t + h_short + h_ratio + cr_8
   form_aggr <- S ~ t + h_short + h_ratio + cr_8
   form_cons <- S ~ t + h_long + cr_8 + vix
 
   # Model training
+  qrfit_extreme <- quantreg::rq(form_extreme, tau = tau_extreme, data = train_df)
+  sum_qr <- summary(qrfit_extreme, se = "boot", R = 500)
+  sum_qr
+
   qrfit_aggr <- quantreg::rq(form_aggr, tau = tau_aggr, data = train_df)
   sum_qr <- summary(qrfit_aggr, se = "boot", R = 500)
   sum_qr
@@ -42,6 +47,7 @@ train_qr <- function(signals, tau_aggr = .92, tau_cons = 0.80) {
 
   # Return models
   list(
+    qrfit_extreme = qrfit_extreme,
     qrfit_aggr = qrfit_aggr,
     qrfit_cons = qrfit_cons,
     train_df = train_df
