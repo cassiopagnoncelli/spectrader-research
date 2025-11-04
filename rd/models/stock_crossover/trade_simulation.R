@@ -28,18 +28,17 @@ df_signals <- df_test %>%
   filter_signals(within_days = 30) %>%
   arrange(date)
 
-# Build list of positions from signals, each position is a tibble
+# Build list of positions from signals, each position is a tibble.
+# Exit functions:
+# - exit_thres(k = 0.15)
+# - exit_vats(sd_short = 6, sd_long = 20, k = 2.5)
+# - exit_fpt(interest_rate = 0.0425, maturity = 15/365)
+# - exit_qr(qrfit_aggr, qrfit_cons)
 posl <- position_cohort(
   df_signals,
   before_days = 30,
   after_days = 60,
-  # Exit functions:
-  #
-  # - exit_thres(k = 0.15)
-  # - exit_vats(sd_short = 6, sd_long = 20, k = 2.5)
-  # - exit_fpt(interest_rate = 0.0425, maturity = 15/365)
-  # - exit_qr(tau = 0.92, qrfit = NULL)
-  #
+  # Exit function.
   # fun = identity
   # fun = exit_fpt(side = "long")
   # fun = exit_vats()
@@ -48,20 +47,36 @@ posl <- position_cohort(
   fun = exit_qr(qrfits$qrfit_aggr, qrfits$qrfit_cons)
 )
 
-# Calculate returns for each position
-rets <- sapply(posl, position_cohort_return)
+# Returns
+rets <- position_cohort_return(posl, log.transform = F) %>% na.omit()
+
+plot_distribution(rets$r, title = "Returns distribution")
+analyse_distribution(rets$r, groups = c(0))
+
+# Kelly - sequential
+f_star <- kelly_fraction(rets$r)
+pk <- plot_kelly_trades(rets$r, f_star, log.transform = F)
 
 # Combine signals with returns and calculate accuracy
 # (Combine multiple plots into one chart.)
-df_signals_rets <- tibble(df_signals, rets)
-df_signals_rets %>% print(n = Inf)
+df_signals_rets <- tibble(
+  df_signals, position_cohort_return(posl, log.transform = T)) %>%
+  mutate(
+    r = ifelse(is.na(r), 0, r),
+    R = exp(r) - 1
+  ) %>%
+  print(n = 100)
+
 accuracy <- df_signals_rets %>%
   mutate(
-    mae = sqrt((y - rets - 1)^2),
-    alpha_captured = rets / (y - 1)
+    mae = sqrt((y - R - 1)^2),
+    alpha_captured = R / (y - 1)
   ) %>%
-  select(y, rets, mae, alpha_captured)
-accuracy %>% print(n = Inf)
+  print(n = 100)
+
+accuracy %>%
+  filter(t < max(t))
+
 plot_distribution(accuracy$mae, title = "MAE distribution")
 plot_distribution(
   accuracy %>%
@@ -73,9 +88,7 @@ plot_distribution(
 plot_distribution(rets, title = "Returns distribution")
 analyse_distribution(rets, groups = c(0))
 
-# Kelly - sequential
-f_star <- kelly_fraction(rets)
-pk <- plot_kelly_trades(rets, f_star, log.transform = T)
+
 
 # Plot individual positions exits
 if (T) {
