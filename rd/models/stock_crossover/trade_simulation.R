@@ -44,19 +44,18 @@ posl <- position_cohort(
   # fun = exit_vats()
   # fun = exit_thres(k = .55)
   # fun = exit_enrich()
-  fun = exit_qr(qrfits$qrfit_aggr, qrfits$qrfit_cons)
+  fun = exit_qr(qrfits$qrfit_extreme, qrfits$qrfit_aggr, qrfits$qrfit_cons)
 )
 
 # Returns
-rets <- position_cohort_return(posl, log.transform = F) %>% na.omit()
-rets.clean <- rets %>% na.omit()
+dfsr <- position_cohort_return(posl, df_signals)
 
-plot_distribution(rets.clean$r, title = "Simple Returns distribution")
-analyse_distribution(rets.clean$r, groups = c(0))
+plot_distribution(dfsr$R, title = "Simple Returns distribution")
+analyse_distribution(dfsr$R, groups = c(0))
 
 # Kelly - sequential
-f_star <- kelly_fraction(rets.clean$r)
-pk <- plot_kelly_trades(rets.clean$r, f_star, log.transform = F)
+f_star <- kelly_fraction(dfsr$R)
+pk <- plot_kelly_trades(dfsr$R, f_star, log.transform = F)
 
 # Plot individual positions exits
 if (F) {
@@ -71,29 +70,8 @@ if (F) {
   sampled
 }
 
-# Combine signals with returns and calculate accuracy
-# (Combine multiple plots into one chart.)
-df_signals_rets <- tibble(df_signals, rets) %>%
-  mutate(
-    R = ifelse(is.na(r), 0, r),
-    r = log(R)
-  ) %>%
-  print(n = 100)
+# Signal accuracy analysis
+accuracy <- exit_accuracy(dfsr)
 
-accuracy <- df_signals_rets %>%
-  mutate(
-    mae = sqrt((y - R - 1)^2),
-    alpha_captured = R / (y - 1)
-  ) %>%
-  print(n = 100)
-
-accuracy %>%
-  filter(t < max(t))
-
-plot_distribution(accuracy$mae, title = "MAE distribution")
-plot_distribution(
-  accuracy %>%
-    filter(alpha_captured >= 0) %>%
-    select(alpha_captured),
-  title = "Alpha-captured distribution", bins = 25)
-
+analyse_distribution(accuracy %>% filter(t < max(t)) %>% select(r), groups = c(0))
+analyse_distribution(accuracy %>% filter(t == max(t)) %>% select(r), groups = c(0))

@@ -57,7 +57,7 @@ position_cohort <- function(symbol_dates,
   })
 }
 
-position_cohort_return <- function(posl, log.transform = FALSE) {
+position_cohort_return <- function(posl, df_signals) {
   if (!is.list(posl)) {
     stop("Input must be a list of tibbles/data frames.")
   }
@@ -70,8 +70,14 @@ position_cohort_return <- function(posl, log.transform = FALSE) {
       stop(sprintf("Element %d must be a tibble or data frame.", i))
     }
     idx <- dplyr::coalesce(which(na.omit(pos_data$exit))[1], dplyr::last(na.omit(pos_data$t)))
-    r <- ifelse(log.transform, log(pos_data$S[idx]), pos_data$S[idx] - 1)
-    tibble::tibble(trade = i, t = idx, r = r)
+    R <- pos_data$S[idx] - 1
+    r <- log(pos_data$S[idx])
+    tibble::tibble(trade = i, t = idx, R, r)
   })
-  dplyr::bind_rows(result_list)
+  df_returns <- dplyr::bind_rows(result_list)
+  # Combine with signals data frame.
+  if (nrow(df_signals) != nrow(df_returns)) {
+    stop("signals and returns data frames must have the same number of rows")
+  }
+  tibble::tibble(df_signals, df_returns)
 }

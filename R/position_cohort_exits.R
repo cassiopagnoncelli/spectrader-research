@@ -82,7 +82,7 @@ exit_qr_fit <- function(data, tau = 0.92) {
   quantreg::rq(form, tau = tau, data = data)
 }
 
-exit_qr <- function(qrfit_aggr = NULL, qrfit_cons = NULL,
+exit_qr <- function(qrfit_extreme = NULL, qrfit_aggr = NULL, qrfit_cons = NULL,
                     sigma_short = 6, sigma_long = 20,
                     ent_short = 9, ent_long = 20) {
   function(data, history = FALSE) {
