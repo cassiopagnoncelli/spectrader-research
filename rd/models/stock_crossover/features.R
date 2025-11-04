@@ -74,7 +74,7 @@ prepare_fwd <- function(fetl, methods, days = 15, companies = 300, cache = FALSE
     tibble
 
   fwd <- fwd_raw %>%
-    group_by(symbol) %>%
+    dplyr::group_by(symbol) %>%
     # Preprocessing
     dplyr::mutate(
       r_t = log(close / lag(close)),
@@ -150,16 +150,16 @@ prepare_fwd <- function(fetl, methods, days = 15, companies = 300, cache = FALSE
       h_ratio_vel = h_ratio_0 - h_ratio_1,
       h_ratio_accel = h_ratio_0 - 2 * h_ratio_1 + h_ratio_2
     ) %>%
-    ungroup() %>%
+    dplyr::ungroup() %>%
     na.omit()
 
   # Store symbol and date before removing them
   fwd_metadata <- fwd %>%
-    select(symbol, date)
+    dplyr::select(symbol, date)
 
   # Remove marker columns for training
   fwd <- fwd %>%
-    select(-c(
+    dplyr::select(-c(
       symbol,
       date,
       close, r_t,

@@ -12,12 +12,21 @@ position_cohort <- function(symbol_dates,
     start_date <- event_date - 2 * (before_days + 10)
     end_date <- event_date + 2 * (after_days + 10)
     query <- sprintf("
-      SELECT c.symbol, q.date, q.close
+      SELECT c.symbol, q.date, q.close, fredu.value AS vix
       FROM quotes q
       JOIN companies c ON q.company_id = c.id
-      WHERE symbol = '%s'
-        AND date BETWEEN '%s' AND '%s'
-      ORDER BY date
+      LEFT JOIN LATERAL (
+        SELECT *
+        FROM fred_univariates fu
+        WHERE fu.code = 'VIXCLS'
+          AND fu.freq = 'D'
+          AND fu.date <= q.date
+        ORDER BY fu.date DESC
+        LIMIT 1
+      ) fredu ON TRUE
+      WHERE c.symbol = '%s'
+        AND q.date BETWEEN '%s' AND '%s'
+      ORDER BY q.date
       ", symbol, start_date, end_date)
     data <- fetl$send_query(query)
     fetl$disconnect()

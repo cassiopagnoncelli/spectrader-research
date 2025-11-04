@@ -1,13 +1,13 @@
 # Volume-Adjusted Trailing Stop (VATS)
 exit_vats <- function(sd_short = 6, sd_long = 20, k = 2.5) {
-  function(data) {
+  function(data, history = FALSE) {
     data %>%
       dplyr::mutate(
         sd_short = zoo::rollapply(r, sd_short, sd, fill = NA, align = "right"),
         sd_long = zoo::rollapply(r, sd_long, sd, fill = NA, align = "right"),
         sd_ratio = sd_short / sd_long
       ) %>%
-      dplyr::filter(t >= 0) %>%
+      dplyr::filter(t >= ifelse(history, -Inf, 0)) %>%
       dplyr::mutate(
         Smax = cummax(S),
         stop = Smax * exp(-k * sd_long),
@@ -20,11 +20,10 @@ exit_vats <- function(sd_short = 6, sd_long = 20, k = 2.5) {
 
 # Threshold Cutoff Exit
 exit_thres <- function(k = .2) {
-  function(data) {
+  function(data, history = FALSE) {
     data %>%
-      dplyr::mutate(
-      ) %>%
-      dplyr::filter(t >= 0) %>%
+      dplyr::mutate() %>%
+      dplyr::filter(t >= ifelse(history, -Inf, 0)) %>%
       dplyr::mutate(
         exit = S > 1.2
       )
@@ -54,9 +53,9 @@ exit_fpt_boundary <- function(mu, sigma, r, K, t, side = c("long", "short")) {
 
 # FPT
 exit_fpt <- function(interest_rate = 0.0425, maturity = 15 / 365, side = "long") {
-  function(data) {
+  function(data, history = FALSE) {
     data %>%
-      dplyr::filter(t >= 0) %>%
+      dplyr::filter(t >= ifelse(history, -Inf, 0)) %>%
       dplyr::mutate(
         boundary = exit_fpt_boundary(
           mu_hat,
@@ -73,46 +72,61 @@ exit_fpt <- function(interest_rate = 0.0425, maturity = 15 / 365, side = "long")
 
 # Quantile Regression Exit
 exit_qr_fit <- function(data, tau = 0.92) {
-  form <- S ~ S_1 + S_2 + sd_short + sd_long + sd_ratio + h_short + h_long + h_ratio +
-    sd_short_1 + sd_long_1 + sd_ratio_1 + h_short_1 + h_long_1 + h_ratio_1
+  form <- S ~ r + S_1 + S_2 +
+    sd_short + sd_long + sd_ratio +
+    h_short + h_long + h_ratio +
+    sd_short_1 + sd_long_1 + sd_ratio_1 +
+    h_short_1 + h_long_1 + h_ratio_1 +
+    vix + vol_vix
+  # Model.
   quantreg::rq(form, tau = tau, data = data)
 }
 
-exit_qr <- function(tau = 0.92, qrfit = NULL, skip = 7, sigma_short = 6, sigma_long = 20, ent_short = 9, ent_long = 20) {
-  function(data) {
+exit_qr <- function(qrfit_aggr = NULL, qrfit_cons = NULL,
+                    sigma_short = 6, sigma_long = 20,
+                    ent_short = 9, ent_long = 20) {
+  function(data, history = FALSE) {
+    # Feature engineering
     result <- data %>%
       dplyr::mutate(
+        S_1 = dplyr::lag(S, 1),
+        S_2 = dplyr::lag(S, 2),
         sd_short = zoo::rollapply(r, sigma_short, sd, fill = NA, align = "right"),
         sd_long = zoo::rollapply(r, sigma_long, sd, fill = NA, align = "right"),
         sd_ratio = sd_short / sd_long,
         h_short = runH(r, ent_short),
         h_long = runH(r, ent_long),
         h_ratio = h_short / h_long,
-        S_1 = dplyr::lag(S, 1),
-        S_2 = dplyr::lag(S, 2),
         sd_short_1 = dplyr::lag(sd_short, 1),
         sd_long_1 = dplyr::lag(sd_long, 1),
         sd_ratio_1 = dplyr::lag(sd_ratio, 1),
         h_short_1 = dplyr::lag(h_short, 1),
         h_long_1 = dplyr::lag(h_long, 1),
-        h_ratio_1 = dplyr::lag(h_ratio, 1)
+        h_ratio_1 = dplyr::lag(h_ratio, 1),
+        vol_vix = sd_short / vix,
+        cr_3 = zoo::rollapply(r, 3, sum, fill = NA, align = "right"),
+        cr_8 = zoo::rollapply(r, 8, sum, fill = NA, align = "right")
       ) %>%
-      dplyr::filter(t >= 0)
-    
-    if (is.null(qrfit))
-      qrfit <- exit_qr_fit(result, tau = tau)
+      dplyr::filter(t >= ifelse(history, -Inf, 0))
 
-    qr_preds <- predict(qrfit, result)
-    result$exit <- result$S >= qr_preds
-    result$exit[1:skip] <- FALSE  # avoid early exits
+    if (is.null(qrfit_aggr) || is.null(qrfit_cons))
+      return(result)
 
-    result
+    result$qhat_aggr <- predict(qrfit_aggr, result)
+    result$qhat_cons <- predict(qrfit_cons, result)
+
+    result %>%
+      dplyr::mutate(
+        exit_qr_aggr = S >= qhat_aggr & t > 5,
+        exit_qr_cons = S >= qhat_cons & t > 13,
+        exit = exit_qr_aggr | exit_qr_cons
+      )
   }
 }
 
 
 exit_enrich <- function(sd_short = 6, sd_long = 20, ent_short = 9, ent_long = 20) {
-  function(data) {
+  function(data, history = FALSE) {
     data %>%
       dplyr::mutate(
         sd_short = zoo::rollapply(r, sd_short, sd, fill = NA, align = "right"),
@@ -122,7 +136,7 @@ exit_enrich <- function(sd_short = 6, sd_long = 20, ent_short = 9, ent_long = 20
         h_long = runH(r, ent_long),
         h_ratio = h_short / h_long
       ) %>%
-      dplyr::filter(t >= 0) %>%
+      dplyr::filter(t >= ifelse(history, -Inf, 0)) %>%
       dplyr::mutate()
   }
 }

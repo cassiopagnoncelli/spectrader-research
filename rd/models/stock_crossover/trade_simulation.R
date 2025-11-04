@@ -1,3 +1,5 @@
+load("rd/models/stock_crossover/qrfit.RData")
+
 df_test <- tibble(
   symbol = fwd_metadata$symbol[test_indices],
   date = fwd_metadata$date[test_indices],
@@ -22,11 +24,12 @@ posl <- position_cohort(
   # - exit_fpt(interest_rate = 0.0425, maturity = 15/365)
   # - exit_qr(tau = 0.92, qrfit = NULL)
   #
-  fun = exit_fpt(side = "long")
+  # fun = identity
+  # fun = exit_fpt(side = "long")
   # fun = exit_vats()
   # fun = exit_thres(k = .55)
   # fun = exit_enrich()
-  # fun = exit_qr(tau = 0.92, skip = 7) # Should use train/val data instead.
+  fun = exit_qr(qrfit_aggr, qrfit_cons)
 )
 
 # Calculate returns for each position
@@ -62,11 +65,11 @@ pk <- plot_kelly_trades(rets, f_star, log.transform = T)
 if (F) {
   sampled <- sample(seq_along(posl), 10) %>% sort
   for (i in sampled) {
-    plot_position_cohort_exit_fpt(posl[[i]], side = "long")
+    # plot_position_cohort_exit_fpt(posl[[i]], side = "long")
     # plot_position_cohort_exit_vats(posl[[i]])
     # plot_position_cohort_exit_thres(posl[[i]])
     # plot_position_cohort_exit_draft(posl[[i]])
-    # plot_position_cohort_exit_qr(posl[[i]])
+    plot_position_cohort_exit_qr(posl[[i]])
   }
   sampled
 }
