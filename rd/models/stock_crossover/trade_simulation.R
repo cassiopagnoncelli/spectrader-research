@@ -47,11 +47,8 @@ posl <- position_cohort(
   fun = exit_qr(qrfits$qrfit_extreme, qrfits$qrfit_aggr, qrfits$qrfit_cons)
 )
 
-# Returns
+# Signals, Returns
 dfsr <- position_cohort_return(posl, df_signals)
-
-plot_distribution(dfsr$R, title = "Simple Returns distribution")
-analyse_distribution(dfsr$R, groups = c(0))
 
 # Kelly - sequential
 f_star <- kelly_fraction(dfsr$R)
@@ -70,10 +67,16 @@ if (F) {
   sampled
 }
 
+# Returns distribution
+plot_distribution(na.omit(dfsr$R), title = "Simple Returns distribution")
+analyse_distribution(na.omit(dfsr$R), groups = c(0))
+
 # Signal accuracy analysis
 accuracy <- exit_accuracy(dfsr)
-accuracy_take_profit <- accuracy %>% filter(t < max(t)) %>% select(r)
-accuracy_open_positions <- accuracy %>% filter(t == max(t)) %>% select(r)
+accuracy_take_profit <- accuracy %>% filter(t < max(t))
+accuracy_open_positions <- accuracy %>% filter(t == max(t))
 
-analyse_distribution(accuracy_take_profit, groups = c(0))
-analyse_distribution(accuracy_open_positions, groups = c(0))
+exit_metrics(accuracy)
+exit_metrics(accuracy_take_profit)
+analyse_distribution(accuracy_take_profit$R, groups = c(0))
+analyse_distribution(accuracy_open_positions$R, groups = c(0))

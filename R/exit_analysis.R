@@ -10,14 +10,22 @@ exit_accuracy <- function(dfsr, drift = 0) {
       # alpha is the gain above the drift.
       long_alpha = long_capture - drift,
       short_alpha = short_capture - drift
-    ) %>%
-    print(n = 100)
+    )
 }
 
 exit_metrics <- function(accuracy) {
   tibble::tibble(
+    n = nrow(accuracy),
     rmse = mean(accuracy$rmse, na.rm = TRUE),
-    alpha_captured_mean = mean(accuracy$alpha_captured, na.rm = TRUE),
-    alpha_captured_median = median(accuracy$alpha_captured, na.rm = TRUE)
+    t_mean = mean(accuracy$t, na.rm = TRUE),
+    t_sd = sd(accuracy$t, na.rm = TRUE),
+    long_alpha = mean(accuracy$long_alpha, na.rm = TRUE),
+    long_capture = mean(accuracy$long_capture, na.rm = TRUE),
+    long_capture_sd = sd(accuracy$long_capture, na.rm = TRUE),
+    long_sharpe = mean(accuracy$long_alpha, na.rm = TRUE) / long_capture_sd * sqrt(252),
+    short_alpha = mean(accuracy$short_alpha, na.rm = TRUE),
+    short_capture = mean(accuracy$short_capture, na.rm = TRUE),
+    short_capture_sd = sd(accuracy$short_capture, na.rm = TRUE),
+    short_sharpe = mean(accuracy$short_alpha, na.rm = TRUE) / short_capture_sd * sqrt(252)
   )
 }

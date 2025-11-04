@@ -102,6 +102,7 @@ exit_qr <- function(qrfit_extreme = NULL, qrfit_aggr = NULL, qrfit_cons = NULL,
     if (is.null(qrfit_aggr) || is.null(qrfit_cons))
       return(result)
 
+    result$qhat_extreme <- predict(qrfit_extreme, result)
     result$qhat_aggr <- predict(qrfit_aggr, result)
     result$qhat_cons <- predict(qrfit_cons, result)
 
