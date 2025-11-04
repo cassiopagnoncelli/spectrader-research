@@ -49,21 +49,34 @@ posl <- position_cohort(
 
 # Returns
 rets <- position_cohort_return(posl, log.transform = F) %>% na.omit()
+rets.clean <- rets %>% na.omit()
 
-plot_distribution(rets$r, title = "Returns distribution")
-analyse_distribution(rets$r, groups = c(0))
+plot_distribution(rets.clean$r, title = "Simple Returns distribution")
+analyse_distribution(rets.clean$r, groups = c(0))
 
 # Kelly - sequential
-f_star <- kelly_fraction(rets$r)
-pk <- plot_kelly_trades(rets$r, f_star, log.transform = F)
+f_star <- kelly_fraction(rets.clean$r)
+pk <- plot_kelly_trades(rets.clean$r, f_star, log.transform = F)
+
+# Plot individual positions exits
+if (F) {
+  sampled <- sample(seq_along(posl), 10) %>% sort
+  for (i in sampled) {
+    # plot_position_cohort_exit_fpt(posl[[i]], side = "long")
+    # plot_position_cohort_exit_vats(posl[[i]])
+    # plot_position_cohort_exit_thres(posl[[i]])
+    # plot_position_cohort_exit_draft(posl[[i]])
+    plot_position_cohort_exit_qr(posl[[i]])
+  }
+  sampled
+}
 
 # Combine signals with returns and calculate accuracy
 # (Combine multiple plots into one chart.)
-df_signals_rets <- tibble(
-  df_signals, position_cohort_return(posl, log.transform = T)) %>%
+df_signals_rets <- tibble(df_signals, rets) %>%
   mutate(
-    r = ifelse(is.na(r), 0, r),
-    R = exp(r) - 1
+    R = ifelse(is.na(r), 0, r),
+    r = log(R)
   ) %>%
   print(n = 100)
 
@@ -80,25 +93,7 @@ accuracy %>%
 plot_distribution(accuracy$mae, title = "MAE distribution")
 plot_distribution(
   accuracy %>%
-    filter(alpha_captured >= 0 & alpha_captured <= 1) %>%
+    filter(alpha_captured >= 0) %>%
     select(alpha_captured),
   title = "Alpha-captured distribution", bins = 25)
 
-# Returns distribution
-plot_distribution(rets, title = "Returns distribution")
-analyse_distribution(rets, groups = c(0))
-
-
-
-# Plot individual positions exits
-if (T) {
-  sampled <- sample(seq_along(posl), 10) %>% sort
-  for (i in sampled) {
-    # plot_position_cohort_exit_fpt(posl[[i]], side = "long")
-    # plot_position_cohort_exit_vats(posl[[i]])
-    # plot_position_cohort_exit_thres(posl[[i]])
-    # plot_position_cohort_exit_draft(posl[[i]])
-    plot_position_cohort_exit_qr(posl[[i]])
-  }
-  sampled
-}
