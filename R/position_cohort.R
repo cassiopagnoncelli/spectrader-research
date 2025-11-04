@@ -57,14 +57,21 @@ position_cohort <- function(symbol_dates,
   })
 }
 
-position_cohort_return <- function(df, log.transform = FALSE) {
-  if (!tibble::is_tibble(df) && !is.data.frame(df)) {
-    stop("Input must be a tibble or data frame.")
+position_cohort_return <- function(posl, log.transform = FALSE) {
+  if (!is.list(posl)) {
+    stop("Input must be a list of tibbles/data frames.")
   }
-  idx <- dplyr::coalesce(which(na.omit(df$exit))[1], dplyr::last(na.omit(df)$t))
-  ret <- df$S[idx] - 1
-  if (log.transform) {
-    ret <- log(ret + 1)
+  if (length(posl) == 0) {
+    return(tibble::tibble(idx = integer(), r = numeric()))
   }
-  ret
+  result_list <- lapply(seq_along(posl), function(i) {
+    pos_data <- posl[[i]]
+    if (!tibble::is_tibble(pos_data) && !is.data.frame(pos_data)) {
+      stop(sprintf("Element %d must be a tibble or data frame.", i))
+    }
+    idx <- dplyr::coalesce(which(na.omit(pos_data$exit))[1], dplyr::last(na.omit(pos_data$t)))
+    r <- ifelse(log.transform, log(pos_data$S[idx]), pos_data$S[idx] - 1)
+    tibble::tibble(trade = i, t = idx, r = r)
+  })
+  dplyr::bind_rows(result_list)
 }
