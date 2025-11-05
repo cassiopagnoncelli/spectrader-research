@@ -1,7 +1,7 @@
 #' @importFrom magrittr %>%
 NULL
 
-train_qr <- function(signals, tau_extreme = .95, tau_aggr = .92, tau_cons = 0.80) {
+train_qr <- function(signals, tau_extreme = .92, tau_aggr = .82, tau_cons = 0.32) {
   posl <- position_cohort(
     signals,
     before_days = 30,

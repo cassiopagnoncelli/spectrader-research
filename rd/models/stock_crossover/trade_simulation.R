@@ -8,10 +8,10 @@ df_train <- tibble(
 )
 
 qrfits <- df_train %>%
-  filter(yhat > 1.35) %>%
-  filter_signals(within_days = 30) %>%
+  filter(yhat > 1.28) %>%
+  filter_signals(within_days = 20) %>%
   arrange(date) %>%
-  train_qr(tau_aggr = .92, tau_cons = 0.80)
+  train_qr()
 
 # Test subset
 df_test <- tibble(
@@ -78,5 +78,11 @@ accuracy_open_positions <- accuracy %>% filter(t == max(t))
 
 exit_metrics(accuracy)
 exit_metrics(accuracy_take_profit)
+exit_metrics(accuracy_open_positions)
 analyse_distribution(accuracy_take_profit$R, groups = c(0))
 analyse_distribution(accuracy_open_positions$R, groups = c(0))
+
+dfsr %>%
+  filter(t == max(t)) %>%
+  select(trade) %>%
+  plot_position_cohort_exit_qr(posl[[trade]])

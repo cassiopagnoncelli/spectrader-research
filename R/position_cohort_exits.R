@@ -72,7 +72,7 @@ exit_fpt <- function(interest_rate = 0.0425, maturity = 15 / 365, side = "long")
 
 # Quantile Regression Exit
 exit_qr <- function(qrfit_extreme = NULL, qrfit_aggr = NULL, qrfit_cons = NULL,
-                    extreme_t = 2, aggr_t = 5, cons_t = 15,
+                    extreme_t = 2, aggr_t = 7, cons_t = 30,
                     sigma_short = 6, sigma_long = 20,
                     ent_short = 9, ent_long = 20) {
   function(data, history = FALSE) {
@@ -110,7 +110,7 @@ exit_qr <- function(qrfit_extreme = NULL, qrfit_aggr = NULL, qrfit_cons = NULL,
       dplyr::mutate(
         exit_qr_extreme = S >= qhat_extreme & t > extreme_t,
         exit_qr_aggr = S >= qhat_aggr & t > aggr_t,
-        exit_qr_cons = S >= qhat_cons & t > cons_t,
+        exit_qr_cons = S >= qhat_cons & t > cons_t & S > 1,
         exit = exit_qr_extreme | exit_qr_aggr | exit_qr_cons
       )
   }
