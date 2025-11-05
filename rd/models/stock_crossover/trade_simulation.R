@@ -18,8 +18,8 @@ qrfits_params <- list(
 qrfits <- fetch_cache(
   cache_key(
     params = c(list(model = "stock_crossover"), qrfits_params),
-    exit = "rds",
-    fun = "qr_fits"
+    ext = "rds",
+    fun = "qrfits"
   ),
   function() {
     df_train %>%
