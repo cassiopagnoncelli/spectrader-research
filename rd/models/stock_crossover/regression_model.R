@@ -9,24 +9,27 @@ train_stacked_model <- function(X, fwd, train_indices, val_indices, test_indices
   # Check cache
   if (!is.null(cache)) {
     results <- load_cache(cache)
-    cat("✓ Cached model loaded successfully\n")
+    if (!is.null(results)) {
+      cat("✓ Cached model loaded successfully\n")
 
-    # Print cached metrics
-    cat("\n=== Cached Performance Metrics ===\n")
-    cat(sprintf("Train - RMSE: %.6f, MAE: %.6f, R²: %.4f\n",
-                results$metrics$train["rmse"],
-                results$metrics$train["mae"],
-                results$metrics$train["r2"]))
-    cat(sprintf("Val   - RMSE: %.6f, MAE: %.6f, R²: %.4f\n",
-                results$metrics$val["rmse"],
-                results$metrics$val["mae"],
-                results$metrics$val["r2"]))
-    cat(sprintf("Test  - RMSE: %.6f, MAE: %.6f, R²: %.4f\n",
-                results$metrics$test["rmse"],
-                results$metrics$test["mae"],
-                results$metrics$test["r2"]))
+      # Print cached metrics
+      cat("\n=== Cached Performance Metrics ===\n")
+      cat(sprintf("Train - RMSE: %.6f, MAE: %.6f, R²: %.4f\n",
+                  results$metrics$train["rmse"],
+                  results$metrics$train["mae"],
+                  results$metrics$train["r2"]))
+      cat(sprintf("Val   - RMSE: %.6f, MAE: %.6f, R²: %.4f\n",
+                  results$metrics$val["rmse"],
+                  results$metrics$val["mae"],
+                  results$metrics$val["r2"]))
+      cat(sprintf("Test  - RMSE: %.6f, MAE: %.6f, R²: %.4f\n",
+                  results$metrics$test["rmse"],
+                  results$metrics$test["mae"],
+                  results$metrics$test["r2"]))
 
-    return(results)
+      return(results)
+    }
+    cat("No cached model found, proceeding to train a new model...\n")
   }
 
   # LEVEL 1: Train 6 XGBoost models to predict y_1, ..., y_6

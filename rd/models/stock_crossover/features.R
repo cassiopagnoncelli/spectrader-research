@@ -6,7 +6,7 @@ prepare_fwd <- function(fetl, methods, days = 15, companies = 300, cache = TRUE)
   start_time <- Sys.time()
 
   # Cache management
-  if (cache) {
+  if (!is.null(cache)) {
     cached_data <- load_cache(cache)
     if (!is.null(cached_data))
       return(cached_data)
@@ -167,7 +167,7 @@ prepare_fwd <- function(fetl, methods, days = 15, companies = 300, cache = TRUE)
   elapsed <- difftime(end_time, start_time, units = "secs")
 
   # Save to cache if enabled
-  if (cache) {
+  if (!is.null(cache)) {
     cat(sprintf("Saving to cache: %s\n", ck$path))
     save_cache(ck, result)
     ck_sql <- cache_key(params = params, ext = "sql", fun = "prepare_fwd")
