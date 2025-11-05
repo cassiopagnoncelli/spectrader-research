@@ -28,9 +28,9 @@ train_qr <- function(signals, tau_extreme = .92, tau_aggr = .82, tau_cons = 0.32
     cr_3 + cr_8
 
   # Formulas for aggresive and conservative models
-  form_extreme <- S ~ t + h_short + h_ratio + cr_8
-  form_aggr <- S ~ t + h_short + h_ratio + cr_8
-  form_cons <- S ~ t + h_long + cr_8 + vix
+  form_extreme <- S ~ S_1 + t + h_short + h_ratio + cr_8
+  form_aggr <- S ~ S_1 + t + h_short + h_ratio + cr_8
+  form_cons <- S ~ S_1 + t + h_long + cr_8 + vix
 
   # Model training
   qrfit_extreme <- quantreg::rq(form_extreme, tau = tau_extreme, data = train_df)

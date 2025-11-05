@@ -20,7 +20,7 @@ features <- prepare_fwd(
     "sharpe_low",             # y_6
     "close_identity"          # y_7
   ),
-  days = 42,                  # Cached: 42
+  days = 15,                  # Cached: 10*, 15, 22*, 44*
   companies = 13000,          # Cached: 13000
   cache = TRUE
 )

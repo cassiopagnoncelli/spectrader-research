@@ -148,7 +148,7 @@ plot_position_cohort_exit_fpt <- function(position, side = c("long", "short"), p
   p
 }
 
-plot_position_cohort_exit_qr <- function(position, plot = TRUE) {
+plot_position_cohort_exit_qr <- function(position, plot = TRUE, ylim = NULL) {
   if (!tibble::is_tibble(position) && !is.data.frame(position)) {
     stop("Input must be a tibble or data frame.")
   }
@@ -159,6 +159,7 @@ plot_position_cohort_exit_qr <- function(position, plot = TRUE) {
       color = "black",
       linewidth = 0.8
     ) +
+    ggplot2::coord_cartesian(ylim = if (is.null(ylim)) NULL else ylim) +
     ggplot2::geom_point(
       data = subset(position, exit_qr_cons),
       aes(y = S),

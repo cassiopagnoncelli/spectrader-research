@@ -11,7 +11,7 @@ qrfits <- df_train %>%
   filter(yhat > 1.28) %>%
   filter_signals(within_days = 20) %>%
   arrange(date) %>%
-  train_qr()
+  train_qr() # 8-10 min training.
 
 # Test subset
 df_test <- tibble(
@@ -52,9 +52,9 @@ pk <- plot_kelly_trades(dfsr$R, f_star, log.transform = F)
 # _fpt(side = "long), _vats, _thres, _qr
 dfsr %>%
   filter(t < max(t, na.rm = TRUE)) %>%
-  slice_sample(n = 0) %>%
+  slice_sample(n = 23) %>%
   pull(trade) %>%
-  purrr::walk(~ plot_position_cohort_exit_qr(posl[[.x]]))
+  purrr::walk(~ plot_position_cohort_exit_qr(posl[[.x]], ylim = c(.8, 1.5)))
 
 # Returns distribution
 plot_distribution(na.omit(dfsr$R), title = "Simple Returns distribution")
