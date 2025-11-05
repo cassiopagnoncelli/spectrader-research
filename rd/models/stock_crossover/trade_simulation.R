@@ -8,20 +8,18 @@ df_train <- tibble(
 )
 
 qrfits_params <- list(
-  fwd_days = features_params$days,
+  model = "stock_crossover",
+  # Sorted params.
   cutoff = 1.28,
   direction = "long",
-  within_days = 20,
-  tau_extreme = .92,
+  fwd_days = features_params$days,
   tau_aggr = .82,
-  tau_cons = .32
+  tau_cons = .32,
+  tau_extreme = .92,
+  within_days = 20
 )
 qrfits <- fetch_cache(
-  cache_key(
-    params = c(list(model = "stock_crossover"), qrfits_params),
-    ext = "rds",
-    fun = "qrfits"
-  ),
+  cache_key(params = qrfits_params, ext = "rds", fun = "qrfits"),
   function() {
     df_train %>%
       filter(yhat > qrfits_params$cutoff) %>%
