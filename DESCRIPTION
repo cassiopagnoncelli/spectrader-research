@@ -1,13 +1,13 @@
 Package: research
 Type: Package
 Title: Research framework
-Version: 2.3.1.9000
+Version: 2.3.2.9000
 Author: Cassio Pagnoncelli <cassiopagnoncelli@gmail.com>
 Maintainer: Cassio Pagnoncelli <cassiopagnoncelli@gmail.com>
 Authors@R:
     person("Cassio", "Pagnoncelli", , "cassiopagnoncelli@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0009-0000-7114-7008"))
-Description: A backtesting framework in iterative fashion.
+Description: A quant research framework.
 License: file LICENSE
 Encoding: UTF-8
 LazyData: true
@@ -23,23 +23,29 @@ Imports:
     progress,
     R6,
     RPostgreSQL,
-    TTR,
     uuid,
     xts,
     zoo,
-    rugarch,
     ggplot2,
-    ggfortify,
     tibble,
     tidyr,
     stringr,
     purrr,
     lubridate,
-    RQuantLib
+    rugarch,
+    TTR
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Suggests: 
     testthat (>= 3.0.0),
     withr (>= 3.0.0),
-    cyclocomp
+    cyclocomp,
+    forecast,
+    xgboost,
+    ggfortify,
+    RQuantLib,
+    gridExtra,
+    DiagrammeR,
+    quantreg,
+    MASS
 Config/testthat/edition: 3

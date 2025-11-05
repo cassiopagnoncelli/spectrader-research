@@ -308,41 +308,6 @@
       "Repository": "CRAN",
       "Encoding": "UTF-8"
     },
-    "RQuantLib": {
-      "Package": "RQuantLib",
-      "Version": "0.4.26",
-      "Source": "Repository",
-      "Title": "R Interface to the 'QuantLib' Library",
-      "Date": "2025-04-24",
-      "Authors@R": "c(person(\"Dirk\", \"Eddelbuettel\", role = c(\"aut\", \"cre\"), email = \"edd@debian.org\", comment = c(ORCID = \"0000-0001-6419-907X\")), person(\"Khanh\", \"Nguyen\", role = \"aut\", comment = \"2009-2010\"), person(\"Terry\", \"Leitch\", role = \"aut\", comment = c(ORCID = \"0000-0003-1706-4070\", \"since 2016\")))",
-      "Description": "The 'RQuantLib' package makes parts of 'QuantLib' accessible from R The 'QuantLib' project aims to provide a comprehensive software framework for quantitative finance. The goal is to provide a standard open source library for quantitative analysis, modeling, trading, and risk management of financial assets.",
-      "Suggests": [
-        "tinytest",
-        "rgl",
-        "shiny"
-      ],
-      "Imports": [
-        "methods",
-        "Rcpp (>= 0.11.0)",
-        "stats",
-        "graphics",
-        "zoo"
-      ],
-      "LinkingTo": [
-        "Rcpp"
-      ],
-      "SystemRequirements": "QuantLib library (>= 1.25) from https://quantlib.org, Boost library from https://www.boost.org",
-      "License": "GPL (>= 2)",
-      "URL": "https://github.com/eddelbuettel/rquantlib, https://dirk.eddelbuettel.com/code/rquantlib.html",
-      "BugReports": "https://github.com/eddelbuettel/rquantlib/issues",
-      "RoxygenNote": "6.0.1",
-      "LazyLoad": "true",
-      "NeedsCompilation": "yes",
-      "Author": "Dirk Eddelbuettel [aut, cre] (<https://orcid.org/0000-0001-6419-907X>), Khanh Nguyen [aut] (2009-2010), Terry Leitch [aut] (<https://orcid.org/0000-0003-1706-4070>, since 2016)",
-      "Maintainer": "Dirk Eddelbuettel <edd@debian.org>",
-      "Repository": "CRAN",
-      "Encoding": "UTF-8"
-    },
     "Rcpp": {
       "Package": "Rcpp",
       "Version": "1.1.0",
@@ -1110,69 +1075,6 @@
       "Maintainer": "Hadley Wickham <hadley@posit.co>",
       "Repository": "CRAN"
     },
-    "ggfortify": {
-      "Package": "ggfortify",
-      "Version": "0.4.19",
-      "Source": "Repository",
-      "Type": "Package",
-      "Title": "Data Visualization Tools for Statistical Analysis Results",
-      "Date": "2025-07-26",
-      "Authors@R": "c( person(\"Masaaki\", \"Horikoshi\", role = c(\"aut\"), email = \"sinhrks@gmail.com\"), person(\"Yuan\", \"Tang\", role = c(\"aut\", \"cre\"), email = \"terrytangyuan@gmail.com\", comment = c(ORCID = \"0000-0001-5243-233X\")), person(\"Austin\", \"Dickey\", role = c(\"ctb\")), person(\"Matthias\", \"Grenié\", role = c(\"ctb\")), person(\"Ryan\", \"Thompson\", role = c(\"ctb\")), person(\"Luciano\", \"Selzer\", role = c(\"ctb\")), person(\"Dario\", \"Strbenac\", role = c(\"ctb\")), person(\"Kirill\", \"Voronin\", role = c(\"ctb\")), person(\"Damir\", \"Pulatov\", role = c(\"ctb\")) )",
-      "Maintainer": "Yuan Tang <terrytangyuan@gmail.com>",
-      "URL": "https://github.com/sinhrks/ggfortify",
-      "BugReports": "https://github.com/sinhrks/ggfortify/issues",
-      "Encoding": "UTF-8",
-      "Description": "Unified plotting tools for statistics commonly used, such as GLM, time series, PCA families, clustering and survival analysis. The package offers a single plotting interface for these analysis results and plots in a unified style using 'ggplot2'.",
-      "License": "MIT + file LICENSE",
-      "Depends": [
-        "methods",
-        "ggplot2 (>= 2.0.0)"
-      ],
-      "Imports": [
-        "dplyr (>= 0.3)",
-        "tidyr",
-        "gridExtra",
-        "grid",
-        "scales",
-        "stringr",
-        "tibble"
-      ],
-      "Suggests": [
-        "testthat",
-        "cluster",
-        "changepoint",
-        "fGarch",
-        "forecast",
-        "ggrepel",
-        "glmnet",
-        "grDevices",
-        "KFAS",
-        "knitr",
-        "lintr",
-        "mapdata",
-        "markdown",
-        "MASS",
-        "MSwM",
-        "nlme",
-        "raster",
-        "ROCR",
-        "sp",
-        "stats",
-        "strucchange",
-        "survival",
-        "timeSeries",
-        "tseries",
-        "utils",
-        "vars",
-        "xts",
-        "zoo",
-        "lfda"
-      ],
-      "RoxygenNote": "7.3.2",
-      "NeedsCompilation": "no",
-      "Author": "Masaaki Horikoshi [aut], Yuan Tang [aut, cre] (ORCID: <https://orcid.org/0000-0001-5243-233X>), Austin Dickey [ctb], Matthias Grenié [ctb], Ryan Thompson [ctb], Luciano Selzer [ctb], Dario Strbenac [ctb], Kirill Voronin [ctb], Damir Pulatov [ctb]",
-      "Repository": "CRAN"
-    },
     "ggplot2": {
       "Package": "ggplot2",
       "Version": "4.0.0",
@@ -1311,37 +1213,6 @@
       "Author": "Jim Hester [aut] (<https://orcid.org/0000-0002-2739-7082>), Jennifer Bryan [aut, cre] (<https://orcid.org/0000-0002-6983-2759>), Posit Software, PBC [cph, fnd]",
       "Maintainer": "Jennifer Bryan <jenny@posit.co>",
       "Repository": "CRAN"
-    },
-    "gridExtra": {
-      "Package": "gridExtra",
-      "Version": "2.3",
-      "Source": "Repository",
-      "Authors@R": "c(person(\"Baptiste\", \"Auguie\", email = \"baptiste.auguie@gmail.com\", role = c(\"aut\", \"cre\")), person(\"Anton\", \"Antonov\", email = \"tonytonov@gmail.com\", role = c(\"ctb\")))",
-      "License": "GPL (>= 2)",
-      "Title": "Miscellaneous Functions for \"Grid\" Graphics",
-      "Type": "Package",
-      "Description": "Provides a number of user-level functions to work with \"grid\" graphics, notably to arrange multiple grid-based plots on a page, and draw tables.",
-      "VignetteBuilder": "knitr",
-      "Imports": [
-        "gtable",
-        "grid",
-        "grDevices",
-        "graphics",
-        "utils"
-      ],
-      "Suggests": [
-        "ggplot2",
-        "egg",
-        "lattice",
-        "knitr",
-        "testthat"
-      ],
-      "RoxygenNote": "6.0.1",
-      "NeedsCompilation": "no",
-      "Author": "Baptiste Auguie [aut, cre], Anton Antonov [ctb]",
-      "Maintainer": "Baptiste Auguie <baptiste.auguie@gmail.com>",
-      "Repository": "CRAN",
-      "Encoding": "UTF-8"
     },
     "gtable": {
       "Package": "gtable",

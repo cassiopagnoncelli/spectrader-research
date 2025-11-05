@@ -141,8 +141,6 @@ perform_train_stacked_model <- function(
   cat(sprintf("\nBest iteration: %d\n", model_final$best_iteration))
 
   # EVALUATION
-  cat("\n=== Model Evaluation ===\n")
-
   # Predictions on all splits
   X_train_stacked_dm <- xgboost::xgb.DMatrix(data = X_train_stacked)
   X_val_stacked_dm <- xgboost::xgb.DMatrix(data = X_val_stacked)
@@ -168,18 +166,13 @@ perform_train_stacked_model <- function(
   r2_val <- 1 - sum((pred_val - y_val)^2) / sum((y_val - mean(y_val))^2)
   r2_test <- 1 - sum((pred_test - y_test)^2) / sum((y_test - mean(y_test))^2)
 
-  cat("\nPerformance Metrics:\n")
-  cat(sprintf("Train - RMSE: %.6f, MAE: %.6f, R²: %.4f\n", rmse_train, mae_train, r2_train))
-  cat(sprintf("Val   - RMSE: %.6f, MAE: %.6f, R²: %.4f\n", rmse_val, mae_val, r2_val))
-  cat(sprintf("Test  - RMSE: %.6f, MAE: %.6f, R²: %.4f\n", rmse_test, mae_test, r2_test))
-
   # Feature importance
   cat("\n=== Feature Importance (Top 20) ===\n")
   importance_matrix <- xgboost::xgb.importance(model = model_final)
   print(head(importance_matrix, 20))
 
   # Prepare results
-  list(
+  results <- list(
     models_level1 = models_level1,
     model_final = model_final,
     predictions = list(
@@ -199,10 +192,15 @@ perform_train_stacked_model <- function(
     ),
     importance = importance_matrix
   )
+
+  # Print final metrics
+  stacked_model_metrics(results)
+
+  results
 }
 
 stacked_model_metrics <- function(results) {
-  cat("Stacked Model: cached performance metrics\n")
+  cat("Stacked Model: performance metrics\n")
   cat(sprintf("Train - RMSE: %.6f, MAE: %.6f, R²: %.4f\n",
               results$metrics$train["rmse"],
               results$metrics$train["mae"],

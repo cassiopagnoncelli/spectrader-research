@@ -31,9 +31,8 @@ import("stringr")
 # Dates
 import("lubridate")
 
-# Charts
+# Charts: ggplot2, ggfortify, MASS
 import("ggplot2")
-# import("ggfortify")
 importFrom("MASS", `truehist`)
 
 # Specifics

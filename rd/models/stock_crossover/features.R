@@ -1,7 +1,7 @@
 # Feature Engineering for Stock Crossover Model
 # This script builds the feature matrix (fwd) and metadata
 
-prepare_fwd <- function(fetl, methods, days = 15, companies = 300, cache = TRUE) {
+prepare_fwd <- function(fetl, methods, days = 15, companies = 300, cache = NULL) {
   # Start timing
   start_time <- Sys.time()
 
@@ -11,7 +11,7 @@ prepare_fwd <- function(fetl, methods, days = 15, companies = 300, cache = TRUE)
     if (!is.null(cached_data))
       return(cached_data)
 
-    cat(sprintf("Cache miss. Computing features...\n"))
+    cat("Cache miss. Computing features...\n")
   }
 
   # Ensure methods is an array
@@ -168,10 +168,11 @@ prepare_fwd <- function(fetl, methods, days = 15, companies = 300, cache = TRUE)
 
   # Save to cache if enabled
   if (!is.null(cache)) {
-    cat(sprintf("Saving to cache: %s\n", ck$path))
-    save_cache(ck, result)
-    ck_sql <- cache_key(params = params, ext = "sql", fun = "prepare_fwd")
-    writeLines(fwd_sql, ck_sql$path)
+    save_cache(cache, result)
+    save_cache(
+      cache_key(existing_key = cache$key, ext = "sql", fun = "prepare_fwd"),
+      fwd_sql
+    )
     cat(sprintf("✓ Computation completed in %.2f seconds (cached for future use)\n",
                 as.numeric(elapsed)))
   } else {
