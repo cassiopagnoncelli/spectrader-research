@@ -217,3 +217,21 @@ train_stacked_model <- function(X, fwd, train_indices, val_indices, test_indices
   cat(sprintf("Models and results saved to cache: %s\n", cache$path))
   results
 }
+
+perform_train_stacked_model <- function(X, fwd, train_indices, val_indices, test_indices,
+                                        Xy1, Xy2, Xy3, Xy4, Xy5, Xy6) {
+  train_stacked_model(
+    X = X,
+    fwd = fwd,
+    train_indices = train_indices,
+    val_indices = val_indices,
+    test_indices = test_indices,
+    Xy1 = Xy1,
+    Xy2 = Xy2,
+    Xy3 = Xy3,
+    Xy4 = Xy4,
+    Xy5 = Xy5,
+    Xy6 = Xy6,
+    cache = cache
+  )
+}
