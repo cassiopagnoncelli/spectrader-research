@@ -8,6 +8,7 @@ df_train <- tibble(
 )
 
 qrfits_params <- list(
+  fwd_days = features_params$days,
   cutoff = 1.28,
   direction = "long",
   within_days = 20,
@@ -45,7 +46,7 @@ df_test <- tibble(
 
 # Generate trading signals, discarding the ones within a month apart
 df_signals <- df_test %>%
-  filter(yhat > 1.45) %>%
+  filter(yhat > 1.35) %>%
   filter_signals(within_days = qrfits_params$within_days) %>%
   arrange(date)
 
