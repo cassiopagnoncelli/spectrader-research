@@ -45,3 +45,14 @@ save_cache <- function(ck, object) {
   else
     stop(sprintf("Unsupported cache format: %s", ck$ext))
 }
+
+fetch_cache <- function(ck, compute_fun) {
+  cached_data <- load_cache(ck)
+  if (!is.null(cached_data)) {
+    return(cached_data)
+  }
+  cat(sprintf("Computing and caching result for %s\n", ck$key))
+  result <- compute_fun()
+  save_cache(ck, result)
+  result
+}

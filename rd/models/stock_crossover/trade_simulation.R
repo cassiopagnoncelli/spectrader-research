@@ -7,11 +7,32 @@ df_train <- tibble(
   close = fwd$y_7[train_indices]
 )
 
-qrfits <- df_train %>%
-  filter(yhat > 1.28) %>%
-  filter_signals(within_days = 20) %>%
-  arrange(date) %>%
-  train_qr() # 8-10 min training.
+qrfits_params <- list(
+  cutoff = 1.28,
+  direction = "long",
+  within_days = 20,
+  tau_extreme = .92,
+  tau_aggr = .82,
+  tau_cons = .32
+)
+qrfits <- fetch_cache(
+  cache_key(
+    params = c(list(model = "stock_crossover"), qrfits_params),
+    exit = "rds",
+    fun = "qr_fits"
+  ),
+  function() {
+    df_train %>%
+      filter(yhat > qrfits_params$cutoff) %>%
+      filter_signals(within_days = qrfits_params$within_days) %>%
+      arrange(date) %>%
+      train_qr( # 8-10 min training.
+        qrfits_params$tau_extreme,
+        qrfits_params$tau_aggr,
+        qrfits_params$tau_cons
+      )
+  }
+)
 
 # Test subset
 df_test <- tibble(
@@ -25,7 +46,7 @@ df_test <- tibble(
 # Generate trading signals, discarding the ones within a month apart
 df_signals <- df_test %>%
   filter(yhat > 1.45) %>%
-  filter_signals(within_days = 30) %>%
+  filter_signals(within_days = qrfits_params$within_days) %>%
   arrange(date)
 
 # Build list of positions from signals, each position is a tibble.
