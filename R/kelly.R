@@ -64,6 +64,125 @@ kelly_fraction <- function(rets) {
   max(0, min(1, f))
 }
 
+#' Calculate the Quantile-Based Kelly Fraction for Optimal Position Sizing
+#'
+#' Computes a quantile-based Kelly Criterion fraction (f_tau) that uses quantiles
+#' of the win and loss distributions instead of means. This approach provides a
+#' more robust position sizing strategy by considering the distributional tails
+#' and downside risk through the quantile parameter tau. Unlike the classical Kelly
+#' approach, this method is less sensitive to outliers and allows for risk-adjusted
+#' position sizing through the tau parameter.
+#'
+#' @param returns Numeric vector of returns. The function automatically separates
+#'   winning (positive) and losing (non-positive) returns for quantile calculation.
+#'   Must be numeric and contain at least 2 observations.
+#' @param tau Numeric value between 0 and 1 representing the quantile parameter.
+#'   Default is 0.5 (median). Higher values (e.g., 0.75) focus on more optimistic
+#'   scenarios, while lower values (e.g., 0.25) emphasize conservative tail risk.
+#'
+#' @return Numeric value between 0 and 1 representing the quantile-based Kelly fraction.
+#'   Returns 0 if there are no winning trades or no losing trades (degenerate case).
+#'   The result is clamped between 0 and 1 to prevent negative or excessive leverage.
+#'
+#' @details
+#' Unlike the classical Kelly Criterion which uses mean returns, this quantile-based
+#' approach calculates position size using distributional quantiles, providing greater
+#' robustness to outliers and allowing explicit risk control through tau.
+#'
+#' The function performs the following steps:
+#' \enumerate{
+#'   \item Separates returns into wins (> 0) and losses (<= 0)
+#'   \item Calculates win probability: p = n_wins / n_total
+#'   \item Computes quantiles:
+#'     \itemize{
+#'       \item r_w: tau-quantile of winning returns
+#'       \item r_l: (1-tau)-quantile of losing returns (complementary quantile)
+#'     }
+#'   \item Calculates: f_tau = (p * r_w - q * |r_l|) / r_w
+#'   \item Clamps result to [0, 1]
+#' }
+#'
+#' The quantile parameter tau controls the risk profile:
+#' \itemize{
+#'   \item \strong{tau = 0.5}: Uses median returns (balanced, robust approach)
+#'   \item \strong{tau > 0.5}: More aggressive, emphasizes upside potential
+#'   \item \strong{tau < 0.5}: More conservative, emphasizes downside protection
+#' }
+#'
+#' This method is particularly useful when:
+#' \itemize{
+#'   \item Return distributions are non-normal, skewed, or fat-tailed
+#'   \item You want to incorporate tail risk into position sizing decisions
+#'   \item Mean-based estimates are unreliable due to extreme outliers
+#'   \item A more conservative or risk-aware approach is desired
+#'   \item You need to adjust position sizing based on distributional properties
+#' }
+#'
+#' @section Comparison to Classical Kelly:
+#' The classical Kelly Criterion (\code{\link{kelly_fraction}}) uses mean wins
+#' and mean losses, which can be heavily influenced by outliers. The quantile-based
+#' approach provides robustness by using quantiles, and allows practitioners to
+#' explicitly adjust their risk profile through the tau parameter. When tau = 0.5,
+#' this method uses medians, which are inherently more robust than means.
+#'
+#' @section Edge Cases:
+#' \itemize{
+#'   \item If all returns are positive (no losses), returns 0 (conservative default)
+#'   \item If all returns are non-positive (no wins), returns 0 (no position)
+#'   \item The function validates that returns is numeric with length > 1
+#' }
+#'
+#' @examples
+#' # Basic usage with mixed returns
+#' returns <- c(0.05, -0.02, 0.03, -0.01, 0.04, -0.03, 0.02, -0.015)
+#'
+#' # Median-based (balanced approach)
+#' kelly_quantile(returns, tau = 0.5)
+#'
+#' # Conservative approach (25th percentile)
+#' kelly_quantile(returns, tau = 0.25)
+#'
+#' # Aggressive approach (75th percentile)
+#' kelly_quantile(returns, tau = 0.75)
+#'
+#' # Compare different tau values
+#' sapply(c(0.25, 0.5, 0.75), function(t) kelly_quantile(returns, tau = t))
+#'
+#' # Compare with classical Kelly
+#' classical <- kelly_fraction(returns)
+#' quantile_median <- kelly_quantile(returns, tau = 0.5)
+#' cat(sprintf("Classical: %.3f, Quantile (median): %.3f\n", 
+#'             classical, quantile_median))
+#'
+#' # Example with fat-tailed returns
+#' set.seed(42)
+#' fat_tailed <- rt(100, df = 3) * 0.02  # Student's t with 3 df
+#' kelly_quantile(fat_tailed, tau = 0.5)
+#'
+#' @seealso
+#' \code{\link{kelly_fraction}} for the classical Kelly Criterion implementation
+#'
+#' @export
+kelly_quantile <- function(returns, tau = 0.5) {
+  stopifnot(is.numeric(returns), length(returns) > 1)
+  returns <- returns[is.finite(returns)]
+  
+  wins  <- returns[returns > 0]
+  loss  <- returns[returns <= 0]
+  p     <- length(wins) / length(returns)
+  q     <- 1 - p
+  
+  if (length(wins) == 0 || length(loss) == 0) return(0)
+  
+  r_w <- quantile(wins,  probs = tau, na.rm = TRUE)
+  r_l <- quantile(loss,  probs = 1 - tau, na.rm = TRUE)
+  
+  f_tau <- (p * r_w - q * abs(r_l)) / r_w
+  f_tau <- max(0, min(f_tau, 1))  # clamp 0–1
+  
+  return(f_tau)
+}
+
 #' Plot Classical Kelly Portfolio Growth Over Time
 #'
 #' Visualizes the cumulative portfolio growth using the classical Kelly Criterion for
