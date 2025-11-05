@@ -172,7 +172,8 @@ kelly_quantile <- function(returns, tau = 0.5) {
   p     <- length(wins) / length(returns)
   q     <- 1 - p
   
-  if (length(wins) == 0 || length(loss) == 0) return(0)
+  if (length(wins) == 0) return(0)
+  if (length(loss) == 0) return(1)
   
   r_w <- quantile(wins,  probs = tau, na.rm = TRUE)
   r_l <- quantile(loss,  probs = 1 - tau, na.rm = TRUE)

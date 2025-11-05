@@ -74,19 +74,23 @@ dfsr %>%
 
 # Kelly - sequential
 f_star <- kelly_fraction(dfsr$R)
-pk <- plot_kelly_trades(dfsr$R, f_star, log.transform = F)
+f_star
+f_star_2 <- kelly_quantile(dfsr$R, tau = .5)
+f_star_2
+pk <- plot_kelly_trades(dfsr$R, f_star_2, log.transform = F)
 
 # Returns distribution
 plot_distribution(na.omit(dfsr$R), title = "Simple Returns distribution")
 
 # Signal accuracy analysis
-accuracy <- exit_accuracy(dfsr)
+side = "long"
+accuracy <- exit_accuracy(dfsr, side = side)
 accuracy_take_profit <- accuracy %>% filter(t < max(t))
 accuracy_open_positions <- accuracy %>% filter(t == max(t))
 
-exit_metrics(accuracy)
-exit_metrics(accuracy_take_profit)
-exit_metrics(accuracy_open_positions)
+exit_metrics(accuracy, side)
+exit_metrics(accuracy_take_profit, side)
+exit_metrics(accuracy_open_positions, side)
 analyse_distribution(accuracy$R, groups = c(0))
 analyse_distribution(accuracy_take_profit$R, groups = c(0))
 analyse_distribution(accuracy_open_positions$R, groups = c(0))
