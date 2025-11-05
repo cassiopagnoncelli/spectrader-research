@@ -16,6 +16,7 @@ exit_accuracy <- function(dfsr, drift = 0) {
 exit_metrics <- function(accuracy) {
   tibble::tibble(
     n = nrow(accuracy),
+    sharpe = sharpe_ratio(accuracy$R),
     rmse = mean(accuracy$rmse, na.rm = TRUE),
     t_mean = mean(accuracy$t, na.rm = TRUE),
     t_sd = sd(accuracy$t, na.rm = TRUE),

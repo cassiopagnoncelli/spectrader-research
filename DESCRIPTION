@@ -33,7 +33,8 @@ Imports:
     purrr,
     lubridate,
     rugarch,
-    TTR
+    TTR,
+    moments
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Suggests: 
