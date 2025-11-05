@@ -64,10 +64,6 @@ posl <- position_cohort(
 # Signals, Returns
 dfsr <- position_cohort_return(posl, df_signals)
 
-# Kelly - sequential
-f_star <- kelly_fraction(dfsr$R)
-pk <- plot_kelly_trades(dfsr$R, f_star, log.transform = F)
-
 # Inspect exits
 # _fpt(side = "long), _vats, _thres, _qr
 dfsr %>%
@@ -76,9 +72,12 @@ dfsr %>%
   pull(trade) %>%
   purrr::walk(~ plot_position_cohort_exit_qr(posl[[.x]], ylim = c(.8, 1.5)))
 
+# Kelly - sequential
+f_star <- kelly_fraction(dfsr$R)
+pk <- plot_kelly_trades(dfsr$R, f_star, log.transform = F)
+
 # Returns distribution
 plot_distribution(na.omit(dfsr$R), title = "Simple Returns distribution")
-analyse_distribution(na.omit(dfsr$R), groups = c(0))
 
 # Signal accuracy analysis
 accuracy <- exit_accuracy(dfsr)
@@ -88,5 +87,6 @@ accuracy_open_positions <- accuracy %>% filter(t == max(t))
 exit_metrics(accuracy)
 exit_metrics(accuracy_take_profit)
 exit_metrics(accuracy_open_positions)
+analyse_distribution(accuracy$R, groups = c(0))
 analyse_distribution(accuracy_take_profit$R, groups = c(0))
 analyse_distribution(accuracy_open_positions$R, groups = c(0))

@@ -108,9 +108,9 @@ exit_qr <- function(qrfit_extreme = NULL, qrfit_aggr = NULL, qrfit_cons = NULL,
 
     result %>%
       dplyr::mutate(
-        exit_qr_extreme = S >= qhat_extreme & t > extreme_t,
-        exit_qr_aggr = S >= qhat_aggr & t > aggr_t,
-        exit_qr_cons = S >= qhat_cons & t > cons_t & S > 1,
+        exit_qr_extreme = S >= qhat_extreme & t >= extreme_t & t < aggr_t & S > 1,
+        exit_qr_aggr = S >= qhat_aggr & t >= aggr_t & t < cons_t & S > 1,
+        exit_qr_cons = S >= qhat_cons & t >= cons_t & S > 1,
         exit = exit_qr_extreme | exit_qr_aggr | exit_qr_cons
       )
   }
