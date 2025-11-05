@@ -29,11 +29,6 @@ df_signals <- df_test %>%
   arrange(date)
 
 # Build list of positions from signals, each position is a tibble.
-# Exit functions:
-# - exit_thres(k = 0.15)
-# - exit_vats(sd_short = 6, sd_long = 20, k = 2.5)
-# - exit_fpt(interest_rate = 0.0425, maturity = 15/365)
-# - exit_qr(qrfit_aggr, qrfit_cons)
 posl <- position_cohort(
   df_signals,
   before_days = 30,
@@ -43,7 +38,6 @@ posl <- position_cohort(
   # fun = exit_fpt(side = "long")
   # fun = exit_vats()
   # fun = exit_thres(k = .55)
-  # fun = exit_enrich()
   fun = exit_qr(qrfits$qrfit_extreme, qrfits$qrfit_aggr, qrfits$qrfit_cons)
 )
 
@@ -54,18 +48,13 @@ dfsr <- position_cohort_return(posl, df_signals)
 f_star <- kelly_fraction(dfsr$R)
 pk <- plot_kelly_trades(dfsr$R, f_star, log.transform = F)
 
-# Plot individual positions exits
-if (F) {
-  sampled <- sample(seq_along(posl), 10) %>% sort
-  for (i in sampled) {
-    # plot_position_cohort_exit_fpt(posl[[i]], side = "long")
-    # plot_position_cohort_exit_vats(posl[[i]])
-    # plot_position_cohort_exit_thres(posl[[i]])
-    # plot_position_cohort_exit_draft(posl[[i]])
-    plot_position_cohort_exit_qr(posl[[i]])
-  }
-  sampled
-}
+# Inspect exits
+# _fpt(side = "long), _vats, _thres, _qr
+dfsr %>%
+  filter(t < max(t, na.rm = TRUE)) %>%
+  slice_sample(n = 0) %>%
+  pull(trade) %>%
+  purrr::walk(~ plot_position_cohort_exit_qr(posl[[.x]]))
 
 # Returns distribution
 plot_distribution(na.omit(dfsr$R), title = "Simple Returns distribution")
@@ -81,8 +70,3 @@ exit_metrics(accuracy_take_profit)
 exit_metrics(accuracy_open_positions)
 analyse_distribution(accuracy_take_profit$R, groups = c(0))
 analyse_distribution(accuracy_open_positions$R, groups = c(0))
-
-dfsr %>%
-  filter(t == max(t)) %>%
-  select(trade) %>%
-  plot_position_cohort_exit_qr(posl[[trade]])
