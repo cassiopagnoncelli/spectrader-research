@@ -3,15 +3,12 @@
 # Stacked XGBoost Model for Stock Crossover Prediction
 # This file contains the model training logic with caching support
 train_stacked_model <- function(X, fwd, train_indices, val_indices, test_indices,
-                                 Xy1, Xy2, Xy3, Xy4, Xy5, Xy6,
-                                 cache = FALSE,
-                                 cache_file = "rd/models/stock_crossover/bkp/stacked_xgboost_results.rds") {
+                                Xy1, Xy2, Xy3, Xy4, Xy5, Xy6,
+                                cache = NULL) {
 
   # Check cache
-  if (cache && file.exists(cache_file)) {
-    cat(sprintf("\n=== Loading Cached Model Results ===\n"))
-    cat(sprintf("Loading from: %s\n", cache_file))
-    results <- readRDS(cache_file)
+  if (!is.null(cache)) {
+    results <- load_cache(cache)
     cat("✓ Cached model loaded successfully\n")
 
     # Print cached metrics
@@ -32,9 +29,6 @@ train_stacked_model <- function(X, fwd, train_indices, val_indices, test_indices
     return(results)
   }
 
-  # Load required library
-  library(xgboost)
-
   # LEVEL 1: Train 6 XGBoost models to predict y_1, ..., y_6
   cat("\n=== LEVEL 1: Training First-Level Models ===\n")
 
@@ -49,8 +43,8 @@ train_stacked_model <- function(X, fwd, train_indices, val_indices, test_indices
     y_val <- Xy_data[val_idx, 1]
 
     # Create DMatrix
-    dtrain <- xgb.DMatrix(data = X_train, label = y_train)
-    dval <- xgb.DMatrix(data = X_val, label = y_val)
+    dtrain <- xgboost::xgb.DMatrix(data = X_train, label = y_train)
+    dval <- xgboost::xgb.DMatrix(data = X_val, label = y_val)
 
     # Set hyperparameters
     params <- list(
@@ -125,8 +119,8 @@ train_stacked_model <- function(X, fwd, train_indices, val_indices, test_indices
   X_val_stacked <- as.matrix(X_stacked[val_indices, ])
   y_val <- fwd$y[val_indices]
 
-  dtrain_final <- xgb.DMatrix(data = X_train_stacked, label = y_train)
-  dval_final <- xgb.DMatrix(data = X_val_stacked, label = y_val)
+  dtrain_final <- xgboost::xgb.DMatrix(data = X_train_stacked, label = y_train)
+  dval_final <- xgboost::xgb.DMatrix(data = X_val_stacked, label = y_val)
 
   params_final <- list(
     objective = "reg:squarederror",
@@ -138,7 +132,7 @@ train_stacked_model <- function(X, fwd, train_indices, val_indices, test_indices
   )
 
   watchlist_final <- list(train = dtrain_final, val = dval_final)
-  model_final <- xgb.train(
+  model_final <- xgboost::xgb.train(
     params = params_final,
     data = dtrain_final,
     nrounds = 500,
@@ -153,10 +147,10 @@ train_stacked_model <- function(X, fwd, train_indices, val_indices, test_indices
   cat("\n=== Model Evaluation ===\n")
 
   # Predictions on all splits
-  X_train_stacked_dm <- xgb.DMatrix(data = X_train_stacked)
-  X_val_stacked_dm <- xgb.DMatrix(data = X_val_stacked)
+  X_train_stacked_dm <- xgboost::xgb.DMatrix(data = X_train_stacked)
+  X_val_stacked_dm <- xgboost::xgb.DMatrix(data = X_val_stacked)
   X_test_stacked <- as.matrix(X_stacked[test_indices, ])
-  X_test_stacked_dm <- xgb.DMatrix(data = X_test_stacked)
+  X_test_stacked_dm <- xgboost::xgb.DMatrix(data = X_test_stacked)
 
   pred_train <- predict(model_final, X_train_stacked_dm)
   pred_val <- predict(model_final, X_val_stacked_dm)
@@ -184,7 +178,7 @@ train_stacked_model <- function(X, fwd, train_indices, val_indices, test_indices
 
   # Feature importance
   cat("\n=== Feature Importance (Top 20) ===\n")
-  importance_matrix <- xgb.importance(model = model_final)
+  importance_matrix <- xgboost::xgb.importance(model = model_final)
   print(head(importance_matrix, 20))
 
   # Prepare results
@@ -210,9 +204,13 @@ train_stacked_model <- function(X, fwd, train_indices, val_indices, test_indices
   )
 
   # Save models and results
-  cat("\n=== Saving Models ===\n")
-  saveRDS(results, cache_file)
-  cat(sprintf("Results saved to: %s\n", cache_file))
+  if (is.null(cache)) {
+    cat("No cache provided, skipping saving models.\n")
+    return(results)
+  }
 
-  return(results)
+  cat(sprintf("\nPersisting models to cache\n"))
+  save_cache(cache, results)
+  cat(sprintf("Models and results saved to cache: %s\n", cache$path))
+  results
 }

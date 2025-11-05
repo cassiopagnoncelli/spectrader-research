@@ -8,8 +8,9 @@ options(scipen = 999)
 source("rd/models/stock_crossover/features.R")
 
 fetl <- Fetl$new()
-features <- prepare_fwd(
-  fetl,
+features_params <- list(
+  companies = 13000,          # Cached: 13000
+  days = 15,                  # Cached: 10*, 15, 22*, 44*
   methods = c(
     "extreme_high_identity",  # y
     "extreme_low_identity",   # y_1
@@ -19,10 +20,15 @@ features <- prepare_fwd(
     "sharpe_high",            # y_5
     "sharpe_low",             # y_6
     "close_identity"          # y_7
-  ),
-  days = 15,                  # Cached: 10*, 15, 22*, 44*
-  companies = 13000,          # Cached: 13000
-  cache = TRUE
+  )
+)
+ckf <- cache_key(params = features_params, ext = "rds", fun = "prepare_fwd")
+features <- prepare_fwd(
+  fetl,
+  companies = features_params$companies,
+  days = features_params$days,
+  methods = features_params$methods,
+  cache = ckf
 )
 fwd <- features$fwd
 fwd_metadata <- features$fwd_metadata
@@ -56,6 +62,7 @@ source("rd/models/stock_crossover/regression_model.R")
 
 # Train model with caching support
 # Set cache = TRUE to load from saved results, FALSE to retrain
+ckm <- cache_key(existing_key = ckf$key, ext = "rds", fun = "stacked_xgboost")
 results <- train_stacked_model(
   X = X,
   fwd = fwd,
@@ -68,8 +75,7 @@ results <- train_stacked_model(
   Xy4 = Xy4,
   Xy5 = Xy5,
   Xy6 = Xy6,
-  cache = TRUE,
-  cache_file = "rd/models/stock_crossover/backup/stacked_xgboost_results.rds"
+  cache = ckm
 )
 
 # GENERATE PLOTS

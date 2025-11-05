@@ -1,38 +1,17 @@
 # Feature Engineering for Stock Crossover Model
 # This script builds the feature matrix (fwd) and metadata
 
-prepare_fwd <- function(fetl, methods, days = 15, companies = 300, cache = FALSE) {
+prepare_fwd <- function(fetl, methods, days = 15, companies = 300, cache = TRUE) {
   # Start timing
   start_time <- Sys.time()
 
   # Cache management
   if (cache) {
-    # Create cache directory if it doesn't exist
-    cache_dir <- "_cache_"
-    if (!dir.exists(cache_dir)) {
-      dir.create(cache_dir, recursive = TRUE)
-    }
-
-    # Generate cache key based on parameters
-    cache_params <- list(
-      methods = sort(methods),  # Sort to ensure consistent ordering
-      days = days,
-      companies = companies
-    )
-    cache_key <- digest::digest(cache_params, algo = "md5")
-    cache_file <- file.path(cache_dir, sprintf("prepare_fwd_%s.rds", cache_key))
-
-    # Try to load from cache
-    if (file.exists(cache_file)) {
-      cat(sprintf("Loading cached data from: %s\n", cache_file))
-      cached_data <- readRDS(cache_file)
-      end_time <- Sys.time()
-      elapsed <- difftime(end_time, start_time, units = "secs")
-      cat(sprintf("✓ Cache hit - loaded in %.2f seconds\n", as.numeric(elapsed)))
+    cached_data <- load_cache(cache)
+    if (!is.null(cached_data))
       return(cached_data)
-    } else {
-      cat(sprintf("Cache miss. Computing features...\n"))
-    }
+
+    cat(sprintf("Cache miss. Computing features...\n"))
   }
 
   # Ensure methods is an array
@@ -189,10 +168,10 @@ prepare_fwd <- function(fetl, methods, days = 15, companies = 300, cache = FALSE
 
   # Save to cache if enabled
   if (cache) {
-    cat(sprintf("Saving to cache: %s\n", cache_file))
-    saveRDS(result, cache_file)
-    sql_file <- file.path(cache_dir, sprintf("prepare_fwd_%s.sql", cache_key))
-    writeLines(fwd_sql, sql_file)
+    cat(sprintf("Saving to cache: %s\n", ck$path))
+    save_cache(ck, result)
+    ck_sql <- cache_key(params = params, ext = "sql", fun = "prepare_fwd")
+    writeLines(fwd_sql, ck_sql$path)
     cat(sprintf("✓ Computation completed in %.2f seconds (cached for future use)\n",
                 as.numeric(elapsed)))
   } else {
