@@ -5,33 +5,27 @@
 train_stacked_model <- function(X, fwd, train_indices, val_indices, test_indices,
                                 Xy1, Xy2, Xy3, Xy4, Xy5, Xy6,
                                 cache = NULL) {
-
-  # Check cache
   if (!is.null(cache)) {
     results <- load_cache(cache)
     if (!is.null(results)) {
-      cat("✓ Cached model loaded successfully\n")
-
-      # Print cached metrics
-      cat("\n=== Cached Performance Metrics ===\n")
-      cat(sprintf("Train - RMSE: %.6f, MAE: %.6f, R²: %.4f\n",
-                  results$metrics$train["rmse"],
-                  results$metrics$train["mae"],
-                  results$metrics$train["r2"]))
-      cat(sprintf("Val   - RMSE: %.6f, MAE: %.6f, R²: %.4f\n",
-                  results$metrics$val["rmse"],
-                  results$metrics$val["mae"],
-                  results$metrics$val["r2"]))
-      cat(sprintf("Test  - RMSE: %.6f, MAE: %.6f, R²: %.4f\n",
-                  results$metrics$test["rmse"],
-                  results$metrics$test["mae"],
-                  results$metrics$test["r2"]))
-
+      stacked_model_metrics(results)
       return(results)
     }
-    cat("No cached model found, proceeding to train a new model...\n")
+    cat("Cache miss, proceeding to train a new model...\n")
   }
+  results <- perform_train_stacked_model(
+    X, fwd, train_indices, val_indices, test_indices,
+    Xy1, Xy2, Xy3, Xy4, Xy5, Xy6
+  )
+  if (!is.null(cache)) {
+    save_cache(cache, results)
+  }
+  results
+}
 
+perform_train_stacked_model <- function(
+  X, fwd, train_indices, val_indices, test_indices, Xy1, Xy2, Xy3, Xy4, Xy5, Xy6
+) {
   # LEVEL 1: Train 6 XGBoost models to predict y_1, ..., y_6
   cat("\n=== LEVEL 1: Training First-Level Models ===\n")
 
@@ -61,7 +55,7 @@ train_stacked_model <- function(X, fwd, train_indices, val_indices, test_indices
 
     # Train with early stopping
     watchlist <- list(train = dtrain, val = dval)
-    model <- xgb.train(
+    model <- xgboost::xgb.train(
       params = params,
       data = dtrain,
       nrounds = 500,
@@ -74,7 +68,7 @@ train_stacked_model <- function(X, fwd, train_indices, val_indices, test_indices
     cat(sprintf("  Train RMSE: %.6f\n", model$evaluation_log$train_rmse_mean[model$best_iteration]))
     cat(sprintf("  Val RMSE: %.6f\n", model$evaluation_log$val_rmse_mean[model$best_iteration]))
 
-    return(model)
+    model
   }
 
   # Train all 6 first-level models
@@ -89,7 +83,7 @@ train_stacked_model <- function(X, fwd, train_indices, val_indices, test_indices
   # Generate predictions from first-level models on all splits
   cat("\n=== Generating Level 1 Predictions ===\n")
   X_matrix <- as.matrix(X)
-  dmatrix_all <- xgb.DMatrix(data = X_matrix)
+  dmatrix_all <- xgboost::xgb.DMatrix(data = X_matrix)
 
   y_1_pred <- predict(models_level1[[1]], dmatrix_all)
   y_2_pred <- predict(models_level1[[2]], dmatrix_all)
@@ -185,7 +179,7 @@ train_stacked_model <- function(X, fwd, train_indices, val_indices, test_indices
   print(head(importance_matrix, 20))
 
   # Prepare results
-  results <- list(
+  list(
     models_level1 = models_level1,
     model_final = model_final,
     predictions = list(
@@ -205,33 +199,20 @@ train_stacked_model <- function(X, fwd, train_indices, val_indices, test_indices
     ),
     importance = importance_matrix
   )
-
-  # Save models and results
-  if (is.null(cache)) {
-    cat("No cache provided, skipping saving models.\n")
-    return(results)
-  }
-
-  cat(sprintf("\nPersisting models to cache\n"))
-  save_cache(cache, results)
-  cat(sprintf("Models and results saved to cache: %s\n", cache$path))
-  results
 }
 
-perform_train_stacked_model <- function(X, fwd, train_indices, val_indices, test_indices,
-                                        Xy1, Xy2, Xy3, Xy4, Xy5, Xy6) {
-  train_stacked_model(
-    X = X,
-    fwd = fwd,
-    train_indices = train_indices,
-    val_indices = val_indices,
-    test_indices = test_indices,
-    Xy1 = Xy1,
-    Xy2 = Xy2,
-    Xy3 = Xy3,
-    Xy4 = Xy4,
-    Xy5 = Xy5,
-    Xy6 = Xy6,
-    cache = cache
-  )
+stacked_model_metrics <- function(results) {
+  cat("Stacked Model: cached performance metrics\n")
+  cat(sprintf("Train - RMSE: %.6f, MAE: %.6f, R²: %.4f\n",
+              results$metrics$train["rmse"],
+              results$metrics$train["mae"],
+              results$metrics$train["r2"]))
+  cat(sprintf("Val   - RMSE: %.6f, MAE: %.6f, R²: %.4f\n",
+              results$metrics$val["rmse"],
+              results$metrics$val["mae"],
+              results$metrics$val["r2"]))
+  cat(sprintf("Test  - RMSE: %.6f, MAE: %.6f, R²: %.4f\n",
+              results$metrics$test["rmse"],
+              results$metrics$test["mae"],
+              results$metrics$test["r2"]))
 }

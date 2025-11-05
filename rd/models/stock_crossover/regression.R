@@ -64,7 +64,7 @@ test_data <- fwd[test_indices, ]
 
 #
 # TRAINING.
-# Stacked model
+# Stacked model.
 #
 ckm <- cache_key(existing_key = ckf$key, ext = "rds", fun = "stacked_xgboost")
 results <- train_stacked_model(
@@ -82,7 +82,9 @@ results <- train_stacked_model(
   cache = ckm
 )
 
-# PLOTS
+#
+# PLOTS.
+#
 if (FALSE) {
   plot_metrics_comparison(results)
   plot_feature_importance(results, top_n = 20)
