@@ -80,4 +80,4 @@ accuracy_take_profit <- accuracy %>% filter(t < max(t))
 accuracy_open_positions <- accuracy %>% filter(t == max(t))
 
 # Dashboard
-shiny::runApp('rd/models/stock_crossover/dashboard.R')
+shiny::runApp("rd/models/stock_crossover/dashboard.R")
