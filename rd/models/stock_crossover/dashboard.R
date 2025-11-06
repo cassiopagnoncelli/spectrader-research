@@ -104,13 +104,13 @@ ui <- dashboardPage(
         ),
         fluidRow(
           box(
-            width = 6,
+            width = 8,
             title = "Kelly Portfolio Growth",
             status = "info",
             plotOutput("kelly_plot", height = 500)
           ),
           box(
-            width = 6,
+            width = 4,
             title = "Kelly Statistics",
             status = "info",
             htmlOutput("kelly_stats")
