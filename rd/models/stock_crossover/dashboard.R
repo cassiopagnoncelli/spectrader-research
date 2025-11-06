@@ -86,7 +86,18 @@ ui <- dashboardPage(
             width = 12,
             title = "Take Profit Position Exits (Quantile Regression)",
             status = "info",
-            uiOutput("exit_plots")
+            fluidRow(
+              column(
+                width = 12,
+                div(
+                  style = "text-align: center; margin-bottom: 15px;",
+                  actionButton("prev_chart", "Previous", icon = icon("arrow-left"), style = "margin-right: 10px;"),
+                  htmlOutput("chart_counter", inline = TRUE),
+                  actionButton("next_chart", "Next", icon = icon("arrow-right"), style = "margin-left: 10px;")
+                )
+              )
+            ),
+            plotOutput("current_exit_plot", height = 400)
           )
         )
       ),
@@ -343,7 +354,8 @@ server <- function(input, output, session) {
     posl = NULL,
     f_star = NULL,
     accuracy = NULL,
-    sample_trades = NULL
+    sample_trades = NULL,
+    current_chart_index = 1
   )
   
   # Load data from global environment
@@ -387,6 +399,49 @@ server <- function(input, output, session) {
     } else {
       rv$sample_trades <- NULL
     }
+    
+    # Reset to first chart when samples are refreshed
+    rv$current_chart_index <- 1
+  })
+  
+  # Carousel Navigation - Previous Button
+  observeEvent(input$prev_chart, {
+    req(rv$sample_trades)
+    if (rv$current_chart_index > 1) {
+      rv$current_chart_index <- rv$current_chart_index - 1
+    }
+  })
+  
+  # Carousel Navigation - Next Button
+  observeEvent(input$next_chart, {
+    req(rv$sample_trades)
+    if (rv$current_chart_index < length(rv$sample_trades)) {
+      rv$current_chart_index <- rv$current_chart_index + 1
+    }
+  })
+  
+  # Carousel - Chart Counter Display
+  output$chart_counter <- renderUI({
+    req(rv$sample_trades)
+    
+    total_charts <- length(rv$sample_trades)
+    current_idx <- rv$current_chart_index
+    current_trade_id <- rv$sample_trades[current_idx]
+    
+    HTML(sprintf(
+      "<strong style='font-size: 16px;'>Chart %d of %d</strong> <span style='color: #777;'>(Trade ID: %s)</span>",
+      current_idx, total_charts, current_trade_id
+    ))
+  })
+  
+  # Carousel - Render Current Chart
+  output$current_exit_plot <- renderPlot({
+    req(rv$sample_trades, rv$posl)
+    
+    current_idx <- rv$current_chart_index
+    trade_id <- rv$sample_trades[current_idx]
+    
+    plot_position_cohort_exit_art(rv$posl[[trade_id]], ylim = c(.7, 1.7))
   })
   
   # Overview Metrics
@@ -482,7 +537,7 @@ server <- function(input, output, session) {
       plotname <- paste0("exit_plot_", i)
       
       output[[plotname]] <- renderPlot({
-        plot_position_cohort_exit_qr(rv$posl[[trade_id]], ylim = c(.8, 1.5))
+        plot_position_cohort_exit_art(rv$posl[[trade_id]], ylim = c(.7, 1.7))
       })
     })
   })

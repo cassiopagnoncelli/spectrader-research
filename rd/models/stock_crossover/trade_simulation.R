@@ -58,12 +58,11 @@ posl <- position_cohort(
 # Signals & Returns
 dfsr <- position_cohort_return(posl, df_signals)
 
-
 # Inspect exits
 # _fpt(side = "long), _vats, _thres, _qr
 dfsr %>%
   filter(t < max(t, na.rm = TRUE)) %>%
-  slice_sample(n = 10) %>%  # Change n to view more samples
+  slice_sample(n = 0) %>%  # Change n to view more samples
   pull(trade) %>%
   purrr::walk(~ plot_position_cohort_exit_art(posl[[.x]],
                                               side = "long",
@@ -71,7 +70,6 @@ dfsr %>%
 
 # Kelly - sequential
 f_star <- kelly_quantile(log(1 + dfsr$R), tau = .32)
-pk <- plot_kelly_trades(dfsr$R, f_star, log.transform = FALSE)
 
 # Signal accuracy analysis
 side <- "long"
