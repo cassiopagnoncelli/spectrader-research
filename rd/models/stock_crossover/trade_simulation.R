@@ -56,7 +56,8 @@ posl <- position_cohort(
 )
 
 # Signals, Returns
-dfsr <- position_cohort_return(posl, df_signals)
+dfsr <- position_cohort_return(posl, df_signals) %>%
+  dplyr::mutate(exit_date = add_business_days(date, t))
 
 # Inspect exits
 # _fpt(side = "long), _vats, _thres, _qr
@@ -73,7 +74,7 @@ f_star <- kelly_quantile(log(1 + dfsr$R), tau = .32)
 pk <- plot_kelly_trades(dfsr$R, f_star, log.transform = FALSE)
 
 # Signal accuracy analysis
-side = "long"
+side <- "long"
 accuracy <- exit_accuracy(dfsr, side = side)
 accuracy_take_profit <- accuracy %>% filter(t < max(t))
 accuracy_open_positions <- accuracy %>% filter(t == max(t))
