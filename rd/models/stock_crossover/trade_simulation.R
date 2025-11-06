@@ -83,4 +83,5 @@ df_dates <- dfsr %>%
   select(trade, symbol, entry, exit, R, t)
 
 # Dashboard
+devtools::load_all()
 shiny::runApp("rd/models/stock_crossover/dashboard.R")

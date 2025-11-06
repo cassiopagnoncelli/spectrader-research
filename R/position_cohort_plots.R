@@ -14,31 +14,31 @@ plot_position_cohort_exit_art <- function(position, side = c("long", "short"), p
       data = subset(position, exit_vats),
       aes(y = S),
       color = "#2eec2e",
-      size = 2
+      size = 5
     ) +
     ggplot2::geom_point(
       data = subset(position, exit_fpt),
       aes(y = S),
       color = "#2ee2ec",
-      size = 2
+      size = 5
     ) +
     ggplot2::geom_point(
       data = subset(position, exit_qr_cons),
       aes(y = S),
       color = "#cfec2e",
-      size = 2
+      size = 5
     ) +
     ggplot2::geom_point(
       data = subset(position, exit_qr_aggr),
       aes(y = S),
       color = "#fc8d0e",
-      size = 2
+      size = 5
     ) +
     ggplot2::geom_point(
       data = subset(position, exit_qr_extr),
       aes(y = S),
       color = "#ff4314",
-      size = 2
+      size = 5
     ) +
     ggplot2::geom_hline(
       yintercept = 1,

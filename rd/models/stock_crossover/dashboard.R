@@ -68,15 +68,16 @@ ui <- dashboardPage(
         fluidRow(
           box(
             width = 12,
-            title = "Position Exit Analysis (Take Profit Only)",
+            title = "Position Exit Analysis",
             status = "primary",
             solidHeader = TRUE,
-            radioButtons(
-              "tp_display_mode",
-              "Display Mode:",
-              choices = c("Show Top 10" = "top10", "Show All TP" = "all"),
-              selected = "top10",
-              inline = TRUE
+            selectInput(
+              "position_filter",
+              "Position Filter:",
+              choices = c("All Positions" = "all", 
+                         "Take Profit (Closed)" = "take_profit", 
+                         "Open Positions" = "open"),
+              selected = "all"
             ),
             actionButton("refresh_samples", "Refresh Samples", icon = icon("refresh"))
           )
@@ -377,25 +378,26 @@ server <- function(input, output, session) {
     rv$accuracy <- exit_accuracy(rv$dfsr, side = input$side)
   })
   
-  # Generate sample trades for take profit positions only
-  observeEvent(c(input$refresh_samples, input$tp_display_mode), {
+  # Generate sample trades based on position filter
+  observeEvent(c(input$refresh_samples, input$position_filter), {
     req(rv$dfsr)
     
-    # Filter for take profit positions only (closed positions)
-    dfsr_tp <- rv$dfsr %>% filter(t < max(t, na.rm = TRUE))
+    # Filter positions based on selection
+    if (input$position_filter == "take_profit") {
+      # Take profit (closed) positions only
+      dfsr_filtered <- rv$dfsr %>% filter(t < max(t, na.rm = TRUE))
+    } else if (input$position_filter == "open") {
+      # Open positions only
+      dfsr_filtered <- rv$dfsr %>% filter(t == max(t, na.rm = TRUE))
+    } else {
+      # All positions
+      dfsr_filtered <- rv$dfsr
+    }
     
-    if (nrow(dfsr_tp) > 0) {
-      if (input$tp_display_mode == "top10") {
-        # Show top 10
-        n <- min(10, nrow(dfsr_tp))
-        rv$sample_trades <- dfsr_tp %>%
-          slice_sample(n = n) %>%
-          pull(trade)
-      } else {
-        # Show all TP
-        rv$sample_trades <- dfsr_tp %>%
-          pull(trade)
-      }
+    # Get all trade IDs (no limit)
+    if (nrow(dfsr_filtered) > 0) {
+      rv$sample_trades <- dfsr_filtered %>%
+        pull(trade)
     } else {
       rv$sample_trades <- NULL
     }
