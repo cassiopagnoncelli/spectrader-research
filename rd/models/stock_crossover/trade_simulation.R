@@ -55,9 +55,9 @@ posl <- position_cohort(
   )
 )
 
-# Signals, Returns
-dfsr <- position_cohort_return(posl, df_signals) %>%
-  dplyr::mutate(exit_date = add_business_days(date, t)) # Approximate exit date
+# Signals & Returns
+dfsr <- position_cohort_return(posl, df_signals)
+
 
 # Inspect exits
 # _fpt(side = "long), _vats, _thres, _qr
@@ -78,6 +78,9 @@ side <- "long"
 accuracy <- exit_accuracy(dfsr, side = side)
 accuracy_take_profit <- accuracy %>% filter(t < max(t))
 accuracy_open_positions <- accuracy %>% filter(t == max(t))
+
+# Dates analysis
+df_dates <- dfsr %>% dplyr::mutate(entry = date, exit = add_business_days(date, t))
 
 # Dashboard
 shiny::runApp("rd/models/stock_crossover/dashboard.R")
