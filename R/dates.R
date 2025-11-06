@@ -32,8 +32,8 @@ add_business_days <- function(date, n) {
   if (length(date) > 1 || length(n) > 1) {
     result <- mapply(add_single, date, n, SIMPLIFY = FALSE, USE.NAMES = FALSE)
     result <- unlist(result)
-    return(as.Date(result, origin = "1970-01-01"))
+    as.Date(result, origin = "1970-01-01")
   } else {
-    return(add_single(date, n))
+    add_single(date, n)
   }
 }

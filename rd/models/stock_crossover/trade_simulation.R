@@ -80,7 +80,15 @@ accuracy_take_profit <- accuracy %>% filter(t < max(t))
 accuracy_open_positions <- accuracy %>% filter(t == max(t))
 
 # Dates analysis
-df_dates <- dfsr %>% dplyr::mutate(entry = date, exit = add_business_days(date, t))
+df_dates <- dfsr %>%
+  dplyr::mutate(entry = date, exit = add_business_days(date, t)) %>%
+  select(trade, symbol, entry, exit, R, t)
+
+plot_dates_concurrency_over_time(df_dates)
+plot_dates_overlap_matrix(df_dates)
+plot_dates_concurrency_distribution(df_dates)
+plot_dates_waterfall(df_dates)
+plot_dates_punchcard(df_dates)
 
 # Dashboard
 shiny::runApp("rd/models/stock_crossover/dashboard.R")
