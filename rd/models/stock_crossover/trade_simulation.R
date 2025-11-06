@@ -44,7 +44,7 @@ df_test <- tibble(
 
 # Generate trading signals, discarding the ones within a month apart
 df_signals <- df_test %>%
-  filter(yhat > 1.4) %>%
+  filter(yhat > 1.3) %>%
   filter_signals(within_days = qrfits_params$within_days) %>%
   arrange(date)
 
@@ -73,7 +73,7 @@ dfsr %>%
   purrr::walk(~ plot_position_cohort_exit_qr(posl[[.x]], ylim = c(.8, 1.5)))
 
 # Kelly - sequential
-f_star <- kelly_quantile(log(1 + dfsr$R), tau = .32) * .8
+f_star <- kelly_quantile(log(1 + dfsr$R), tau = .32)
 pk <- plot_kelly_trades(dfsr$R, f_star, log.transform = FALSE)
 
 # Returns distribution
