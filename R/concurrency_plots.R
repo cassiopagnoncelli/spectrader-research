@@ -48,7 +48,7 @@ prepare_overlap_data <- function(df_dates) {
 #' @param df_dates Input data frame.
 #' @param plot Logical; if TRUE prints plot.
 #' @return List with data and ggplot.
-plot_dates_concurrency_over_time <- function(df_dates, plot = TRUE) {
+plot_concurrency_over_time <- function(df_dates, plot = TRUE) {
   d <- prepare_overlap_data(df_dates)
   df_overlap <- d$df_overlap
   p <- ggplot2::ggplot(df_overlap, ggplot2::aes(x = date, y = active_trades, fill = active_trades)) +
@@ -72,7 +72,7 @@ plot_dates_concurrency_over_time <- function(df_dates, plot = TRUE) {
 #' @param df_dates Input data frame.
 #' @param plot Logical; if TRUE prints plot.
 #' @return List with matrix and ggplot.
-plot_dates_overlap_matrix <- function(df_dates, plot = TRUE) {
+plot_concurrency_overlap_matrix <- function(df_dates, plot = TRUE) {
   d <- prepare_overlap_data(df_dates)
   overlap_days <- d$overlap_days
   vmax <- base::max(overlap_days, na.rm = TRUE)
@@ -100,7 +100,7 @@ plot_dates_overlap_matrix <- function(df_dates, plot = TRUE) {
 #' @param df_dates Input data frame.
 #' @param plot Logical; if TRUE prints plot.
 #' @return List with data and ggplot.
-plot_dates_concurrency_distribution <- function(df_dates, plot = TRUE) {
+plot_concurrency_distribution <- function(df_dates, plot = TRUE) {
   d <- prepare_overlap_data(df_dates)
   df_dates <- d$df_dates
   p <- ggplot2::ggplot(df_dates, ggplot2::aes(x = overlap_count)) +
@@ -117,7 +117,7 @@ plot_dates_concurrency_distribution <- function(df_dates, plot = TRUE) {
 #' @param df_dates Input data frame.
 #' @param plot Logical; if TRUE prints plot.
 #' @return List with data and ggplot.
-plot_dates_waterfall <- function(df_dates, plot = TRUE) {
+plot_concurrency_waterfall <- function(df_dates, plot = TRUE) {
   df_gantt <- df_dates %>%
     dplyr::group_by(symbol) %>%
     dplyr::summarise(first_entry = base::min(entry), .groups = "drop") %>%
@@ -147,7 +147,7 @@ plot_dates_waterfall <- function(df_dates, plot = TRUE) {
 #' @param df_dates Input data frame.
 #' @param plot Logical; if TRUE prints plot.
 #' @return List with data and ggplot.
-plot_dates_punchcard <- function(df_dates, plot = TRUE) {
+plot_concurrency_punchcard <- function(df_dates, plot = TRUE) {
   d <- prepare_overlap_data(df_dates)
   df_overlap <- d$df_overlap
   df_punch <- df_overlap %>%

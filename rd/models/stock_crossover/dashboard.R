@@ -18,6 +18,7 @@ ui <- dashboardPage(
       menuItem("Returns Analysis", tabName = "returns", icon = icon("chart-area")),
       menuItem("Captures", tabName = "accuracy", icon = icon("bullseye")),
       menuItem("Captures Breakdown", tabName = "captures_breakdown", icon = icon("chart-pie")),
+      menuItem("Concurrency", tabName = "concurrency", icon = icon("layer-group")),
       menuItem("Signals & Returns", tabName = "signals_returns", icon = icon("table")),
       hr(),
       menuItem("Settings", tabName = "settings", icon = icon("cog"))
@@ -226,6 +227,58 @@ ui <- dashboardPage(
             status = "success",
             solidHeader = TRUE,
             htmlOutput("breakdown_g2")
+          )
+        )
+      ),
+      
+      # Concurrency Tab
+      tabItem(
+        tabName = "concurrency",
+        fluidRow(
+          box(
+            width = 12,
+            title = "Trade Concurrency Analysis",
+            status = "primary",
+            solidHeader = TRUE,
+            p("Analysis of overlapping trades and concurrent positions over time.")
+          )
+        ),
+        fluidRow(
+          box(
+            width = 12,
+            title = "Concurrent Trades Over Time",
+            status = "info",
+            plotOutput("concurrency_over_time", height = 400)
+          )
+        ),
+        fluidRow(
+          box(
+            width = 6,
+            title = "Trade-to-Trade Overlap Matrix",
+            status = "info",
+            plotOutput("concurrency_overlap_matrix", height = 500)
+          ),
+          box(
+            width = 6,
+            title = "Distribution of Overlap Counts",
+            status = "info",
+            plotOutput("concurrency_distribution", height = 500)
+          )
+        ),
+        fluidRow(
+          box(
+            width = 12,
+            title = "Trade Timeline (Gantt View)",
+            status = "info",
+            plotOutput("concurrency_waterfall", height = 500)
+          )
+        ),
+        fluidRow(
+          box(
+            width = 12,
+            title = "Weekly Trade Concurrency (Punchcard View)",
+            status = "info",
+            plotOutput("concurrency_punchcard", height = 400)
           )
         )
       ),
@@ -822,6 +875,48 @@ server <- function(input, output, session) {
     } else {
       HTML("<p style='text-align: center; padding: 20px;'>No group data available</p>")
     }
+  })
+  
+  # Concurrency Analysis - Create df_dates
+  df_dates <- reactive({
+    req(rv$dfsr)
+    
+    rv$dfsr %>%
+      dplyr::mutate(
+        entry = date,
+        exit = add_business_days(date, t)
+      ) %>%
+      select(trade, symbol, entry, exit, R, t)
+  })
+  
+  # Concurrency Plot 1: Concurrency Over Time
+  output$concurrency_over_time <- renderPlot({
+    req(df_dates())
+    plot_concurrency_over_time(df_dates(), plot = FALSE)$plot
+  })
+  
+  # Concurrency Plot 2: Overlap Matrix
+  output$concurrency_overlap_matrix <- renderPlot({
+    req(df_dates())
+    plot_concurrency_overlap_matrix(df_dates(), plot = FALSE)$plot
+  })
+  
+  # Concurrency Plot 3: Distribution
+  output$concurrency_distribution <- renderPlot({
+    req(df_dates())
+    plot_concurrency_distribution(df_dates(), plot = FALSE)$plot
+  })
+  
+  # Concurrency Plot 4: Waterfall (Gantt)
+  output$concurrency_waterfall <- renderPlot({
+    req(df_dates())
+    plot_concurrency_waterfall(df_dates(), plot = FALSE)$plot
+  })
+  
+  # Concurrency Plot 5: Punchcard
+  output$concurrency_punchcard <- renderPlot({
+    req(df_dates())
+    plot_concurrency_punchcard(df_dates(), plot = FALSE)$plot
   })
   
   # Signals, Returns Table
