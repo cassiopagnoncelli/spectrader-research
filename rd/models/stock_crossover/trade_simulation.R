@@ -1,4 +1,4 @@
-# Train subset for qrfit with train subset
+# Fit exit qr on train subset
 df_train <- tibble(
   symbol = fwd_metadata$symbol[train_indices],
   date = fwd_metadata$date[train_indices],
@@ -7,35 +7,15 @@ df_train <- tibble(
   close = fwd$y_7[train_indices]
 )
 
-qrfits_params <- list(
-  model = "stock_crossover",
-  # Sorted params.
-  cutoff = 1.28,
-  direction = "long",
-  fwd_days = features_params$days,
-  tau_aggr = .82,
-  tau_cons = .32,
-  tau_extreme = .92,
-  within_days = 20
-)
-fetch_cache(
-  cache_key(params = qrfits_params, ext = "RData", fun = "qrfits"),
-  function() {
-    assign(
-      'qrfits',
-      df_train %>%
-        filter(yhat > qrfits_params$cutoff) %>%
-        filter_signals(within_days = qrfits_params$within_days) %>%
-        arrange(date) %>%
-        train_qr( # 8-10 min training.
-          qrfits_params$tau_extreme,
-          qrfits_params$tau_aggr,
-          qrfits_params$tau_cons
-        ),
-      envir = .GlobalEnv
-    )
-  }
-)
+exit_qr_fits <- df_train %>%
+  filter(yhat > 1.28) %>%
+  filter_signals(within_days = 20) %>%
+  arrange(date) %>%
+  train_trifecta_qr( # 8-10 min training.
+    tau_extr = .92,
+    tau_aggr = .82,
+    tau_cons = .32
+  )
 
 # Test subset
 df_test <- tibble(
@@ -48,8 +28,8 @@ df_test <- tibble(
 
 # Generate trading signals, discarding the ones within a month apart
 df_signals <- df_test %>%
-  filter(yhat > 1.3) %>%
-  filter_signals(within_days = qrfits_params$within_days) %>%
+  filter(yhat > 1.37) %>%
+  filter_signals(within_days = 20) %>%
   arrange(date)
 
 # Build list of positions from signals, each position is a tibble.
@@ -62,7 +42,7 @@ posl <- position_cohort(
   # fun = exit_fpt(side = "long")
   # fun = exit_vats()
   # fun = exit_thres(k = .55)
-  fun = exit_qr(qrfits$qrfit_extreme, qrfits$qrfit_aggr, qrfits$qrfit_cons)
+  fun = exit_qr(exit_qr_fits$extr, exit_qr_fits$aggr, exit_qr_fits$cons)
 )
 
 # Signals, Returns
@@ -81,7 +61,7 @@ f_star <- kelly_quantile(log(1 + dfsr$R), tau = .32)
 pk <- plot_kelly_trades(dfsr$R, f_star, log.transform = FALSE)
 
 # Returns distribution
-plot_distribution(na.omit(dfsr$R), title = "Simple Returns distribution")
+plot_distribution(na.omit(dfsr$R), title = "Normal Returns distribution")
 
 # Signal accuracy analysis
 side = "long"

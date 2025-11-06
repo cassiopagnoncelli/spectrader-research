@@ -26,7 +26,7 @@ load_cache <- function(ck) {
     return(NULL)
   }
   if (ck$ext == "RData")
-    attach(ck$path)
+    load(ck$path, envir = .GlobalEnv)
   else if (ck$ext == "rds")
     readRDS(ck$path)
   else if (ck$ext %in% c("sql", "txt"))
