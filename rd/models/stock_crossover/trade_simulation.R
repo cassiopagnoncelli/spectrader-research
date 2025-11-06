@@ -18,18 +18,22 @@ qrfits_params <- list(
   tau_extreme = .92,
   within_days = 20
 )
-qrfits <- fetch_cache(
-  cache_key(params = qrfits_params, ext = "qs", fun = "qrfits"),
+fetch_cache(
+  cache_key(params = qrfits_params, ext = "RData", fun = "qrfits"),
   function() {
-    df_train %>%
-      filter(yhat > qrfits_params$cutoff) %>%
-      filter_signals(within_days = qrfits_params$within_days) %>%
-      arrange(date) %>%
-      train_qr( # 8-10 min training.
-        qrfits_params$tau_extreme,
-        qrfits_params$tau_aggr,
-        qrfits_params$tau_cons
-      )
+    assign(
+      'qrfits',
+      df_train %>%
+        filter(yhat > qrfits_params$cutoff) %>%
+        filter_signals(within_days = qrfits_params$within_days) %>%
+        arrange(date) %>%
+        train_qr( # 8-10 min training.
+          qrfits_params$tau_extreme,
+          qrfits_params$tau_aggr,
+          qrfits_params$tau_cons
+        ),
+      envir = .GlobalEnv
+    )
   }
 )
 

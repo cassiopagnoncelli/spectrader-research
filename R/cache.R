@@ -26,7 +26,7 @@ load_cache <- function(ck) {
     return(NULL)
   }
   if (ck$ext == "RData")
-    load(ck$path)
+    attach(ck$path)
   else if (ck$ext == "rds")
     readRDS(ck$path)
   else if (ck$ext %in% c("sql", "txt"))
@@ -43,7 +43,7 @@ save_cache <- function(ck, object) {
   else if (ck$ext %in% c("sql", "txt"))
     writeLines(object, ck$path)
   else if (ck$ext == "RData")
-    stop("Saving to RData format is not implemented yet, use save() directly.")
+    save(object, file = ck$path)
   else if (ck$ext == "qs")
     qs::qsave(object, ck$path)
   else
