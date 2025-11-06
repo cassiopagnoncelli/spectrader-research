@@ -17,7 +17,8 @@ ui <- dashboardPage(
       menuItem("Kelly Criterion", tabName = "kelly", icon = icon("balance-scale")),
       menuItem("Returns Analysis", tabName = "returns", icon = icon("chart-area")),
       menuItem("Captures", tabName = "accuracy", icon = icon("bullseye")),
-      menuItem("Signals, Returns", tabName = "signals_returns", icon = icon("table")),
+      menuItem("Captures Breakdown", tabName = "captures_breakdown", icon = icon("chart-pie")),
+      menuItem("Signals & Returns", tabName = "signals_returns", icon = icon("table")),
       hr(),
       menuItem("Settings", tabName = "settings", icon = icon("cog"))
     )
@@ -185,6 +186,46 @@ ui <- dashboardPage(
             htmlOutput("accuracy_all_metrics"),
             hr(),
             htmlOutput("accuracy_all_dist")
+          )
+        )
+      ),
+      
+      # Captures Breakdown Tab
+      tabItem(
+        tabName = "captures_breakdown",
+        fluidRow(
+          box(
+            width = 12,
+            title = "Captures Breakdown",
+            status = "primary",
+            solidHeader = TRUE,
+            selectInput("breakdown_side", "Trading Side:", choices = c("long", "short"), selected = "long"),
+            selectInput("breakdown_category", "Category:", 
+                       choices = c("Overall", "Take Profit", "Open Positions"), 
+                       selected = "Overall")
+          )
+        ),
+        fluidRow(
+          box(
+            width = 4,
+            title = "Overall Results",
+            status = "primary",
+            solidHeader = TRUE,
+            htmlOutput("breakdown_overall")
+          ),
+          box(
+            width = 4,
+            title = "g1 (R <= 0)",
+            status = "danger",
+            solidHeader = TRUE,
+            htmlOutput("breakdown_g1")
+          ),
+          box(
+            width = 4,
+            title = "g2 (R > 0)",
+            status = "success",
+            solidHeader = TRUE,
+            htmlOutput("breakdown_g2")
           )
         )
       ),
@@ -663,6 +704,124 @@ server <- function(input, output, session) {
       dist$overall_results$median,
       dist$overall_results$sd
     ))
+  })
+  
+  # Captures Breakdown - Get filtered data based on category
+  breakdown_data <- reactive({
+    req(rv$dfsr, input$breakdown_category, input$breakdown_side)
+    
+    # Get accuracy data
+    accuracy_data <- exit_accuracy(rv$dfsr, side = input$breakdown_side)
+    
+    # Filter based on category
+    if (input$breakdown_category == "Take Profit") {
+      accuracy_data %>% filter(t < max(t))
+    } else if (input$breakdown_category == "Open Positions") {
+      accuracy_data %>% filter(t == max(t))
+    } else {
+      # Overall
+      accuracy_data
+    }
+  })
+  
+  # Captures Breakdown - Overall Results
+  output$breakdown_overall <- renderUI({
+    req(breakdown_data())
+    
+    dist <- analyse_distribution(breakdown_data()$R, groups = c(0))
+    
+    HTML(sprintf(
+      "<table class='table table-bordered' style='font-size: 18px;'>
+        <tr><td><strong>Expected:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+        <tr><td><strong>Mean:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+        <tr><td><strong>Median:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+        <tr><td><strong>SD:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+        <tr><td><strong>N:</strong></td><td style='text-align: right;'>%d</td></tr>
+      </table>",
+      dist$overall_results$expected_value,
+      dist$overall_results$mean,
+      dist$overall_results$median,
+      dist$overall_results$sd,
+      dist$overall_results$n
+    ))
+  })
+  
+  # Captures Breakdown - g1 (R <= 0)
+  output$breakdown_g1 <- renderUI({
+    req(breakdown_data())
+    
+    dist <- analyse_distribution(breakdown_data()$R, groups = c(0))
+    
+    # Check if g1 exists in group_results
+    if (!is.null(dist$group_results) && nrow(dist$group_results) > 0) {
+      g1_data <- dist$group_results %>% filter(group == "g1")
+      
+      if (nrow(g1_data) > 0) {
+        HTML(sprintf(
+          "<table class='table table-bordered' style='font-size: 18px;'>
+            <tr><td><strong>Count:</strong></td><td style='text-align: right;'>%d</td></tr>
+            <tr><td><strong>Prob:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+            <tr><td><strong>Mean:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+            <tr><td><strong>Expected:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+            <tr><td><strong>Median:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+            <tr><td><strong>SD:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+            <tr><td><strong>Min:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+            <tr><td><strong>Max:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+          </table>",
+          g1_data$count,
+          g1_data$prob,
+          g1_data$mean,
+          g1_data$expected,
+          g1_data$median,
+          ifelse(is.na(g1_data$sd), 0, g1_data$sd),
+          g1_data$min,
+          g1_data$max
+        ))
+      } else {
+        HTML("<p style='text-align: center; padding: 20px;'>No data available for g1</p>")
+      }
+    } else {
+      HTML("<p style='text-align: center; padding: 20px;'>No group data available</p>")
+    }
+  })
+  
+  # Captures Breakdown - g2 (R > 0)
+  output$breakdown_g2 <- renderUI({
+    req(breakdown_data())
+    
+    dist <- analyse_distribution(breakdown_data()$R, groups = c(0))
+    
+    # Check if g2 exists in group_results
+    if (!is.null(dist$group_results) && nrow(dist$group_results) > 0) {
+      g2_data <- dist$group_results %>% filter(group == "g2")
+      
+      if (nrow(g2_data) > 0) {
+        HTML(sprintf(
+          "<table class='table table-bordered' style='font-size: 18px;'>
+            <tr><td><strong>Count:</strong></td><td style='text-align: right;'>%d</td></tr>
+            <tr><td><strong>Prob:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+            <tr><td><strong>Mean:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+            <tr><td><strong>Expected:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+            <tr><td><strong>Median:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+            <tr><td><strong>SD:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+            <tr><td><strong>Min:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+            <tr><td><strong>Max:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+          </table>",
+          g2_data$count,
+          g2_data$prob,
+          g2_data$mean,
+          g2_data$expected,
+          g2_data$median,
+          ifelse(is.na(g2_data$sd), 0, g2_data$sd),
+          g2_data$min,
+          g2_data$max
+        ))
+      } else {
+        HTML("<p style='text-align: center; padding: 20px;'>No data available for g2</p>")
+      }
+    } else {
+      HTML("<p style='text-align: center; padding: 20px;'>No group data available</p>")
+    }
   })
   
   # Signals, Returns Table
