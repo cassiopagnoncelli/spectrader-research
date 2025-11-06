@@ -16,7 +16,7 @@ ui <- dashboardPage(
       menuItem("Position Exits", tabName = "exits", icon = icon("chart-line")),
       menuItem("Kelly Criterion", tabName = "kelly", icon = icon("balance-scale")),
       menuItem("Returns Analysis", tabName = "returns", icon = icon("chart-area")),
-      menuItem("Signal Accuracy", tabName = "accuracy", icon = icon("bullseye")),
+      menuItem("Captures", tabName = "accuracy", icon = icon("bullseye")),
       menuItem("Signals, Returns", tabName = "signals_returns", icon = icon("table")),
       hr(),
       menuItem("Settings", tabName = "settings", icon = icon("cog"))
@@ -146,13 +146,13 @@ ui <- dashboardPage(
         )
       ),
       
-      # Signal Accuracy Tab
+      # Captures Tab
       tabItem(
         tabName = "accuracy",
         fluidRow(
           box(
             width = 12,
-            title = "Signal Accuracy Analysis",
+            title = "Captures",
             status = "primary",
             solidHeader = TRUE,
             selectInput("side", "Trading Side:", choices = c("long", "short"), selected = "long")

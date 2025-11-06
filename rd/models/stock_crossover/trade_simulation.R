@@ -47,7 +47,7 @@ posl <- position_cohort(
     cons_t = 30,
     # VATS params
     vats_k = 1.5,
-    vats_t = 20,
+    vats_t = 20, 
     # FPT params
     fpt_maturity = 15 / 365,
     fpt_side = "long",
