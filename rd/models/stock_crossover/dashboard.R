@@ -45,20 +45,6 @@ ui <- dashboardPage(
           valueBoxOutput("win_rate", width = 3),
           valueBoxOutput("avg_return", width = 3),
           valueBoxOutput("kelly_fraction", width = 3)
-        ),
-        fluidRow(
-          box(
-            width = 6,
-            title = "Returns Distribution Summary",
-            status = "info",
-            plotOutput("overview_distribution", height = 300)
-          ),
-          box(
-            width = 6,
-            title = "Portfolio Growth",
-            status = "info",
-            plotOutput("overview_kelly", height = 300)
-          )
         )
       ),
       

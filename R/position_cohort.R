@@ -72,7 +72,7 @@ position_cohort_return <- function(posl, df_signals) {
     idx <- dplyr::coalesce(which(na.omit(pos_data$exit))[1], dplyr::last(na.omit(pos_data$t)))
     R <- pos_data$S[idx] - 1
     r <- log(pos_data$S[idx])
-    tibble::tibble(trade = i, t = idx, R, r)
+    tibble::tibble(trade = i, t = idx - 1, R, r)
   })
   df_returns <- dplyr::bind_rows(result_list)
   # Combine with signals data frame.
