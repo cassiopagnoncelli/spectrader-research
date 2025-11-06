@@ -40,7 +40,6 @@ exit_metrics <- function(accuracy, side = c("long", "short")) {
   result <- accuracy %>%
     dplyr::summarise(
       n = dplyr::n(),
-      sharpe = sharpe_ratio(R),
       rmse = mean(rmse, na.rm = TRUE),
       t_mean = mean(t, na.rm = TRUE),
       t_sd = sd(t, na.rm = TRUE)
@@ -49,18 +48,18 @@ exit_metrics <- function(accuracy, side = c("long", "short")) {
   if (side == "long") {
     result <- result %>%
       dplyr::mutate(
-        long_alpha = mean(accuracy$long_alpha, na.rm = TRUE),
-        long_capture = mean(accuracy$long_capture, na.rm = TRUE),
-        long_capture_sd = sd(accuracy$long_capture, na.rm = TRUE),
-        long_sharpe = long_alpha / long_capture_sd * sqrt(252)
+        long_alpha = mean(accuracy$long_alpha[is.finite(accuracy$long_alpha)], na.rm = TRUE),
+        long_capture = mean(accuracy$long_capture[is.finite(accuracy$long_capture)], na.rm = TRUE),
+        long_capture_sd = sd(accuracy$long_capture[is.finite(accuracy$long_capture)], na.rm = TRUE),
+        long_sharpe = sharpe_ratio(accuracy$R, na.rm = TRUE)
       )
   } else if (side == "short") {
     result <- result %>%
       dplyr::mutate(
-        short_alpha = mean(accuracy$short_alpha, na.rm = TRUE),
-        short_capture = mean(accuracy$short_capture, na.rm = TRUE),
-        short_capture_sd = sd(accuracy$short_capture, na.rm = TRUE),
-        short_sharpe = short_alpha / short_capture_sd * sqrt(252)
+        short_alpha = mean(accuracy$short_alpha[is.finite(accuracy$short_alpha)], na.rm = TRUE),
+        short_capture = mean(accuracy$short_capture[is.finite(accuracy$short_capture)], na.rm = TRUE),
+        short_capture_sd = sd(accuracy$short_capture[is.finite(accuracy$short_capture)], na.rm = TRUE),
+        short_sharpe = sharpe_ratio(accuracy$R, na.rm = TRUE)
       )
   }
   

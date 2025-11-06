@@ -43,10 +43,10 @@ rf_period <- function(rf_annual, scale) {
 #' sharpe_ratio(r, rf_annual = 0.045)
 #'
 #' @export
-sharpe_ratio <- function(returns, rf_annual = 0.045, scale = 252) {
+sharpe_ratio <- function(returns, rf_annual = 0.045, scale = 252, na.rm = TRUE) {
   rf <- rf_period(rf_annual, scale)
   excess <- returns - rf
-  mean(excess) / sd(excess) * sqrt(scale)
+  mean(excess, na.rm = na.rm) / sd(excess, na.rm = na.rm) * sqrt(scale)
 }
 
 #' Probabilistic Sharpe Ratio (PSR)

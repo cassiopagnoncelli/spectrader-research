@@ -44,7 +44,7 @@ df_test <- tibble(
 
 # Generate trading signals, discarding the ones within a month apart
 df_signals <- df_test %>%
-  filter(yhat > 1.35) %>%
+  filter(yhat > 1.4) %>%
   filter_signals(within_days = qrfits_params$within_days) %>%
   arrange(date)
 
@@ -68,16 +68,13 @@ dfsr <- position_cohort_return(posl, df_signals)
 # _fpt(side = "long), _vats, _thres, _qr
 dfsr %>%
   filter(t < max(t, na.rm = TRUE)) %>%
-  slice_sample(n = 23) %>%
+  slice_sample(n = 0) %>%  # Change n to view more samples
   pull(trade) %>%
   purrr::walk(~ plot_position_cohort_exit_qr(posl[[.x]], ylim = c(.8, 1.5)))
 
 # Kelly - sequential
-f_star <- kelly_fraction(dfsr$R)
-f_star
-f_star_2 <- kelly_quantile(dfsr$R, tau = .5)
-f_star_2
-pk <- plot_kelly_trades(dfsr$R, f_star_2, log.transform = F)
+f_star <- kelly_quantile(log(1 + dfsr$R), tau = .32) * .8
+pk <- plot_kelly_trades(dfsr$R, f_star, log.transform = FALSE)
 
 # Returns distribution
 plot_distribution(na.omit(dfsr$R), title = "Simple Returns distribution")
@@ -88,9 +85,11 @@ accuracy <- exit_accuracy(dfsr, side = side)
 accuracy_take_profit <- accuracy %>% filter(t < max(t))
 accuracy_open_positions <- accuracy %>% filter(t == max(t))
 
-exit_metrics(accuracy, side)
 exit_metrics(accuracy_take_profit, side)
-exit_metrics(accuracy_open_positions, side)
-analyse_distribution(accuracy$R, groups = c(0))
 analyse_distribution(accuracy_take_profit$R, groups = c(0))
+
+exit_metrics(accuracy_open_positions, side)
 analyse_distribution(accuracy_open_positions$R, groups = c(0))
+
+exit_metrics(accuracy, side)
+analyse_distribution(accuracy$R, groups = c(0))
