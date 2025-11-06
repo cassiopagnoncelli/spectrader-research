@@ -2,6 +2,7 @@ library(shiny)
 library(shinydashboard)
 library(dplyr)
 library(ggplot2)
+library(DT)
 
 # UI Definition
 ui <- dashboardPage(
@@ -16,6 +17,7 @@ ui <- dashboardPage(
       menuItem("Kelly Criterion", tabName = "kelly", icon = icon("balance-scale")),
       menuItem("Returns Analysis", tabName = "returns", icon = icon("chart-area")),
       menuItem("Signal Accuracy", tabName = "accuracy", icon = icon("bullseye")),
+      menuItem("Signals, Returns", tabName = "signals_returns", icon = icon("table")),
       hr(),
       menuItem("Settings", tabName = "settings", icon = icon("cog"))
     )
@@ -183,6 +185,20 @@ ui <- dashboardPage(
             htmlOutput("accuracy_all_metrics"),
             hr(),
             htmlOutput("accuracy_all_dist")
+          )
+        )
+      ),
+      
+      # Signals, Returns Tab
+      tabItem(
+        tabName = "signals_returns",
+        fluidRow(
+          box(
+            width = 12,
+            title = "Signals and Returns Data Table",
+            status = "primary",
+            solidHeader = TRUE,
+            DT::dataTableOutput("signals_returns_table")
           )
         )
       ),
@@ -397,21 +413,21 @@ server <- function(input, output, session) {
     
     HTML(sprintf(
       "<h4>Kelly Fractions</h4>
-      <table class='table table-bordered'>
-        <tr><td><strong>Classical Kelly:</strong></td><td>%.4f</td></tr>
-        <tr><td><strong>Quantile Kelly (τ=%.2f):</strong></td><td>%.4f</td></tr>
+      <table class='table table-bordered' style='font-size: 18px;'>
+        <tr><td><strong>Classical Kelly:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+        <tr><td><strong>Quantile Kelly (τ=%.2f):</strong></td><td style='text-align: right;'>%.4f</td></tr>
       </table>
       <h4>Portfolio Growth</h4>
-      <table class='table table-bordered'>
-        <tr><td><strong>Classical:</strong></td><td>%.2fx</td></tr>
-        <tr><td><strong>Quantile:</strong></td><td>%.2fx</td></tr>
+      <table class='table table-bordered' style='font-size: 18px;'>
+        <tr><td><strong>Classical:</strong></td><td style='text-align: right;'>%.2fx</td></tr>
+        <tr><td><strong>Quantile:</strong></td><td style='text-align: right;'>%.2fx</td></tr>
       </table>
       <h4>Return Statistics</h4>
-      <table class='table table-bordered'>
-        <tr><td><strong>Mean Return:</strong></td><td>%.4f</td></tr>
-        <tr><td><strong>Median Return:</strong></td><td>%.4f</td></tr>
-        <tr><td><strong>Std Dev:</strong></td><td>%.4f</td></tr>
-        <tr><td><strong>Sharpe Ratio:</strong></td><td>%.4f</td></tr>
+      <table class='table table-bordered' style='font-size: 18px;'>
+        <tr><td><strong>Mean Return:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+        <tr><td><strong>Median Return:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+        <tr><td><strong>Std Dev:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+        <tr><td><strong>Sharpe Ratio:</strong></td><td style='text-align: right;'>%.4f</td></tr>
       </table>",
       f_classical, input$kelly_tau, f_quantile,
       portfolio_classical, portfolio_quantile,
@@ -435,18 +451,18 @@ server <- function(input, output, session) {
     
     HTML(sprintf(
       "<h4>Summary Statistics</h4>
-      <table class='table table-bordered' style='font-size: 12px;'>
-        <tr><td><strong>N:</strong></td><td>%d</td></tr>
-        <tr><td><strong>Mean:</strong></td><td>%.4f</td></tr>
-        <tr><td><strong>Median:</strong></td><td>%.4f</td></tr>
-        <tr><td><strong>Std Dev:</strong></td><td>%.4f</td></tr>
-        <tr><td><strong>Min:</strong></td><td>%.4f</td></tr>
-        <tr><td><strong>Max:</strong></td><td>%.4f</td></tr>
-        <tr><td><strong>Q0.05:</strong></td><td>%.4f</td></tr>
-        <tr><td><strong>Q0.25:</strong></td><td>%.4f</td></tr>
-        <tr><td><strong>Q0.75:</strong></td><td>%.4f</td></tr>
-        <tr><td><strong>Q0.95:</strong></td><td>%.4f</td></tr>
-        <tr><td><strong>Skewness:</strong></td><td>%.4f</td></tr>
+      <table class='table table-bordered' style='font-size: 18px;'>
+        <tr><td><strong>N:</strong></td><td style='text-align: right;'>%d</td></tr>
+        <tr><td><strong>Mean:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+        <tr><td><strong>Median:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+        <tr><td><strong>Std Dev:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+        <tr><td><strong>Min:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+        <tr><td><strong>Max:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+        <tr><td><strong>Q0.05:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+        <tr><td><strong>Q0.25:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+        <tr><td><strong>Q0.75:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+        <tr><td><strong>Q0.95:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+        <tr><td><strong>Skewness:</strong></td><td style='text-align: right;'>%.4f</td></tr>
       </table>",
       length(returns),
       mean(returns),
@@ -472,15 +488,15 @@ server <- function(input, output, session) {
     if (input$side == "long") {
       HTML(sprintf(
         "<h5>Metrics</h5>
-        <table class='table table-condensed' style='font-size: 11px;'>
-          <tr><td><strong>N:</strong></td><td>%d</td></tr>
-          <tr><td><strong>RMSE:</strong></td><td>%.4f</td></tr>
-          <tr><td><strong>t mean:</strong></td><td>%.2f</td></tr>
-          <tr><td><strong>t sd:</strong></td><td>%.2f</td></tr>
-          <tr><td><strong>Alpha:</strong></td><td>%.4f</td></tr>
-          <tr><td><strong>Capture:</strong></td><td>%.4f</td></tr>
-          <tr><td><strong>Capture SD:</strong></td><td>%.4f</td></tr>
-          <tr><td><strong>Sharpe:</strong></td><td>%.4f</td></tr>
+        <table class='table table-condensed' style='font-size: 18px;'>
+          <tr><td><strong>N:</strong></td><td style='text-align: right;'>%d</td></tr>
+          <tr><td><strong>RMSE:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+          <tr><td><strong>t mean:</strong></td><td style='text-align: right;'>%.2f</td></tr>
+          <tr><td><strong>t sd:</strong></td><td style='text-align: right;'>%.2f</td></tr>
+          <tr><td><strong>Alpha:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+          <tr><td><strong>Capture:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+          <tr><td><strong>Capture SD:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+          <tr><td><strong>Sharpe:</strong></td><td style='text-align: right;'>%.4f</td></tr>
         </table>",
         metrics$n, metrics$rmse, metrics$t_mean, metrics$t_sd,
         metrics$long_alpha, metrics$long_capture, metrics$long_capture_sd, metrics$long_sharpe
@@ -488,15 +504,15 @@ server <- function(input, output, session) {
     } else {
       HTML(sprintf(
         "<h5>Metrics</h5>
-        <table class='table table-condensed' style='font-size: 11px;'>
-          <tr><td><strong>N:</strong></td><td>%d</td></tr>
-          <tr><td><strong>RMSE:</strong></td><td>%.4f</td></tr>
-          <tr><td><strong>t mean:</strong></td><td>%.2f</td></tr>
-          <tr><td><strong>t sd:</strong></td><td>%.2f</td></tr>
-          <tr><td><strong>Alpha:</strong></td><td>%.4f</td></tr>
-          <tr><td><strong>Capture:</strong></td><td>%.4f</td></tr>
-          <tr><td><strong>Capture SD:</strong></td><td>%.4f</td></tr>
-          <tr><td><strong>Sharpe:</strong></td><td>%.4f</td></tr>
+        <table class='table table-condensed' style='font-size: 18px;'>
+          <tr><td><strong>N:</strong></td><td style='text-align: right;'>%d</td></tr>
+          <tr><td><strong>RMSE:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+          <tr><td><strong>t mean:</strong></td><td style='text-align: right;'>%.2f</td></tr>
+          <tr><td><strong>t sd:</strong></td><td style='text-align: right;'>%.2f</td></tr>
+          <tr><td><strong>Alpha:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+          <tr><td><strong>Capture:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+          <tr><td><strong>Capture SD:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+          <tr><td><strong>Sharpe:</strong></td><td style='text-align: right;'>%.4f</td></tr>
         </table>",
         metrics$n, metrics$rmse, metrics$t_mean, metrics$t_sd,
         metrics$short_alpha, metrics$short_capture, metrics$short_capture_sd, metrics$short_sharpe
@@ -512,11 +528,11 @@ server <- function(input, output, session) {
     
     HTML(sprintf(
       "<h5>Distribution</h5>
-      <table class='table table-condensed' style='font-size: 10px;'>
-        <tr><td><strong>Expected:</strong></td><td>%.4f</td></tr>
-        <tr><td><strong>Mean:</strong></td><td>%.4f</td></tr>
-        <tr><td><strong>Median:</strong></td><td>%.4f</td></tr>
-        <tr><td><strong>SD:</strong></td><td>%.4f</td></tr>
+      <table class='table table-condensed' style='font-size: 18px;'>
+        <tr><td><strong>Expected:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+        <tr><td><strong>Mean:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+        <tr><td><strong>Median:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+        <tr><td><strong>SD:</strong></td><td style='text-align: right;'>%.4f</td></tr>
       </table>",
       dist$overall_results$expected_value,
       dist$overall_results$mean,
@@ -535,15 +551,15 @@ server <- function(input, output, session) {
     if (input$side == "long") {
       HTML(sprintf(
         "<h5>Metrics</h5>
-        <table class='table table-condensed' style='font-size: 11px;'>
-          <tr><td><strong>N:</strong></td><td>%d</td></tr>
-          <tr><td><strong>RMSE:</strong></td><td>%.4f</td></tr>
-          <tr><td><strong>t mean:</strong></td><td>%.2f</td></tr>
-          <tr><td><strong>t sd:</strong></td><td>%.4f</td></tr>
-          <tr><td><strong>Alpha:</strong></td><td>%.4f</td></tr>
-          <tr><td><strong>Capture:</strong></td><td>%.4f</td></tr>
-          <tr><td><strong>Capture SD:</strong></td><td>%.4f</td></tr>
-          <tr><td><strong>Sharpe:</strong></td><td>%.4f</td></tr>
+        <table class='table table-condensed' style='font-size: 18px;'>
+          <tr><td><strong>N:</strong></td><td style='text-align: right;'>%d</td></tr>
+          <tr><td><strong>RMSE:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+          <tr><td><strong>t mean:</strong></td><td style='text-align: right;'>%.2f</td></tr>
+          <tr><td><strong>t sd:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+          <tr><td><strong>Alpha:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+          <tr><td><strong>Capture:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+          <tr><td><strong>Capture SD:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+          <tr><td><strong>Sharpe:</strong></td><td style='text-align: right;'>%.4f</td></tr>
         </table>",
         metrics$n, metrics$rmse, metrics$t_mean, metrics$t_sd,
         metrics$long_alpha, metrics$long_capture, metrics$long_capture_sd, metrics$long_sharpe
@@ -551,15 +567,15 @@ server <- function(input, output, session) {
     } else {
       HTML(sprintf(
         "<h5>Metrics</h5>
-        <table class='table table-condensed' style='font-size: 11px;'>
-          <tr><td><strong>N:</strong></td><td>%d</td></tr>
-          <tr><td><strong>RMSE:</strong></td><td>%.4f</td></tr>
-          <tr><td><strong>t mean:</strong></td><td>%.2f</td></tr>
-          <tr><td><strong>t sd:</strong></td><td>%.4f</td></tr>
-          <tr><td><strong>Alpha:</strong></td><td>%.4f</td></tr>
-          <tr><td><strong>Capture:</strong></td><td>%.4f</td></tr>
-          <tr><td><strong>Capture SD:</strong></td><td>%.4f</td></tr>
-          <tr><td><strong>Sharpe:</strong></td><td>%.4f</td></tr>
+        <table class='table table-condensed' style='font-size: 18px;'>
+          <tr><td><strong>N:</strong></td><td style='text-align: right;'>%d</td></tr>
+          <tr><td><strong>RMSE:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+          <tr><td><strong>t mean:</strong></td><td style='text-align: right;'>%.2f</td></tr>
+          <tr><td><strong>t sd:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+          <tr><td><strong>Alpha:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+          <tr><td><strong>Capture:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+          <tr><td><strong>Capture SD:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+          <tr><td><strong>Sharpe:</strong></td><td style='text-align: right;'>%.4f</td></tr>
         </table>",
         metrics$n, metrics$rmse, metrics$t_mean, metrics$t_sd,
         metrics$short_alpha, metrics$short_capture, metrics$short_capture_sd, metrics$short_sharpe
@@ -575,11 +591,11 @@ server <- function(input, output, session) {
     
     HTML(sprintf(
       "<h5>Distribution</h5>
-      <table class='table table-condensed' style='font-size: 10px;'>
-        <tr><td><strong>Expected:</strong></td><td>%.4f</td></tr>
-        <tr><td><strong>Mean:</strong></td><td>%.4f</td></tr>
-        <tr><td><strong>Median:</strong></td><td>%.4f</td></tr>
-        <tr><td><strong>SD:</strong></td><td>%.4f</td></tr>
+      <table class='table table-condensed' style='font-size: 18px;'>
+        <tr><td><strong>Expected:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+        <tr><td><strong>Mean:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+        <tr><td><strong>Median:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+        <tr><td><strong>SD:</strong></td><td style='text-align: right;'>%.4f</td></tr>
       </table>",
       dist$overall_results$expected_value,
       dist$overall_results$mean,
@@ -597,15 +613,15 @@ server <- function(input, output, session) {
     if (input$side == "long") {
       HTML(sprintf(
         "<h5>Metrics</h5>
-        <table class='table table-condensed' style='font-size: 11px;'>
-          <tr><td><strong>N:</strong></td><td>%d</td></tr>
-          <tr><td><strong>RMSE:</strong></td><td>%.4f</td></tr>
-          <tr><td><strong>t mean:</strong></td><td>%.2f</td></tr>
-          <tr><td><strong>t sd:</strong></td><td>%.2f</td></tr>
-          <tr><td><strong>Alpha:</strong></td><td>%.4f</td></tr>
-          <tr><td><strong>Capture:</strong></td><td>%.4f</td></tr>
-          <tr><td><strong>Capture SD:</strong></td><td>%.4f</td></tr>
-          <tr><td><strong>Sharpe:</strong></td><td>%.4f</td></tr>
+        <table class='table table-condensed' style='font-size: 18px;'>
+          <tr><td><strong>N:</strong></td><td style='text-align: right;'>%d</td></tr>
+          <tr><td><strong>RMSE:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+          <tr><td><strong>t mean:</strong></td><td style='text-align: right;'>%.2f</td></tr>
+          <tr><td><strong>t sd:</strong></td><td style='text-align: right;'>%.2f</td></tr>
+          <tr><td><strong>Alpha:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+          <tr><td><strong>Capture:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+          <tr><td><strong>Capture SD:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+          <tr><td><strong>Sharpe:</strong></td><td style='text-align: right;'>%.4f</td></tr>
         </table>",
         metrics$n, metrics$rmse, metrics$t_mean, metrics$t_sd,
         metrics$long_alpha, metrics$long_capture, metrics$long_capture_sd, metrics$long_sharpe
@@ -613,15 +629,15 @@ server <- function(input, output, session) {
     } else {
       HTML(sprintf(
         "<h5>Metrics</h5>
-        <table class='table table-condensed' style='font-size: 11px;'>
-          <tr><td><strong>N:</strong></td><td>%d</td></tr>
-          <tr><td><strong>RMSE:</strong></td><td>%.4f</td></tr>
-          <tr><td><strong>t mean:</strong></td><td>%.2f</td></tr>
-          <tr><td><strong>t sd:</strong></td><td>%.2f</td></tr>
-          <tr><td><strong>Alpha:</strong></td><td>%.4f</td></tr>
-          <tr><td><strong>Capture:</strong></td><td>%.4f</td></tr>
-          <tr><td><strong>Capture SD:</strong></td><td>%.4f</td></tr>
-          <tr><td><strong>Sharpe:</strong></td><td>%.4f</td></tr>
+        <table class='table table-condensed' style='font-size: 18px;'>
+          <tr><td><strong>N:</strong></td><td style='text-align: right;'>%d</td></tr>
+          <tr><td><strong>RMSE:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+          <tr><td><strong>t mean:</strong></td><td style='text-align: right;'>%.2f</td></tr>
+          <tr><td><strong>t sd:</strong></td><td style='text-align: right;'>%.2f</td></tr>
+          <tr><td><strong>Alpha:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+          <tr><td><strong>Capture:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+          <tr><td><strong>Capture SD:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+          <tr><td><strong>Sharpe:</strong></td><td style='text-align: right;'>%.4f</td></tr>
         </table>",
         metrics$n, metrics$rmse, metrics$t_mean, metrics$t_sd,
         metrics$short_alpha, metrics$short_capture, metrics$short_capture_sd, metrics$short_sharpe
@@ -636,17 +652,40 @@ server <- function(input, output, session) {
     
     HTML(sprintf(
       "<h5>Distribution</h5>
-      <table class='table table-condensed' style='font-size: 10px;'>
-        <tr><td><strong>Expected:</strong></td><td>%.4f</td></tr>
-        <tr><td><strong>Mean:</strong></td><td>%.4f</td></tr>
-        <tr><td><strong>Median:</strong></td><td>%.4f</td></tr>
-        <tr><td><strong>SD:</strong></td><td>%.4f</td></tr>
+      <table class='table table-condensed' style='font-size: 18px;'>
+        <tr><td><strong>Expected:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+        <tr><td><strong>Mean:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+        <tr><td><strong>Median:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+        <tr><td><strong>SD:</strong></td><td style='text-align: right;'>%.4f</td></tr>
       </table>",
       dist$overall_results$expected_value,
       dist$overall_results$mean,
       dist$overall_results$median,
       dist$overall_results$sd
     ))
+  })
+  
+  # Signals, Returns Table
+  output$signals_returns_table <- DT::renderDataTable({
+    req(rv$dfsr)
+    
+    DT::datatable(
+      rv$dfsr,
+      options = list(
+        pageLength = 25,
+        scrollX = TRUE,
+        scrollY = "600px",
+        scrollCollapse = TRUE,
+        searching = TRUE,
+        ordering = TRUE,
+        lengthMenu = c(10, 25, 50, 100, 500),
+        autoWidth = TRUE
+      ),
+      filter = "top",
+      rownames = FALSE,
+      class = "display compact"
+    ) %>%
+      DT::formatRound(columns = which(sapply(rv$dfsr, is.numeric)), digits = 4)
   })
   
   # Data Status Check
