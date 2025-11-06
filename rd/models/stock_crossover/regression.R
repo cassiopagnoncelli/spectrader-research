@@ -53,10 +53,10 @@ Xy4 <- cbind(y = fwd$y_4, X)
 Xy5 <- cbind(y = fwd$y_5, X)
 Xy6 <- cbind(y = fwd$y_6, X)
 
-train_indices <- which(fwd_metadata$date <= as.Date('2024-06-30'))
-val_indices <- which(fwd_metadata$date > as.Date('2024-06-30') &
-                       fwd_metadata$date <= as.Date('2024-12-31'))
-test_indices <- which(fwd_metadata$date >= as.Date('2025-01-20'))
+train_indices <- which(fwd_metadata$date <= as.Date("2024-06-30"))
+val_indices <- which(fwd_metadata$date > as.Date("2024-06-30") &
+                       fwd_metadata$date <= as.Date("2024-12-31"))
+test_indices <- which(fwd_metadata$date >= as.Date("2025-01-20"))
 
 train_data <- fwd[train_indices, ]
 val_data <- fwd[val_indices, ]

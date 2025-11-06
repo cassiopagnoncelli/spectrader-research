@@ -42,7 +42,22 @@ posl <- position_cohort(
   # fun = exit_fpt(side = "long")
   # fun = exit_vats()
   # fun = exit_thres(k = .55)
-  fun = exit_qr(exit_qr_fits$extr, exit_qr_fits$aggr, exit_qr_fits$cons)
+  fun = exit_art(
+    # QR params
+    qrfit_extr = exit_qr_fits$extr,
+    qrfit_aggr = exit_qr_fits$aggr,
+    qrfit_cons = exit_qr_fits$cons,
+    extr_t = 2,
+    aggr_t = 7,
+    cons_t = 30,
+    # VATS params
+    vats_k = 1.5,
+    vats_t = 20,
+    # FPT params
+    fpt_maturity = 15 / 365,
+    fpt_side = "long",
+    fpt_t = 20
+  )
 )
 
 # Signals, Returns

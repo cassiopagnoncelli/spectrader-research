@@ -1,3 +1,64 @@
+plot_position_cohort_exit_art <- function(position, side = c("long", "short"), plot = TRUE) {
+  if (!tibble::is_tibble(position) && !is.data.frame(position)) {
+    stop("Input must be a tibble or data frame.")
+  }
+
+  p <- ggplot2::ggplot(na.omit(position), ggplot2::aes(x = t)) +
+    ggplot2::geom_line(
+      ggplot2::aes(y = S),
+      color = "black",
+      linewidth = 0.8
+    ) +
+    ggplot2::coord_cartesian(ylim = if (is.null(ylim)) NULL else ylim) +
+    ggplot2::geom_point(
+      data = subset(position, exit_vats),
+      aes(y = S),
+      color = "#2eec2e",
+      size = 2
+    ) +
+    ggplot2::geom_point(
+      data = subset(position, exit_fpt),
+      aes(y = S),
+      color = "#2ee2ec",
+      size = 2
+    ) +
+    ggplot2::geom_point(
+      data = subset(position, exit_qr_cons),
+      aes(y = S),
+      color = "#cfec2e",
+      size = 2
+    ) +
+    ggplot2::geom_point(
+      data = subset(position, exit_qr_aggr),
+      aes(y = S),
+      color = "#fc8d0e",
+      size = 2
+    ) +
+    ggplot2::geom_point(
+      data = subset(position, exit_qr_extr),
+      aes(y = S),
+      color = "#ff4314",
+      size = 2
+    ) +
+    ggplot2::geom_hline(
+      yintercept = 1,
+      color = "gray",
+      linetype = "dashed",
+      linewidth = 0.5
+    ) +
+    ggplot2::theme_minimal() +
+    ggplot2::labs(
+      x = "t",
+      y = "Value",
+      title = "State of the Art Exit - Position"
+    )
+
+  if (plot) {
+    print(p)
+  }
+  p
+}
+
 plot_position_cohort_exit_vats <- function(position, plot = TRUE) {
   if (!tibble::is_tibble(position) && !is.data.frame(position)) {
     stop("Input must be a tibble or data frame.")
@@ -173,7 +234,7 @@ plot_position_cohort_exit_qr <- function(position, plot = TRUE, ylim = NULL) {
       size = 2
     ) +
     ggplot2::geom_point(
-      data = subset(position, exit_qr_extreme),
+      data = subset(position, exit_qr_extr),
       aes(y = S),
       color = "#ff4314",
       size = 2
