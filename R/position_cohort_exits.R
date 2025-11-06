@@ -99,7 +99,7 @@ exit_qr <- function(qrfit_extreme = NULL, qrfit_aggr = NULL, qrfit_cons = NULL,
       ) %>%
       dplyr::filter(t >= ifelse(history, -Inf, 0))
 
-    if (is.null(qrfit_aggr) || is.null(qrfit_cons))
+    if (is.null(qrfit_extreme) || is.null(qrfit_aggr) || is.null(qrfit_cons))
       return(result)
 
     result$qhat_extreme <- predict(qrfit_extreme, result)

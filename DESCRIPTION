@@ -48,5 +48,6 @@ Suggests:
     gridExtra,
     DiagrammeR,
     quantreg,
-    MASS
+    MASS,
+    knitr
 Config/testthat/edition: 3
