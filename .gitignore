@@ -7,3 +7,5 @@
 
 _cache_/
 **/*.rds
+
+**/rd/results/*.html
