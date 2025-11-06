@@ -57,7 +57,7 @@ launch_dashboard <- function(load_data = FALSE) {
     cat("Press Ctrl+C (or Cmd+C on Mac) in the console to stop the dashboard.\n\n")
     
     # Run the dashboard
-    shiny::runApp("rd/models/stock_crossover/tradedashboard.R", launch.browser = TRUE)
+    shiny::runApp("rd/models/stock_crossover/dashboard.R", launch.browser = TRUE)
   } else {
     cat("\nCannot launch dashboard without required data.\n")
     cat("Please load your data first, then try again.\n")
