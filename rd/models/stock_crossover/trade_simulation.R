@@ -47,7 +47,7 @@ posl <- position_cohort(
     cons_t = 30,
     # VATS params
     vats_k = 1.5,
-    vats_t = 20, 
+    vats_t = 20,
     # FPT params
     fpt_maturity = 15 / 365,
     fpt_side = "long",
@@ -72,20 +72,8 @@ dfsr %>%
 f_star <- kelly_quantile(log(1 + dfsr$R), tau = .32)
 pk <- plot_kelly_trades(dfsr$R, f_star, log.transform = FALSE)
 
-# Returns distribution
-plot_distribution(na.omit(dfsr$R), title = "Normal Returns distribution")
-
 # Signal accuracy analysis
 side = "long"
 accuracy <- exit_accuracy(dfsr, side = side)
 accuracy_take_profit <- accuracy %>% filter(t < max(t))
 accuracy_open_positions <- accuracy %>% filter(t == max(t))
-
-exit_metrics(accuracy_take_profit, side)
-analyse_distribution(accuracy_take_profit$R, groups = c(0))
-
-exit_metrics(accuracy_open_positions, side)
-analyse_distribution(accuracy_open_positions$R, groups = c(0))
-
-exit_metrics(accuracy, side)
-analyse_distribution(accuracy$R, groups = c(0))
