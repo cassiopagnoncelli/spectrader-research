@@ -21,6 +21,8 @@ ui <- dashboardPage(
       menuItem("Concurrency", tabName = "concurrency", icon = icon("layer-group")),
       menuItem("Signals & Returns", tabName = "signals_returns", icon = icon("table")),
       hr(),
+      menuItem("Signal Model", tabName = "models", icon = icon("chart-bar")),
+      hr(),
       menuItem("Settings", tabName = "settings", icon = icon("cog"))
     )
   ),
@@ -304,6 +306,39 @@ ui <- dashboardPage(
         )
       ),
       
+      # Models Tab
+      tabItem(
+        tabName = "models",
+        fluidRow(
+          box(
+            width = 12,
+            title = "Model Analysis",
+            status = "primary",
+            solidHeader = TRUE,
+            p("Signal prediction model diagnostics and performance analysis.")
+          )
+        ),
+        fluidRow(
+          box(
+            width = 12,
+            title = "Model Plots",
+            status = "info",
+            fluidRow(
+              column(
+                width = 12,
+                div(
+                  style = "text-align: center; margin-bottom: 15px;",
+                  actionButton("prev_model_plot", "Previous", icon = icon("arrow-left"), style = "margin-right: 10px;"),
+                  htmlOutput("model_plot_counter", inline = TRUE),
+                  actionButton("next_model_plot", "Next", icon = icon("arrow-right"), style = "margin-left: 10px;")
+                )
+              )
+            ),
+            plotOutput("current_model_plot", height = 500)
+          )
+        )
+      ),
+      
       # Settings Tab
       tabItem(
         tabName = "settings",
@@ -351,7 +386,23 @@ server <- function(input, output, session) {
     f_star = NULL,
     accuracy = NULL,
     sample_trades = NULL,
-    current_chart_index = 1
+    current_chart_index = 1,
+    model_signal = NULL,
+    current_model_plot_index = 1
+  )
+  
+  # Define model plot names
+  model_plot_names <- c(
+    "Metrics Comparison",
+    "Feature Importance (Top 20)",
+    "All Predictions",
+    "Predictions vs Actuals (Test)",
+    "Residuals (Test)",
+    "Residual Distribution (Test)",
+    "Predictions vs Actuals (Validation)",
+    "Residuals (Validation)",
+    "Predictions vs Actuals (Train)",
+    "Residuals (Train)"
   )
   
   # Load data from global environment
@@ -364,6 +415,9 @@ server <- function(input, output, session) {
     }
     if (exists("f_star", envir = .GlobalEnv)) {
       rv$f_star <- get("f_star", envir = .GlobalEnv)
+    }
+    if (exists("model_signal", envir = .GlobalEnv)) {
+      rv$model_signal <- get("model_signal", envir = .GlobalEnv)
     }
   })
   
@@ -999,6 +1053,53 @@ server <- function(input, output, session) {
   output$concurrency_punchcard <- renderPlot({
     req(df_dates())
     plot_concurrency_punchcard(df_dates(), plot = FALSE)$plot
+  })
+  
+  # Models Carousel Navigation - Previous Button
+  observeEvent(input$prev_model_plot, {
+    if (rv$current_model_plot_index > 1) {
+      rv$current_model_plot_index <- rv$current_model_plot_index - 1
+    }
+  })
+  
+  # Models Carousel Navigation - Next Button
+  observeEvent(input$next_model_plot, {
+    if (rv$current_model_plot_index < length(model_plot_names)) {
+      rv$current_model_plot_index <- rv$current_model_plot_index + 1
+    }
+  })
+  
+  # Models Carousel - Plot Counter Display
+  output$model_plot_counter <- renderUI({
+    total_plots <- length(model_plot_names)
+    current_idx <- rv$current_model_plot_index
+    plot_name <- model_plot_names[current_idx]
+    
+    HTML(sprintf(
+      "<strong style='font-size: 16px;'>Plot %d of %d</strong> <span style='color: #777;'>(%s)</span>",
+      current_idx, total_plots, plot_name
+    ))
+  })
+  
+  # Models Carousel - Render Current Plot
+  output$current_model_plot <- renderPlot({
+    req(rv$model_signal)
+    
+    current_idx <- rv$current_model_plot_index
+    
+    # Switch between different plots based on index
+    switch(current_idx,
+      plot_metrics_comparison(rv$model_signal),
+      plot_feature_importance(rv$model_signal, top_n = 20),
+      plot_all_predictions(rv$model_signal),
+      plot_predictions_vs_actuals(rv$model_signal, "test"),
+      plot_residuals(rv$model_signal, "test"),
+      plot_residual_distribution(rv$model_signal, "test"),
+      plot_predictions_vs_actuals(rv$model_signal, "val"),
+      plot_residuals(rv$model_signal, "val"),
+      plot_predictions_vs_actuals(rv$model_signal, "train"),
+      plot_residuals(rv$model_signal, "train")
+    )
   })
   
   # Signals, Returns Table

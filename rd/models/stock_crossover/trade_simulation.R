@@ -2,8 +2,8 @@
 df_train <- tibble(
   symbol = fwd_metadata$symbol[train_indices],
   date = fwd_metadata$date[train_indices],
-  y = results$actuals$train,
-  yhat = results$predictions$train,
+  y = model_signal$actuals$train,
+  yhat = model_signal$predictions$train,
   close = fwd$y_7[train_indices]
 )
 
@@ -21,8 +21,8 @@ exit_qr_fits <- df_train %>%
 df_test <- tibble(
   symbol = fwd_metadata$symbol[test_indices],
   date = fwd_metadata$date[test_indices],
-  y = results$actuals$test,
-  yhat = results$predictions$test,
+  y = model_signal$actuals$test,
+  yhat = model_signal$predictions$test,
   close = fwd$y_7[test_indices]
 )
 

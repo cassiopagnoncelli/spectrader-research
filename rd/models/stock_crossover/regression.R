@@ -67,7 +67,7 @@ test_data <- fwd[test_indices, ]
 # Stacked model.
 #
 ckm <- cache_key(existing_key = ckf$key, ext = "rds", fun = "stacked_xgboost")
-results <- train_stacked_model(
+model_signal <- train_stacked_model(
   X = X,
   fwd = fwd,
   train_indices = train_indices,
@@ -86,15 +86,15 @@ results <- train_stacked_model(
 # PLOTS.
 #
 if (FALSE) {
-  plot_metrics_comparison(results)
-  plot_feature_importance(results, top_n = 20)
-  plot_all_predictions(results)
-  plot_predictions_vs_actuals(results, "test")
-  plot_residuals(results, "test")
-  plot_residual_distribution(results, "test")
-  plot_predictions_vs_actuals(results, "val")
-  plot_residuals(results, "val")
-  plot_predictions_vs_actuals(results, "train")
-  plot_residuals(results, "train")
-  plot_xgboost_trees(results, tree_indices = c(0, 1, 2, 3, 4))
+  plot_metrics_comparison(model_signal)
+  plot_feature_importance(model_signal, top_n = 20)
+  plot_all_predictions(model_signal)
+  plot_predictions_vs_actuals(model_signal, "test")
+  plot_residuals(model_signal, "test")
+  plot_residual_distribution(model_signal, "test")
+  plot_predictions_vs_actuals(model_signal, "val")
+  plot_residuals(model_signal, "val")
+  plot_predictions_vs_actuals(model_signal, "train")
+  plot_residuals(model_signal, "train")
+  plot_xgboost_trees(model_signal, tree_indices = c(0, 1, 2, 3, 4))
 }
