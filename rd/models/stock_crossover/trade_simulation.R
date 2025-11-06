@@ -19,7 +19,7 @@ qrfits_params <- list(
   within_days = 20
 )
 qrfits <- fetch_cache(
-  cache_key(params = qrfits_params, ext = "rds", fun = "qrfits"),
+  cache_key(params = qrfits_params, ext = "qs", fun = "qrfits"),
   function() {
     df_train %>%
       filter(yhat > qrfits_params$cutoff) %>%

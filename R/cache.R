@@ -1,7 +1,7 @@
 CACHE_DIR <<- "_cache_"
 
 cache_key <- function(params = list(), existing_key = NULL, ext = NULL, fun = NULL) {
-  if (is.null(ext) || ext == "" || !(ext %in% c("rds", "RData", "sql", "txt"))) {
+  if (is.null(ext) || ext == "" || !(ext %in% c("rds", "RData", "qs", "sql", "txt"))) {
     stop("Extension 'ext' must be either rds or RData")
   }
   # Create cache directory if it doesn't exist
@@ -31,6 +31,8 @@ load_cache <- function(ck) {
     readRDS(ck$path)
   else if (ck$ext %in% c("sql", "txt"))
     readLines(ck$path)
+  else if (ck$ext == "qs")
+    qs::qread(ck$path)
   else
     stop(sprintf("Unsupported cache format: %s", ck$ext))
 }
@@ -42,6 +44,8 @@ save_cache <- function(ck, object) {
     writeLines(object, ck$path)
   else if (ck$ext == "RData")
     stop("Saving to RData format is not implemented yet, use save() directly.")
+  else if (ck$ext == "qs")
+    qs::qsave(object, ck$path)
   else
     stop(sprintf("Unsupported cache format: %s", ck$ext))
 }
