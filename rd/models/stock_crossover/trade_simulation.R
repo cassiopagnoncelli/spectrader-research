@@ -37,11 +37,6 @@ posl <- position_cohort(
   df_signals,
   before_days = 30,
   after_days = 60,
-  # Exit function.
-  # fun = identity
-  # fun = exit_fpt(side = "long")
-  # fun = exit_vats()
-  # fun = exit_thres(k = .55)
   fun = exit_art(
     # QR params
     qrfit_extr = exit_qr_fits$extr,
@@ -67,9 +62,11 @@ dfsr <- position_cohort_return(posl, df_signals)
 # _fpt(side = "long), _vats, _thres, _qr
 dfsr %>%
   filter(t < max(t, na.rm = TRUE)) %>%
-  slice_sample(n = 0) %>%  # Change n to view more samples
+  slice_sample(n = 10) %>%  # Change n to view more samples
   pull(trade) %>%
-  purrr::walk(~ plot_position_cohort_exit_qr(posl[[.x]], ylim = c(.8, 1.5)))
+  purrr::walk(~ plot_position_cohort_exit_art(posl[[.x]],
+                                              side = "long",
+                                              ylim = c(.8, 1.5)))
 
 # Kelly - sequential
 f_star <- kelly_quantile(log(1 + dfsr$R), tau = .32)

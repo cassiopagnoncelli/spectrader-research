@@ -1,4 +1,4 @@
-plot_position_cohort_exit_art <- function(position, side = c("long", "short"), plot = TRUE) {
+plot_position_cohort_exit_art <- function(position, side = c("long", "short"), plot = TRUE, ylim = NULL) {
   if (!tibble::is_tibble(position) && !is.data.frame(position)) {
     stop("Input must be a tibble or data frame.")
   }
