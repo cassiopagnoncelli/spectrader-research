@@ -258,6 +258,15 @@ ui <- dashboardPage(
         fluidRow(
           box(
             width = 12,
+            title = "Concurrency Summary Statistics",
+            status = "info",
+            solidHeader = TRUE,
+            htmlOutput("concurrency_summary_stats")
+          )
+        ),
+        fluidRow(
+          box(
+            width = 12,
             title = "Concurrent Trades Over Time",
             status = "info",
             plotOutput("concurrency_over_time", height = 400)
@@ -944,6 +953,36 @@ server <- function(input, output, session) {
         exit = add_business_days(date, t)
       ) %>%
       select(trade, symbol, entry, exit, R, t)
+  })
+  
+  # Concurrency Summary Statistics
+  output$concurrency_summary_stats <- renderUI({
+    req(df_dates())
+    
+    summary <- concurrency_summary(df_dates())
+    
+    HTML(sprintf(
+      "<table class='table table-bordered' style='font-size: 18px;'>
+        <tr><td><strong>Mean Concurrent Trades:</strong></td><td style='text-align: right;'>%.2f</td></tr>
+        <tr><td><strong>Median Concurrent Trades:</strong></td><td style='text-align: right;'>%.0f</td></tr>
+        <tr><td><strong>Max Concurrent Trades:</strong></td><td style='text-align: right;'>%d</td></tr>
+        <tr><td><strong>Q0.05:</strong></td><td style='text-align: right;'>%.2f</td></tr>
+        <tr><td><strong>Q0.32:</strong></td><td style='text-align: right;'>%.2f</td></tr>
+        <tr><td><strong>Q0.68:</strong></td><td style='text-align: right;'>%.2f</td></tr>
+        <tr><td><strong>Q0.80:</strong></td><td style='text-align: right;'>%.2f</td></tr>
+        <tr><td><strong>Q0.95:</strong></td><td style='text-align: right;'>%.2f</td></tr>
+        <tr><td><strong>%% Time with Multiple Trades:</strong></td><td style='text-align: right;'>%.1f%%</td></tr>
+      </table>",
+      summary$mean_concurrent,
+      summary$median_concurrent,
+      summary$max_concurrent,
+      summary$q.05,
+      summary$q.32,
+      summary$q.68,
+      summary$q.80,
+      summary$q.95,
+      summary$pct_time_multi * 100
+    ))
   })
   
   # Concurrency Plot 1: Concurrency Over Time

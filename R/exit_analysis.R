@@ -59,7 +59,7 @@ exit_metrics <- function(accuracy, side = c("long", "short")) {
           NA
         ),
         long_capture_sd = ifelse(
-          length(accuracy$long_capture) > 0,
+          length(accuracy$long_capture) >= 2,
           sd(accuracy$long_capture[is.finite(accuracy$long_capture)], na.rm = TRUE),
           NA
         ),
@@ -79,7 +79,7 @@ exit_metrics <- function(accuracy, side = c("long", "short")) {
           NA
         ),
         short_capture_sd = ifelse(
-          length(accuracy$short_capture) > 0,
+          length(accuracy$short_capture) >= 2,
           sd(accuracy$short_capture[is.finite(accuracy$short_capture)], na.rm = TRUE),
           NA
         ),
