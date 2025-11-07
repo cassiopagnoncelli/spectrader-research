@@ -4,6 +4,10 @@
 - Captures: capture SD - take profit / open positions split not correct
 - Rename take profit / open positions to captured / uncaptured
 
+## Portfolio
+
+Portfolio growth over time not over trades
+
 ## Exit model
 
 Goals: shortfall expectation maximisation or long/short capture

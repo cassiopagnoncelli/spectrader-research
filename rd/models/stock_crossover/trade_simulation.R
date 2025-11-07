@@ -28,7 +28,7 @@ df_test <- tibble(
 
 # Generate trading signals, discarding the ones within a month apart
 df_signals <- df_test %>%
-  filter(yhat > 1.15) %>%
+  filter(yhat > 1.35) %>%
   filter_signals(within_days = 20) %>%
   arrange(date)
 
