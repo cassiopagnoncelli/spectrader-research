@@ -6,7 +6,11 @@
 plot_concurrency_over_time <- function(df_dates, plot = TRUE) {
   d <- prepare_overlap_data(df_dates)
   df_overlap <- d$df_overlap
-  p <- ggplot2::ggplot(df_overlap, ggplot2::aes(x = date, y = active_trades, fill = active_trades)) +
+
+  p <- ggplot2::ggplot(
+      df_overlap,
+      ggplot2::aes(x = date, y = active_trades, fill = active_trades)
+    ) +
     ggplot2::geom_col(width = 0.9) +
     ggplot2::scale_fill_gradientn(
       colours = c("#4CAF50", "#FFD54F", "#E53935"),
@@ -18,7 +22,10 @@ plot_concurrency_over_time <- function(df_dates, plot = TRUE) {
     ggplot2::labs(title = "Concurrent Trades Over Time",
                   x = "Date", y = "Number of Active Trades") +
     ggplot2::theme_minimal() + ggplot2::theme(legend.position = "top")
-  if (plot) base::print(p)
+
+  if (plot)
+    base::print(p)
+
   list(data = df_overlap, plot = p)
 }
 
@@ -33,6 +40,7 @@ plot_concurrency_overlap_matrix <- function(df_dates, plot = TRUE) {
   vmax <- base::max(overlap_days, na.rm = TRUE)
   grad_vals <- base::unique(base::sort(base::pmin(base::pmax(c(0, 1, 4, vmax) / vmax, 0), 1)))
   df_melt <- reshape2::melt(overlap_days)
+
   p <- ggplot2::ggplot(df_melt, ggplot2::aes(Var1, Var2, fill = value)) +
     ggplot2::geom_tile(color = "white") +
     ggplot2::scale_fill_gradientn(
@@ -46,7 +54,10 @@ plot_concurrency_overlap_matrix <- function(df_dates, plot = TRUE) {
                    axis.text = ggplot2::element_text(size = 9),
                    legend.position = "top") +
     ggplot2::coord_fixed()
-  if (plot) base::print(p)
+
+  if (plot)
+    base::print(p)
+
   list(data = overlap_days, plot = p)
 }
 
@@ -58,12 +69,18 @@ plot_concurrency_overlap_matrix <- function(df_dates, plot = TRUE) {
 plot_concurrency_distribution <- function(df_dates, plot = TRUE) {
   d <- prepare_overlap_data(df_dates)
   df_dates <- d$df_dates
+
   p <- ggplot2::ggplot(df_dates, ggplot2::aes(x = overlap_count)) +
     ggplot2::geom_histogram(binwidth = 1, fill = "steelblue", color = "white") +
-    ggplot2::labs(title = "Distribution of Overlap Counts",
-                  x = "Number of Concurrent Trades", y = "Frequency") +
+    ggplot2::labs(
+      title = "Distribution of Overlap Counts",
+      x = "Number of Concurrent Trades", y = "Frequency"
+    ) +
     ggplot2::theme_minimal()
-  if (plot) base::print(p)
+
+  if (plot)
+    base::print(p)
+
   list(data = df_dates, plot = p)
 }
 
@@ -77,7 +94,7 @@ plot_concurrency_waterfall <- function(df_dates, plot = TRUE) {
     dplyr::group_by(symbol) %>%
     dplyr::summarise(first_entry = base::min(entry), .groups = "drop") %>%
     dplyr::right_join(df_dates, by = "symbol") %>%
-    dplyr::mutate(symbol = forcats::fct_rev(stats::reorder(symbol, first_entry)))  # ✅ fix here
+    dplyr::mutate(symbol = forcats::fct_rev(stats::reorder(symbol, first_entry)))
 
   p <- ggplot2::ggplot(df_gantt, ggplot2::aes(y = symbol)) +
     ggplot2::geom_segment(
@@ -92,10 +109,11 @@ plot_concurrency_waterfall <- function(df_dates, plot = TRUE) {
     ggplot2::theme_minimal() +
     ggplot2::theme(legend.position = "none")
 
-  if (plot) base::print(p)
+  if (plot)
+    base::print(p)
+
   list(data = df_gantt, plot = p)
 }
-
 
 #' @title Plot weekly punchcard
 #' @description GitHub-style weekly concurrency heatmap.
@@ -112,6 +130,7 @@ plot_concurrency_punchcard <- function(df_dates, plot = TRUE) {
     ) %>%
     dplyr::group_by(week, weekday) %>%
     dplyr::summarise(mean_active = base::mean(active_trades), .groups = "drop")
+
   p <- ggplot2::ggplot(df_punch, ggplot2::aes(x = week, y = forcats::fct_rev(weekday), fill = mean_active)) +
     ggplot2::geom_tile(color = "white", linewidth = 0.3) +
     ggplot2::scale_fill_gradientn(
@@ -127,6 +146,9 @@ plot_concurrency_punchcard <- function(df_dates, plot = TRUE) {
                    axis.text.x = ggplot2::element_text(angle = 0, hjust = 0.5),
                    panel.grid = ggplot2::element_blank(),
                    legend.position = "top")
-  if (plot) base::print(p)
+
+  if (plot)
+    base::print(p)
+
   list(data = df_punch, plot = p)
 }

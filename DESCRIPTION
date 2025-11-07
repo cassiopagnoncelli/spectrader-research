@@ -34,7 +34,10 @@ Imports:
     lubridate,
     rugarch,
     TTR,
-    moments
+    moments,
+    forcats,
+    scales,
+    reshape2
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Suggests: 
@@ -50,5 +53,6 @@ Suggests:
     quantreg,
     MASS,
     knitr,
-    qs
+    qs,
+    shiny
 Config/testthat/edition: 3
