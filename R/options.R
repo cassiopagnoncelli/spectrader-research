@@ -4,25 +4,27 @@
 #' @param S_t Strike price
 #' @param t Time to maturity (days)
 #' @param vol Implied volatility
+#' @param dy Dividend yield
+#' @param r Annual risk-free interest rate
 #' @return Vector of option values
-american_optprice <- function(S_0, S_t, t, vol) {
-  mapply(function(s0, st, tm, v) {
+american_optprice <- function(S_0, S_t, tm, vol, dy = 0, r = 0.0409) {
+  mapply(function(s0, st, ttm, v) {
     RQuantLib::AmericanOption(
       "call",
       underlying = s0,
       strike = st,
-      dividendYield = 0,
+      dividendYield = dy,
 
       # Annual risk-free rate
-      riskFreeRate = 0.0409,
+      riskFreeRate = r,
 
       # Days in year
-      maturity = tm / 365,
+      maturity = ttm / 365,
 
       # Implied volatility
       volatility = v
     )$value
-  }, S_0, S_t, t, vol)
+  }, S_0, S_t, tm, vol)
 }
 
 #' @title American Option Returns Calculator
