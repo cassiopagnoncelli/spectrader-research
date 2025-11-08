@@ -10,7 +10,7 @@
 #' @return Numeric goal function value based on selected method
 american_optprice_optim_goal <- function(
   data, K, tm, vol_0 = NA, vol_t = NA, verbose = FALSE,
-  goal = list(method = "kelly", q = .3)
+  goal = list(method = "kelly", q = .4, cap = .3)
 ) {
   if (verbose)
     cat(sprintf("Evaluating goal function with K=%.2f, tm=%d, method=%s\n",
@@ -25,10 +25,10 @@ american_optprice_optim_goal <- function(
       ) %>%
       dplyr::pull(sharpe)
   } else if (goal$method == "log-portfolio-kelly") {
-    kelly <- kelly_quantile(na.omit(data$R), tau = goal$q)
-    american_optprice_returns(data, K, tm) %>%
-      dplyr::summarise(W = prod(1 + kelly * opt_R)) %>%
-      dplyr::pull(W)
+    opt_R <- american_optprice_returns(data, K, tm) %>%
+      dplyr::pull(opt_R)
+    f_star <- kelly_quantile(na.omit(opt_R), tau = goal$q, cap = goal$cap)
+    log(prod(1 + f_star * opt_R))
   } else if (goal$method == "log-portfolio") {
     american_optprice_returns(data, K, tm) %>%
       dplyr::summarise(W = log(prod(1 + goal$wager * opt_R))) %>%

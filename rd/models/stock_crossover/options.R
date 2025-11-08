@@ -6,8 +6,8 @@ options_surface_grid <- options_optim_surface_grid(
   K_values = K_values,
   tm_values = tm_values,
   # goal = list(method = "sharpe"),
-  # goal = list(method = "log-portfolio-kelly", q = .5),
-  goal = list(method = "log-portfolio", wager = .05),
+  goal = list(method = "log-portfolio-kelly", q = .3, cap = .4),
+  # goal = list(method = "log-portfolio", wager = .08),
   vol_0 = 0.9,
   vol_t = 0.9
 )
@@ -40,10 +40,13 @@ plotly::plot_ly() %>%
     )
   )
 
-# Find optimal parameters
-print(options_optim_maximal(options_surface_grid))
-
 # Returns
-american_optprice_returns(dfsr, K = 1.2, tm = 30) %>%
-  pull(opt_R) %>%
-  kelly_quantile(tau = c(.05, .15, .32, .5))
+opt_R <- american_optprice_returns(dfsr, K = 1.25, tm = 21) %>% pull(opt_R)
+tibble(
+  f_star = kelly_fraction(opt_R),
+  f_star_q = kelly_quantile(opt_R, tau = 0.3, cap = .4),
+  log_portfolio = log(prod(1 + f_star * opt_R)),
+  log_portfolio_q = log(prod(1 + f_star_q * opt_R))
+)
+
+print(options_optim_maximal(options_surface_grid)) # Maximum

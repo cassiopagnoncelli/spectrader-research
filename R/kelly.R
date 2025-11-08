@@ -80,6 +80,8 @@ kelly_fraction <- function(rets) {
 #'   Default is 0.5 (median). Higher values (e.g., 0.75) focus on more optimistic
 #'   scenarios, while lower values (e.g., 0.25) emphasize conservative tail risk.
 #'   When a vector is provided, the function returns a vector of Kelly fractions.
+#' @param cap Numeric value between 0 and 1 representing the maximum Kelly fraction
+#'   allowed. Default is 0.5. This caps the position size to reduce risk exposure.
 #'
 #' @return Numeric value or vector (matching length of tau) between 0 and 1 representing
 #'   the quantile-based Kelly fraction(s). Returns 0 if there are no winning trades
@@ -167,7 +169,7 @@ kelly_fraction <- function(rets) {
 #' @export
 kelly_quantile <- local({
   # Internal helper function for single tau value
-  .kelly_quantile_single <- function(returns, tau) {
+  .kelly_quantile_single <- function(returns, tau, cap) {
     stopifnot(is.numeric(tau), tau >= 0, tau <= 1)
     
     wins  <- returns[returns > 0]
@@ -177,7 +179,7 @@ kelly_quantile <- local({
     
     # Handle edge cases
     if (length(wins) == 0) return(0)
-    if (length(loss) == 0) return(1)
+    if (length(loss) == 0) return(min(1, cap))
     
     r_w <- quantile(wins, probs = tau, na.rm = TRUE, names = FALSE)
     r_l <- quantile(loss, probs = 1 - tau, na.rm = TRUE, names = FALSE)
@@ -185,18 +187,18 @@ kelly_quantile <- local({
     f_tau <- (p * r_w - q * abs(r_l)) / r_w
     f_tau <- max(0, min(f_tau, 1))  # clamp to [0, 1]
     
-    f_tau
+    min(f_tau, cap)
   }
   
   # Vectorized wrapper
   .kelly_quantile_vectorized <- Vectorize(.kelly_quantile_single, vectorize.args = "tau")
   
   # Main function
-  function(returns, tau = 0.5) {
+  function(returns, tau = 0.5, cap = 0.5) {
     stopifnot(is.numeric(returns), length(returns) > 1)
     returns <- returns[is.finite(returns)]
     
-    result <- .kelly_quantile_vectorized(returns, tau)
+    result <- .kelly_quantile_vectorized(returns, tau, cap)
     return(as.numeric(result))
   }
 })
