@@ -46,4 +46,4 @@ print(options_optim_maximal(options_surface_grid))
 # Returns
 american_optprice_returns(dfsr, K = 1.2, tm = 30) %>%
   pull(opt_R) %>%
-  kelly_quantile(q = .25)
+  kelly_quantile(tau = c(.05, .15, .32, .5))

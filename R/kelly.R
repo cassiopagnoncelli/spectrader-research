@@ -76,13 +76,15 @@ kelly_fraction <- function(rets) {
 #' @param returns Numeric vector of returns. The function automatically separates
 #'   winning (positive) and losing (non-positive) returns for quantile calculation.
 #'   Must be numeric and contain at least 2 observations.
-#' @param tau Numeric value between 0 and 1 representing the quantile parameter.
+#' @param tau Numeric value or vector between 0 and 1 representing the quantile parameter(s).
 #'   Default is 0.5 (median). Higher values (e.g., 0.75) focus on more optimistic
 #'   scenarios, while lower values (e.g., 0.25) emphasize conservative tail risk.
+#'   When a vector is provided, the function returns a vector of Kelly fractions.
 #'
-#' @return Numeric value between 0 and 1 representing the quantile-based Kelly fraction.
-#'   Returns 0 if there are no winning trades or no losing trades (degenerate case).
-#'   The result is clamped between 0 and 1 to prevent negative or excessive leverage.
+#' @return Numeric value or vector (matching length of tau) between 0 and 1 representing
+#'   the quantile-based Kelly fraction(s). Returns 0 if there are no winning trades
+#'   or no losing trades (degenerate case). Results are clamped between 0 and 1 to
+#'   prevent negative or excessive leverage.
 #'
 #' @details
 #' Unlike the classical Kelly Criterion which uses mean returns, this quantile-based
@@ -163,90 +165,59 @@ kelly_fraction <- function(rets) {
 #' \code{\link{kelly_fraction}} for the classical Kelly Criterion implementation
 #'
 #' @export
-kelly_quantile <- function(returns, tau = 0.5) {
-  stopifnot(is.numeric(returns), length(returns) > 1)
-  returns <- returns[is.finite(returns)]
+kelly_quantile <- local({
+  # Internal helper function for single tau value
+  .kelly_quantile_single <- function(returns, tau) {
+    stopifnot(is.numeric(tau), tau >= 0, tau <= 1)
+    
+    wins  <- returns[returns > 0]
+    loss  <- returns[returns <= 0]
+    p     <- length(wins) / length(returns)
+    q     <- 1 - p
+    
+    # Handle edge cases
+    if (length(wins) == 0) return(0)
+    if (length(loss) == 0) return(1)
+    
+    r_w <- quantile(wins, probs = tau, na.rm = TRUE, names = FALSE)
+    r_l <- quantile(loss, probs = 1 - tau, na.rm = TRUE, names = FALSE)
+    
+    f_tau <- (p * r_w - q * abs(r_l)) / r_w
+    f_tau <- max(0, min(f_tau, 1))  # clamp to [0, 1]
+    
+    f_tau
+  }
   
-  wins  <- returns[returns > 0]
-  loss  <- returns[returns <= 0]
-  p     <- length(wins) / length(returns)
-  q     <- 1 - p
+  # Vectorized wrapper
+  .kelly_quantile_vectorized <- Vectorize(.kelly_quantile_single, vectorize.args = "tau")
   
-  if (length(wins) == 0) return(0)
-  if (length(loss) == 0) return(1)
-  
-  r_w <- quantile(wins,  probs = tau, na.rm = TRUE)
-  r_l <- quantile(loss,  probs = 1 - tau, na.rm = TRUE)
-  
-  f_tau <- (p * r_w - q * abs(r_l)) / r_w
-  f_tau <- max(0, min(f_tau, 1))  # clamp 0–1
-  
-  return(f_tau)
-}
+  # Main function
+  function(returns, tau = 0.5) {
+    stopifnot(is.numeric(returns), length(returns) > 1)
+    returns <- returns[is.finite(returns)]
+    
+    result <- .kelly_quantile_vectorized(returns, tau)
+    return(as.numeric(result))
+  }
+})
 
-#' Plot Classical Kelly Portfolio Growth Over Time
+#' Plot Kelly Portfolio Growth
 #'
-#' Visualizes the cumulative portfolio growth using the classical Kelly Criterion for
-#' position sizing. Creates a ggplot2 area chart showing how a portfolio would
-#' grow when applying the classical Kelly fraction to a series of returns. Optionally
-#' displays growth on a logarithmic scale.
+#' Visualizes cumulative portfolio growth using the Kelly Criterion for position sizing.
 #'
 #' @param returns Numeric vector of returns for each trade.
-#' @param kelly_p Numeric value between 0 and 1 representing the Kelly fraction
-#'   to apply. If NULL (default), the optimal Kelly fraction is automatically
-#'   calculated using \code{\link{kelly_fraction}}.
-#' @param log.transform Logical. If TRUE, applies log10 transformation to the
-#'   portfolio values for visualization. Useful when portfolio growth spans
-#'   multiple orders of magnitude. Default is FALSE.
+#' @param kelly_p Kelly fraction to apply. If NULL (default), automatically calculated
+#'   using \code{\link{kelly_fraction}}.
+#' @param log.transform If TRUE, applies log10 transformation for visualization. Default is FALSE.
 #'
-#' @return A ggplot2 object representing the portfolio growth visualization.
-#'   The plot is also printed to the current graphics device.
-#'
-#' @details
-#' The function calculates portfolio growth using the classical Kelly approach as:
-#' P_n = P_0 * prod(1 + r_i * f*)
-#'
-#' where P_n is the portfolio value at trade n, r_i is the return on trade i,
-#' and f* is the classical Kelly fraction.
-#'
-#' The visualization includes:
-#' \itemize{
-#'   \item Green area chart showing portfolio evolution
-#'   \item Solid line tracking the portfolio value
-#'   \item Horizontal dotted line at 1.0 (starting capital)
-#'   \item Title, subtitle with key statistics (number of trades, Kelly fraction)
-#'   \item Minimal theme for clean presentation
-#' }
-#'
-#' @section Dependencies:
-#' Requires the following packages:
-#' \itemize{
-#'   \item ggplot2: For creating the visualization
-#'   \item magrittr: For the pipe operator (%>%)
-#' }
-#'
-#' @seealso \code{\link{kelly_fraction}} for calculating the optimal classical Kelly fraction
+#' @return A ggplot2 object showing portfolio growth over time.
 #'
 #' @examples
 #' \dontrun{
-#' # Generate sample returns
-#' set.seed(123)
 #' returns <- rnorm(100, mean = 0.01, sd = 0.05)
-#'
-#' # Plot with automatically calculated Kelly fraction
 #' plot_kelly_trades(returns)
-#'
-#' # Plot with custom Kelly fraction
 #' plot_kelly_trades(returns, kelly_p = 0.25)
-#'
-#' # Plot with log transformation for large growth
-#' large_returns <- rnorm(500, mean = 0.02, sd = 0.03)
-#' plot_kelly_trades(large_returns, log.transform = TRUE)
-#'
-#' # Compare different Kelly fractions
-#' returns <- c(0.05, -0.02, 0.03, -0.01, 0.04, -0.03, 0.02, 0.01)
-#' plot_kelly_trades(returns, kelly_p = 0.5)
-#' plot_kelly_trades(returns, kelly_p = 1.0)
+#' plot_kelly_trades(returns, log.transform = TRUE)
 #' }
 #'
 #' @export
