@@ -1,15 +1,15 @@
 K_values <- seq(.6, 1.4, by = .01)
-tm_values <- c(4, 14, 21, 28, 35, 42, 49)
+tm_values <- c(4, 14, 21, 28, 35, 42, 49) |> (\(v) v[v >= feature_days])()
 
 options_surface_grid <- options_optim_surface_grid(
   data = dfsr,
   K_values = K_values,
   tm_values = tm_values,
   # goal = list(method = "sharpe"),
-  goal = list(method = "log-portfolio-kelly", q = .3, cap = .4),
-  # goal = list(method = "log-portfolio", wager = .08),
-  vol_0 = 0.9,
-  vol_t = 0.9
+  # goal = list(method = "log-portfolio-kelly", q = .3, cap = .4),
+  goal = list(method = "log-portfolio", wager = .08),
+  vol_0 = NA,
+  vol_t = NA
 )
 
 options_surface_goal <- options_optim_surface_matrix(
