@@ -11,7 +11,7 @@ source("rd/models/stock_crossover/regression_plots.R")
 #
 fetl <- Fetl$new()
 
-feature_days <- 15
+feature_days <- 22
 features_params <- list(
   companies = 13000,          # Cached: 13000
   days = feature_days,        # Cached: 10, 15, 22, 44

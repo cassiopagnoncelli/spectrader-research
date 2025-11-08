@@ -1,5 +1,8 @@
 K_values <- seq(.6, 1.4, by = .01)
-tm_values <- c(4, 14, 21, 28, 35, 42, 49) |> (\(v) v[v >= feature_days])()
+
+tm_values <- tibble(x = c(4, 14, 21, 28, 35, 42, 49)) %>%
+  dplyr::filter(x > ceiling(365/252 * feature_days)) %>%
+  dplyr::pull(x)
 
 options_surface_grid <- options_optim_surface_grid(
   data = dfsr,
