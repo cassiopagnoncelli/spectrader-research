@@ -21,6 +21,8 @@ ui <- dashboardPage(
       menuItem("Concurrency", tabName = "concurrency", icon = icon("layer-group")),
       menuItem("Signals & Returns", tabName = "signals_returns", icon = icon("table")),
       hr(),
+      menuItem("Options Returns", tabName = "options_returns", icon = icon("dollar-sign")),
+      hr(),
       menuItem("Signal Model", tabName = "models", icon = icon("chart-bar")),
       hr(),
       menuItem("Settings", tabName = "settings", icon = icon("cog"))
@@ -302,6 +304,30 @@ ui <- dashboardPage(
             status = "primary",
             solidHeader = TRUE,
             DT::dataTableOutput("signals_returns_table")
+          )
+        )
+      ),
+      
+      # Options Returns Tab
+      tabItem(
+        tabName = "options_returns",
+        fluidRow(
+          box(
+            width = 12,
+            title = "American Options Returns Analysis",
+            status = "primary",
+            solidHeader = TRUE,
+            numericInput("options_K", "Strike Multiplier (K):", value = 1.25, min = 0.1, max = 2.0, step = 0.05),
+            numericInput("options_tm", "Days to Maturity (tm):", value = 25, min = 1, max = 100, step = 1)
+          )
+        ),
+        fluidRow(
+          box(
+            width = 12,
+            title = "Options Returns Table",
+            status = "info",
+            solidHeader = TRUE,
+            DT::dataTableOutput("options_returns_table")
           )
         )
       ),
@@ -1123,6 +1149,32 @@ server <- function(input, output, session) {
       class = "display compact"
     ) %>%
       DT::formatRound(columns = which(sapply(rv$dfsr, is.numeric)), digits = 4)
+  })
+  
+  # Options Returns Table
+  output$options_returns_table <- DT::renderDataTable({
+    req(rv$dfsr)
+    
+    # Call american_optprice_returns with user-specified parameters
+    options_data <- american_optprice_returns(rv$dfsr, K = input$options_K, tm = input$options_tm)
+    
+    DT::datatable(
+      options_data,
+      options = list(
+        pageLength = 25,
+        scrollX = TRUE,
+        scrollY = "600px",
+        scrollCollapse = TRUE,
+        searching = TRUE,
+        ordering = TRUE,
+        lengthMenu = c(10, 25, 50, 100, 500),
+        autoWidth = TRUE
+      ),
+      filter = "top",
+      rownames = FALSE,
+      class = "display compact"
+    ) %>%
+      DT::formatRound(columns = which(sapply(options_data, is.numeric)), digits = 4)
   })
   
   # Data Status Check
