@@ -3,7 +3,7 @@
 position_cohort <- function(symbol_dates,
                             before_days,
                             after_days,
-                            fun = vats) {
+                            fun = identity) {
   fetl <- Fetl$new()
   lapply(seq_len(nrow(symbol_dates)), function(i) {
     # Extract.

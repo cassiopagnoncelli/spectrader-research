@@ -10,33 +10,17 @@ keep_first_true_only <- function(x) {
 }
 
 # Decaying Quantile Regression Exit
-exit_dqr <- function(exit_qr_fits, max_position_days,
-                     sigma_short = 6, sigma_long = 20, ent_short = 9, ent_long = 20) {
+exit_dqr <- function(dqr_fits, max_position_days) {
+  if (!is.list(dqr_fits) || length(dqr_fits) == 0)
+    stop("dqr_fits must be a list of fitted quantile regression models.")
+
   function(data, history = FALSE) {
     # Feature engineering
     result <- data %>%
-      dplyr::mutate(
-        S_1 = dplyr::lag(S, 1),
-        S_2 = dplyr::lag(S, 2),
-        sd_short = RcppRoll::roll_sd(r, n = sigma_short, fill = NA, align = "right"),
-        sd_long = RcppRoll::roll_sd(r, n = sigma_long, fill = NA, align = "right"),
-        sd_ratio = sd_short / sd_long,
-        h_short = runH(r, ent_short),
-        h_long = runH(r, ent_long),
-        h_ratio = h_short / h_long,
-        sd_short_1 = dplyr::lag(sd_short, 1),
-        sd_long_1 = dplyr::lag(sd_long, 1),
-        sd_ratio_1 = dplyr::lag(sd_ratio, 1),
-        h_short_1 = dplyr::lag(h_short, 1),
-        h_long_1 = dplyr::lag(h_long, 1),
-        h_ratio_1 = dplyr::lag(h_ratio, 1),
-        vol_vix = sd_short / vix,
-        cr_3 = RcppRoll::roll_sum(r, n = 3, fill = NA, align = "right"),
-        cr_8 = RcppRoll::roll_sum(r, n = 8, fill = NA, align = "right")
-      ) %>%
+      fe_dqr()%>%
       dplyr::filter(t >= ifelse(history, -Inf, 0))
 
-    if (is.null(exit_qr_fits$q92) || is.null(exit_qr_fits$q82) || is.null(exit_qr_fits$q32))
+    if (is.null(dqr_fits$q92) || is.null(dqr_fits$q82) || is.null(dqr_fits$q32))
       return(result)
 
     result$qhat_extr <- predict(exit_qr_fits$q92, result)

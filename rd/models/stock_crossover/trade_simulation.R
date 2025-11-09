@@ -7,16 +7,16 @@ df_train <- tibble(
   close = fwd$y_7[train_indices]
 )
 
-exit_qr_fits <- df_train %>%
+dqr_fits <- df_train %>%
   filter(yhat > 1.2) %>%
   filter_signals(within_days = 20) %>%
   arrange(date) %>%
-  train_qr(
+  train_dqr(
     taus = c(.92, .82, .32),
     formulas = list(
-      S ~ S_1 + t + sd_short + h_short + h_ratio + cr_3 + cr_8 + vix + vol_vix,
-      S ~ S_1 + t + sd_short + h_short + h_ratio + cr_3 + cr_8 + vix + vol_vix,
-      S ~ S_1 + t + sd_short + h_short + h_ratio + cr_3 + cr_8 + vix + vol_vix
+      S ~ S_1 + t + sd_short + h_short + h_ratio + cr_short + cr_long + vix + vol_vix,
+      S ~ S_1 + t + sd_short + h_short + h_ratio + cr_short + cr_long + vix + vol_vix,
+      S ~ S_1 + t + sd_short + h_short + h_ratio + cr_short + cr_long + vix + vol_vix
     ),
     max_position_days = 30
   )
@@ -37,13 +37,12 @@ df_signals <- df_test %>%
   arrange(date)
 
 # Build list of positions from signals, each position is a tibble.
-position_max_days <- 20
-
+max_position_days <- 20
 posl <- position_cohort(
   df_signals,
   before_days = 30,
   after_days = position_max_days,
-  fun = exit_dqr(exit_qr_fits, max_position_days = position_max_days)
+  fun = exit_dqr(dqr_fits, max_position_days = max_position_days)
 )
 
 # Signals & Returns
@@ -58,9 +57,6 @@ dfsr %>%
   purrr::walk(~ plot_position_cohort_exit_dqr(posl[[.x]],
                                               side = "long",
                                               ylim = c(.8, 1.5)))
-
-# Kelly - sequential
-f_star <- kelly_quantile(log(1 + dfsr$R), tau = .32)
 
 # Signal accuracy analysis
 side <- "long"
