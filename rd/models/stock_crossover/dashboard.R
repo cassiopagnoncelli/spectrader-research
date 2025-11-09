@@ -1286,7 +1286,7 @@ server <- function(input, output, session) {
       fluidRow(
         column(4,
           h5("Count & Probability"),
-          tags$table(style = "width: 100%; font-size: 14px;",
+          tags$table(style = "width: 100%; font-size: 16px;",
             tags$tr(tags$td(strong("Count:")), tags$td(style = "text-align: right;", sprintf("%d", row$n))),
             tags$tr(tags$td(strong("Overall Prob:")), tags$td(style = "text-align: right;", sprintf("%.2f%%", row$overall_probability * 100))),
             tags$tr(tags$td(strong("Capture Prob:")), tags$td(style = "text-align: right;", sprintf("%.2f%%", row$capture_probability * 100)))
@@ -1294,7 +1294,7 @@ server <- function(input, output, session) {
         ),
         column(4,
           h5("Returns"),
-          tags$table(style = "width: 100%; font-size: 14px;",
+          tags$table(style = "width: 100%; font-size: 16px;",
             tags$tr(tags$td(strong("Mean R:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$mean_R))),
             tags$tr(tags$td(strong("Median R:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$median_R))),
             tags$tr(tags$td(strong("SD:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$sd_R)))
@@ -1302,7 +1302,7 @@ server <- function(input, output, session) {
         ),
         column(4,
           h5("Expected Values"),
-          tags$table(style = "width: 100%; font-size: 14px;",
+          tags$table(style = "width: 100%; font-size: 16px;",
             tags$tr(tags$td(strong("Expected:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$expected))),
             tags$tr(tags$td(strong("Expected|Capture:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$expected_given_capture))),
             tags$tr(tags$td(strong("Min/Max:")), tags$td(style = "text-align: right;", sprintf("%.3f / %.3f", row$min_R, row$max_R)))
@@ -1338,7 +1338,7 @@ server <- function(input, output, session) {
         fluidRow(
           column(3,
             h5("Count & Probability"),
-            tags$table(style = "width: 100%; font-size: 14px;",
+            tags$table(style = "width: 100%; font-size: 16px;",
               tags$tr(tags$td(strong("Count:")), tags$td(style = "text-align: right;", sprintf("%d", row$n))),
               tags$tr(tags$td(strong("Overall Prob:")), tags$td(style = "text-align: right;", sprintf("%.2f%%", row$overall_probability * 100))),
               tags$tr(tags$td(strong("Capture Prob:")), tags$td(style = "text-align: right;", sprintf("%.2f%%", row$capture_probability * 100)))
@@ -1346,7 +1346,7 @@ server <- function(input, output, session) {
           ),
           column(3,
             h5("Returns"),
-            tags$table(style = "width: 100%; font-size: 14px;",
+            tags$table(style = "width: 100%; font-size: 16px;",
               tags$tr(tags$td(strong("Mean R:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$mean_R))),
               tags$tr(tags$td(strong("Median R:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$median_R))),
               tags$tr(tags$td(strong("SD:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$sd_R))),
@@ -1355,7 +1355,7 @@ server <- function(input, output, session) {
           ),
           column(3,
             h5("Expected Values"),
-            tags$table(style = "width: 100%; font-size: 14px;",
+            tags$table(style = "width: 100%; font-size: 16px;",
               tags$tr(tags$td(strong("Expected:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$expected))),
               tags$tr(tags$td(strong("Expected|Capt:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$expected_given_capture))),
               tags$tr(tags$td(strong("IQR:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$iqr_R)))
@@ -1363,7 +1363,7 @@ server <- function(input, output, session) {
           ),
           column(3,
             h5("Quantiles"),
-            tags$table(style = "width: 100%; font-size: 14px;",
+            tags$table(style = "width: 100%; font-size: 16px;",
               tags$tr(tags$td(strong("Q05:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$q05_R))),
               tags$tr(tags$td(strong("Q32:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$q32_R))),
               tags$tr(tags$td(strong("Q68:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$q68_R))),
