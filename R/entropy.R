@@ -10,6 +10,5 @@ entropy_r <- function(x) {
 # Rolling Shannon entropy (differential) like TTR::runSD
 runH <- function(x, n = 100) {
   stopifnot(is.numeric(x))
-  zoo::rollapply(x, width = n, FUN = entropy_r, by = 1,
-                 align = "right", fill = NA)
+  slider::slide_dbl(x, .f = entropy_r, .before = n - 1, .complete = TRUE)
 }

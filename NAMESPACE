@@ -20,6 +20,7 @@ importFrom("dplyr", `slice`)
 importFrom("dplyr", `row_number`)
 
 # Data manipulation
+import("RcppRoll")
 import("zoo")
 # import("xts")
 

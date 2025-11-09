@@ -21,8 +21,8 @@ exit_art <- function(
         # Common features
         S_1 = dplyr::lag(S, 1),
         S_2 = dplyr::lag(S, 2),
-        sd_short = zoo::rollapply(r, sigma_short, sd, fill = NA, align = "right"),
-        sd_long = zoo::rollapply(r, sigma_long, sd, fill = NA, align = "right"),
+        sd_short = RcppRoll::roll_sd(r, n = sigma_short, fill = NA, align = "right"),
+        sd_long = RcppRoll::roll_sd(r, n = sigma_long, fill = NA, align = "right"),
         sd_ratio = sd_short / sd_long,
         h_short = runH(r, ent_short),
         h_long = runH(r, ent_long),
@@ -34,8 +34,8 @@ exit_art <- function(
         h_long_1 = dplyr::lag(h_long, 1),
         h_ratio_1 = dplyr::lag(h_ratio, 1),
         vol_vix = sd_short / vix,
-        cr_3 = zoo::rollapply(r, 3, sum, fill = NA, align = "right"),
-        cr_8 = zoo::rollapply(r, 8, sum, fill = NA, align = "right")
+        cr_3 = RcppRoll::roll_sum(r, n = 3, fill = NA, align = "right"),
+        cr_8 = RcppRoll::roll_sum(r, n = 8, fill = NA, align = "right")
       ) %>%
       dplyr::filter(t >= ifelse(history, -Inf, 0))
 
@@ -81,8 +81,8 @@ exit_vats <- function(sd_short = 6, sd_long = 20, k = 2.5) {
   function(data, history = FALSE) {
     data %>%
       dplyr::mutate(
-        sd_short = zoo::rollapply(r, sd_short, sd, fill = NA, align = "right"),
-        sd_long = zoo::rollapply(r, sd_long, sd, fill = NA, align = "right"),
+        sd_short = RcppRoll::roll_sd(r, n = sd_short, fill = NA, align = "right"),
+        sd_long = RcppRoll::roll_sd(r, n = sd_long, fill = NA, align = "right"),
         sd_ratio = sd_short / sd_long
       ) %>%
       dplyr::filter(t >= ifelse(history, -Inf, 0)) %>%
@@ -159,8 +159,8 @@ exit_qr <- function(qrfit_extr = NULL, qrfit_aggr = NULL, qrfit_cons = NULL,
       dplyr::mutate(
         S_1 = dplyr::lag(S, 1),
         S_2 = dplyr::lag(S, 2),
-        sd_short = zoo::rollapply(r, sigma_short, sd, fill = NA, align = "right"),
-        sd_long = zoo::rollapply(r, sigma_long, sd, fill = NA, align = "right"),
+        sd_short = RcppRoll::roll_sd(r, n = sigma_short, fill = NA, align = "right"),
+        sd_long = RcppRoll::roll_sd(r, n = sigma_long, fill = NA, align = "right"),
         sd_ratio = sd_short / sd_long,
         h_short = runH(r, ent_short),
         h_long = runH(r, ent_long),
@@ -172,8 +172,8 @@ exit_qr <- function(qrfit_extr = NULL, qrfit_aggr = NULL, qrfit_cons = NULL,
         h_long_1 = dplyr::lag(h_long, 1),
         h_ratio_1 = dplyr::lag(h_ratio, 1),
         vol_vix = sd_short / vix,
-        cr_3 = zoo::rollapply(r, 3, sum, fill = NA, align = "right"),
-        cr_8 = zoo::rollapply(r, 8, sum, fill = NA, align = "right")
+        cr_3 = RcppRoll::roll_sum(r, n = 3, fill = NA, align = "right"),
+        cr_8 = RcppRoll::roll_sum(r, n = 8, fill = NA, align = "right")
       ) %>%
       dplyr::filter(t >= ifelse(history, -Inf, 0))
 
@@ -199,8 +199,8 @@ exit_draft <- function(sd_short = 6, sd_long = 20, ent_short = 9, ent_long = 20)
   function(data, history = FALSE) {
     data %>%
       dplyr::mutate(
-        sd_short = zoo::rollapply(r, sd_short, sd, fill = NA, align = "right"),
-        sd_long = zoo::rollapply(r, sd_long, sd, fill = NA, align = "right"),
+        sd_short = RcppRoll::roll_sd(r, n = sd_short, fill = NA, align = "right"),
+        sd_long = RcppRoll::roll_sd(r, n = sd_long, fill = NA, align = "right"),
         sd_ratio = sd_short / sd_long,
         h_short = runH(r, ent_short),
         h_long = runH(r, ent_long),

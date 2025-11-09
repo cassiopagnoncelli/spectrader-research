@@ -29,6 +29,7 @@ Imports:
     ggplot2,
     tibble,
     tidyr,
+    RcppRoll,
     stringr,
     purrr,
     lubridate,
