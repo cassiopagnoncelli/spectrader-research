@@ -23,6 +23,7 @@ ui <- dashboardPage(
       hr(),
       menuItem("Options Returns", tabName = "options_returns", icon = icon("dollar-sign")),
       menuItem("Options Kelly", tabName = "options_kelly", icon = icon("calculator")),
+      menuItem("Options Surface", tabName = "options_surface", icon = icon("cube")),
       hr(),
       menuItem("Signal Model", tabName = "models", icon = icon("chart-bar")),
       hr(),
@@ -329,6 +330,57 @@ ui <- dashboardPage(
             status = "info",
             solidHeader = TRUE,
             DT::dataTableOutput("options_returns_table")
+          )
+        )
+      ),
+      
+      # Options Surface Tab
+      tabItem(
+        tabName = "options_surface",
+        fluidRow(
+          box(
+            width = 12,
+            title = "Options Surface Optimization",
+            status = "primary",
+            solidHeader = TRUE,
+            fluidRow(
+              column(
+                width = 6,
+                h4("Parameters"),
+                numericInput("surface_feature_days", "Feature Days:", value = 22, min = 1, max = 100, step = 1),
+                numericInput("surface_vol_0", "Entry Volatility (σ₀):", value = NA, min = 0.05, max = 3.0, step = 0.05),
+                numericInput("surface_vol_t", "Exit Volatility (σₜ):", value = NA, min = 0.05, max = 3.0, step = 0.05),
+                selectInput("surface_goal", "Goal:",
+                           choices = c("log-portfolio" = "log-portfolio",
+                                     "log-portfolio-kelly" = "log-portfolio-kelly",
+                                     "sharpe" = "sharpe"),
+                           selected = "log-portfolio"),
+                conditionalPanel(
+                  condition = "input.surface_goal == 'log-portfolio-kelly'",
+                  numericInput("surface_kelly_q", "Kelly Quantile (q):", value = 0.3, min = 0.01, max = 0.99, step = 0.01),
+                  numericInput("surface_kelly_cap", "Kelly Cap:", value = 0.4, min = 0.01, max = 1.0, step = 0.01)
+                ),
+                conditionalPanel(
+                  condition = "input.surface_goal == 'log-portfolio'",
+                  numericInput("surface_wager", "Wager:", value = 0.08, min = 0.01, max = 1.0, step = 0.01)
+                ),
+                actionButton("compute_surface", "Compute Surface", icon = icon("play"), class = "btn-primary")
+              ),
+              column(
+                width = 6,
+                h4("Maximum"),
+                htmlOutput("surface_maximum")
+              )
+            )
+          )
+        ),
+        fluidRow(
+          box(
+            width = 12,
+            title = "3D Surface Plot",
+            status = "info",
+            solidHeader = TRUE,
+            plotly::plotlyOutput("surface_plot", height = "600px")
           )
         )
       ),
@@ -1273,6 +1325,113 @@ server <- function(input, output, session) {
       options_kelly_log_portfolio(),
       options_kelly_log_portfolio_q()
     ))
+  })
+  
+  # Options Surface - Reactive values for storing surface data
+  surface_data <- reactiveValues(
+    grid = NULL,
+    matrix = NULL,
+    K_values = NULL,
+    tm_values = NULL
+  )
+  
+  # Options Surface - Compute on button click
+  observeEvent(input$compute_surface, {
+    req(rv$dfsr, input$surface_feature_days)
+    
+    # Define K and tm values
+    K_values <- seq(0.6, 1.4, by = 0.01)
+    
+    tm_values <- tibble(x = c(4, 14, 21, 28, 35, 42, 49)) %>%
+      dplyr::filter(x > ceiling(365/252 * input$surface_feature_days)) %>%
+      dplyr::pull(x)
+    
+    # Build goal list based on selection
+    goal <- if (input$surface_goal == "sharpe") {
+      list(method = "sharpe")
+    } else if (input$surface_goal == "log-portfolio-kelly") {
+      list(method = "log-portfolio-kelly", q = input$surface_kelly_q, cap = input$surface_kelly_cap)
+    } else {
+      list(method = "log-portfolio", wager = input$surface_wager)
+    }
+    
+    # Build volatility parameters
+    vol_0 <- if (is.na(input$surface_vol_0)) NA else input$surface_vol_0
+    vol_t <- if (is.na(input$surface_vol_t)) NA else input$surface_vol_t
+    
+    # Compute surface grid
+    withProgress(message = 'Computing surface...', value = 0, {
+      grid <- options_optim_surface_grid(
+        data = rv$dfsr,
+        K_values = K_values,
+        tm_values = tm_values,
+        goal = goal,
+        vol_0 = vol_0,
+        vol_t = vol_t
+      )
+      
+      incProgress(0.7)
+      
+      # Compute surface matrix
+      matrix <- options_optim_surface_matrix(
+        grid,
+        length(K_values),
+        length(tm_values)
+      )
+      
+      incProgress(0.3)
+      
+      # Store in reactive values
+      surface_data$grid <- grid
+      surface_data$matrix <- matrix
+      surface_data$K_values <- K_values
+      surface_data$tm_values <- tm_values
+    })
+  })
+  
+  # Options Surface - Display maximum
+  output$surface_maximum <- renderUI({
+    req(surface_data$grid)
+    
+    maximum <- options_optim_maximal(surface_data$grid)
+    
+    HTML(sprintf(
+      "<table class='table table-bordered' style='font-size: 18px;'>
+        <tr><td><strong>K:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+        <tr><td><strong>tm:</strong></td><td style='text-align: right;'>%d</td></tr>
+        <tr><td><strong>Result:</strong></td><td style='text-align: right;'>%.6f</td></tr>
+      </table>",
+      maximum$K,
+      maximum$tm,
+      maximum$result
+    ))
+  })
+  
+  # Options Surface - Render 3D plot
+  output$surface_plot <- plotly::renderPlotly({
+    req(surface_data$matrix, surface_data$K_values, surface_data$tm_values, surface_data$grid)
+    
+    plotly::plot_ly() %>%
+      plotly::add_surface(
+        x = surface_data$K_values,
+        y = surface_data$tm_values,
+        z = surface_data$matrix,
+        colorscale = "Viridis"
+      ) %>%
+      plotly::layout(
+        title = NULL,
+        scene = list(
+          xaxis = list(title = "Strike Multiplier (K)"),
+          yaxis = list(title = "Days to Maturity (tm)"),
+          zaxis = list(
+            title = "Portfolio Goal",
+            range = c(
+              min(surface_data$grid$result, na.rm = TRUE, 0),
+              max(surface_data$grid$result, na.rm = TRUE)
+            )
+          )
+        )
+      )
   })
   
   # Data Status Check
