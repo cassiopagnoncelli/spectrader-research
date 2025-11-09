@@ -13,10 +13,10 @@ ui <- dashboardPage(
   dashboardSidebar(
     sidebarMenu(
       menuItem("Overview", tabName = "overview", icon = icon("dashboard")),
-      menuItem("Position Exits", tabName = "exits", icon = icon("chart-line")),
       menuItem("Kelly Criterion", tabName = "kelly", icon = icon("balance-scale")),
       menuItem("Returns Analysis", tabName = "returns", icon = icon("chart-area")),
       menuItem("Captures", tabName = "accuracy", icon = icon("bullseye")),
+      menuItem("Captures Inspect", tabName = "exits", icon = icon("chart-line")),
       menuItem("Captures Breakdown", tabName = "captures_breakdown", icon = icon("chart-pie")),
       menuItem("Concurrency", tabName = "concurrency", icon = icon("layer-group")),
       menuItem("Signals & Returns", tabName = "signals_returns", icon = icon("table")),
@@ -60,7 +60,7 @@ ui <- dashboardPage(
         fluidRow(
           box(
             width = 12,
-            title = "Position Exit Analysis",
+            title = "Captures Inspect",
             status = "primary",
             solidHeader = TRUE,
             selectInput(
