@@ -1,12 +1,4 @@
-# Fit exit qr on train subset
-df_train <- tibble(
-  symbol = fwd_metadata$symbol[train_indices],
-  date = fwd_metadata$date[train_indices],
-  y = model_signal$actuals$train,
-  yhat = model_signal$predictions$train,
-  close = fwd$y_7[train_indices]
-)
-
+# Fit exit dqr on train subset
 dqr_fits <- df_train %>%
   filter(yhat > 1.2) %>%
   filter_signals(within_days = 20) %>%
@@ -20,15 +12,6 @@ dqr_fits <- df_train %>%
     ),
     max_position_days = 30
   )
-
-# Test subset
-df_test <- tibble(
-  symbol = fwd_metadata$symbol[test_indices],
-  date = fwd_metadata$date[test_indices],
-  y = model_signal$actuals$test,
-  yhat = model_signal$predictions$test,
-  close = fwd$y_7[test_indices]
-)
 
 # Generate trading signals, discarding the ones within a month apart
 df_signals <- df_test %>%
@@ -48,27 +31,16 @@ posl <- position_cohort(
 # Signals & Returns
 dfsr <- position_cohort_return(posl, df_signals)
 
-# Inspect exits
-# _fpt(side = "long), _vats, _thres, _qr
-dfsr %>%
-  filter(!is.na(exit_method)) %>%
-  slice_sample(n = 0) %>%  # Change n to view more samples
-  pull(trade) %>%
-  purrr::walk(~ plot_position_cohort_exit_dqr(posl[[.x]],
-                                              side = "long",
-                                              ylim = c(.8, 1.5)))
-
 # Signal accuracy analysis
-side <- "long"
-accuracy <- exit_accuracy(dfsr, side = side)
+accuracy <- exit_accuracy(dfsr, side = "long")
 accuracy_captured <- accuracy %>% filter(!is.na(exit_method))
 accuracy_uncaptured <- accuracy %>% filter(is.na(exit_method))
 
 # Dates analysis
 df_dates <- dfsr %>%
   dplyr::mutate(entry = date, exit = add_business_days(date, t)) %>%
-  select(trade, symbol, entry, exit, R, t)
+  dplyr::select(trade, symbol, entry, exit, R, t)
 
 # Dashboard
-devtools::load_all()
+# devtools::load_all()
 shiny::runApp("rd/models/stock_crossover/dashboard.R")

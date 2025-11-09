@@ -99,3 +99,30 @@ if (FALSE) {
   plot_residuals(model_signal, "train")
   plot_xgboost_trees(model_signal, tree_indices = c(0, 1, 2, 3, 4))
 }
+
+#
+# Data sets
+#
+df_train <- tibble(
+  symbol = fwd_metadata$symbol[train_indices],
+  date = fwd_metadata$date[train_indices],
+  y = model_signal$actuals$train,
+  yhat = model_signal$predictions$train,
+  close = fwd$y_7[train_indices]
+)
+
+df_val <- tibble(
+  symbol = fwd_metadata$symbol[val_indices],
+  date = fwd_metadata$date[val_indices],
+  y = model_signal$actuals$val,
+  yhat = model_signal$predictions$val,
+  close = fwd$y_7[val_indices]
+)
+
+df_test <- tibble(
+  symbol = fwd_metadata$symbol[test_indices],
+  date = fwd_metadata$date[test_indices],
+  y = model_signal$actuals$test,
+  yhat = model_signal$predictions$test,
+  close = fwd$y_7[test_indices]
+)
