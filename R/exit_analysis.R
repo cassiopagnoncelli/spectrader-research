@@ -13,7 +13,7 @@ exit_accuracy <- function(dfsr, drift = 0, side = c("long", "short")) {
     result <- result %>%
       dplyr::mutate(
         # Proportion of the actual top captured by the exit.
-        long_capture = ifelse(is.numeric(y), R / (y - 1), NA),
+        long_capture = ifelse(is.finite(y) & is.finite(R) & y != 1, R / (y - 1), NA),
         # Since the position follows a Brownian motion with drift,
         # alpha is the gain above the drift.
         long_alpha = long_capture - drift
@@ -22,7 +22,7 @@ exit_accuracy <- function(dfsr, drift = 0, side = c("long", "short")) {
     result <- result %>%
       dplyr::mutate(
         # Proportion of the actual top captured by the exit.
-        short_capture = ifelse(is.numeric(y), R / (1 - y), NA),
+        short_capture = ifelse(is.finite(y) & is.finite(R) & y != 1, R / (1 - y), NA),
         # Since the position follows a Brownian motion with drift,
         # alpha is the gain above the drift.
         short_alpha = short_capture - drift
