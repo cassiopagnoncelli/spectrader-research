@@ -347,7 +347,7 @@ ui <- dashboardPage(
               column(
                 width = 6,
                 h4("Parameters"),
-                numericInput("surface_feature_days", "Feature Days:", value = 22, min = 1, max = 100, step = 1),
+                numericInput("surface_max_position_days", "Feature Days:", value = 22, min = 1, max = 100, step = 1),
                 numericInput("surface_vol_0", "Entry Volatility (σ₀):", value = NA, min = 0.05, max = 3.0, step = 0.05),
                 numericInput("surface_vol_t", "Exit Volatility (σₜ):", value = NA, min = 0.05, max = 3.0, step = 0.05),
                 selectInput("surface_goal", "Goal:",
@@ -1337,13 +1337,13 @@ server <- function(input, output, session) {
   
   # Options Surface - Compute on button click
   observeEvent(input$compute_surface, {
-    req(rv$dfsr, input$surface_feature_days)
+    req(rv$dfsr, input$surface_max_position_days)
     
     # Define K and tm values
     K_values <- seq(0.6, 1.4, by = 0.01)
     
     tm_values <- tibble(x = c(4, 14, 21, 28, 35, 42, 49)) %>%
-      dplyr::filter(x > ceiling(365/252 * input$surface_feature_days)) %>%
+      dplyr::filter(x > ceiling(365/252 * input$surface_max_position_days)) %>%
       dplyr::pull(x)
     
     # Build goal list based on selection

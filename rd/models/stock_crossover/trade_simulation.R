@@ -33,10 +33,12 @@ df_signals <- df_test %>%
   arrange(date)
 
 # Build list of positions from signals, each position is a tibble.
+position_max_days <- 20
+
 posl <- position_cohort(
   df_signals,
   before_days = 30,
-  after_days = 20,
+  after_days = position_max_days,
   fun = exit_art(
     # QR params
     qrfit_extr = exit_qr_fits$extr,
