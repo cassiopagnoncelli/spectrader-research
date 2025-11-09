@@ -23,7 +23,7 @@ Heterogeneous
 - [x] ~~Cascading: when model is not so sure about the result, cascades to another model recursively~~
 - [x] ~~Stacking: meta-learner like genderguess, a model orchestrating based on underyling models predictions; trains on OOF~~
 
-## Simulation, Optimization
+## Simulation, Optimization, Feature Engineering
 
 - [x] ~~Monte Carlo simulation~~
 - [ ] [t-SNE](https://www.appsilon.com/post/r-tsne): [Python](https://app.datacamp.com/learn/courses/dimensionality-reduction-in-python)

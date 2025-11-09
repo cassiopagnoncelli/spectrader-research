@@ -18,6 +18,7 @@ ui <- dashboardPage(
       menuItem("Captures", tabName = "accuracy", icon = icon("bullseye")),
       menuItem("Captures Inspect", tabName = "exits", icon = icon("chart-line")),
       menuItem("Captures Breakdown", tabName = "captures_breakdown", icon = icon("chart-pie")),
+      menuItem("Capture Methods", tabName = "capture_methods", icon = icon("table")),
       menuItem("Concurrency", tabName = "concurrency", icon = icon("layer-group")),
       menuItem("Signals & Returns", tabName = "signals_returns", icon = icon("table")),
       hr(),
@@ -231,6 +232,29 @@ ui <- dashboardPage(
             status = "success",
             solidHeader = TRUE,
             htmlOutput("breakdown_g2")
+          )
+        )
+      ),
+      
+      # Capture Methods Tab
+      tabItem(
+        tabName = "capture_methods",
+        fluidRow(
+          box(
+            width = 12,
+            title = "Exit Methods Summary",
+            status = "primary",
+            solidHeader = TRUE,
+            p("Summary statistics for different exit methods grouped by exit method type.")
+          )
+        ),
+        fluidRow(
+          box(
+            width = 12,
+            title = "Exit Methods Summary Table",
+            status = "info",
+            solidHeader = TRUE,
+            DT::dataTableOutput("capture_methods_table")
           )
         )
       ),
@@ -1232,6 +1256,31 @@ server <- function(input, output, session) {
       plot_predictions_vs_actuals(rv$model_signal, "train"),
       plot_residuals(rv$model_signal, "train")
     )
+  })
+  
+  # Capture Methods Table
+  output$capture_methods_table <- DT::renderDataTable({
+    req(rv$dfsr)
+    
+    summary_data <- exit_methods_summary(rv$dfsr)
+    
+    DT::datatable(
+      summary_data,
+      options = list(
+        pageLength = 25,
+        scrollX = TRUE,
+        scrollY = "600px",
+        scrollCollapse = TRUE,
+        searching = TRUE,
+        ordering = TRUE,
+        lengthMenu = c(10, 25, 50, 100),
+        autoWidth = TRUE
+      ),
+      filter = "top",
+      rownames = FALSE,
+      class = "display compact"
+    ) %>%
+      DT::formatRound(columns = which(sapply(summary_data, is.numeric)), digits = 4)
   })
   
   # Signals, Returns Table
