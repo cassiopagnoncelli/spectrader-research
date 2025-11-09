@@ -67,8 +67,8 @@ ui <- dashboardPage(
               "position_filter",
               "Position Filter:",
               choices = c("All Positions" = "all", 
-                         "Take Profit (Closed)" = "take_profit", 
-                         "Open Positions" = "open"),
+                         "Captured" = "captured", 
+                         "Uncaptured" = "uncaptured"),
               selected = "all"
             ),
             actionButton("refresh_samples", "Refresh Samples", icon = icon("refresh"))
@@ -77,7 +77,7 @@ ui <- dashboardPage(
         fluidRow(
           box(
             width = 12,
-            title = "Take Profit Position Exits (Quantile Regression)",
+            title = "Captured Position Exits (Quantile Regression)",
             status = "info",
             fluidRow(
               column(
@@ -167,21 +167,21 @@ ui <- dashboardPage(
         fluidRow(
           box(
             width = 4,
-            title = "Take Profit (Closed) Positions",
+            title = "Captured Positions",
             status = "success",
             solidHeader = TRUE,
-            htmlOutput("accuracy_take_profit_metrics"),
+            htmlOutput("accuracy_captured_metrics"),
             hr(),
-            htmlOutput("accuracy_take_profit_dist")
+            htmlOutput("accuracy_captured_dist")
           ),
           box(
             width = 4,
-            title = "Open Positions",
+            title = "Uncaptured Positions",
             status = "warning",
             solidHeader = TRUE,
-            htmlOutput("accuracy_open_metrics"),
+            htmlOutput("accuracy_uncaptured_metrics"),
             hr(),
-            htmlOutput("accuracy_open_dist")
+            htmlOutput("accuracy_uncaptured_dist")
           ),
           box(
             width = 4,
@@ -206,7 +206,7 @@ ui <- dashboardPage(
             solidHeader = TRUE,
             selectInput("breakdown_side", "Trading Side:", choices = c("long", "short"), selected = "long"),
             selectInput("breakdown_category", "Category:", 
-                       choices = c("Overall", "Take Profit", "Open Positions"), 
+                       choices = c("Overall", "Captured", "Uncaptured"), 
                        selected = "Overall")
           )
         ),
@@ -546,12 +546,12 @@ server <- function(input, output, session) {
     req(rv$dfsr)
     
     # Filter positions based on selection
-    if (input$position_filter == "take_profit") {
-      # Take profit (closed) positions only
-      dfsr_filtered <- rv$dfsr %>% filter(t < max(t, na.rm = TRUE))
-    } else if (input$position_filter == "open") {
-      # Open positions only
-      dfsr_filtered <- rv$dfsr %>% filter(t == max(t, na.rm = TRUE))
+    if (input$position_filter == "captured") {
+      # Captured positions only (have an exit method)
+      dfsr_filtered <- rv$dfsr %>% filter(!is.na(exit_method))
+    } else if (input$position_filter == "uncaptured") {
+      # Uncaptured positions only (no exit method)
+      dfsr_filtered <- rv$dfsr %>% filter(is.na(exit_method))
     } else {
       # All positions
       dfsr_filtered <- rv$dfsr
@@ -614,16 +614,16 @@ server <- function(input, output, session) {
     req(rv$dfsr)
     
     n_trades <- nrow(rv$dfsr)
-    n_closed <- sum(rv$dfsr$t < max(rv$dfsr$t, na.rm = TRUE))
-    n_open <- n_trades - n_closed
+    n_captured <- sum(!is.na(rv$dfsr$exit_method))
+    n_uncaptured <- n_trades - n_captured
     
     HTML(sprintf(
       "<table class='table table-bordered'>
         <tr><td><strong>Total Signals:</strong></td><td>%d</td></tr>
-        <tr><td><strong>Closed Positions:</strong></td><td>%d</td></tr>
-        <tr><td><strong>Open Positions:</strong></td><td>%d</td></tr>
+        <tr><td><strong>Captured Positions:</strong></td><td>%d</td></tr>
+        <tr><td><strong>Uncaptured Positions:</strong></td><td>%d</td></tr>
       </table>",
-      n_trades, n_closed, n_open
+      n_trades, n_captured, n_uncaptured
     ))
   })
   
@@ -792,12 +792,12 @@ server <- function(input, output, session) {
     ))
   })
   
-  # Signal Accuracy - Take Profit
-  output$accuracy_take_profit_metrics <- renderUI({
+  # Signal Accuracy - Captured
+  output$accuracy_captured_metrics <- renderUI({
     req(rv$accuracy)
     
-    accuracy_take_profit <- rv$accuracy %>% filter(t < max(t))
-    metrics <- exit_metrics(accuracy_take_profit, input$side)
+    accuracy_captured <- rv$accuracy %>% filter(!is.na(exit_method))
+    metrics <- exit_metrics(accuracy_captured, input$side)
     
     if (input$side == "long") {
       HTML(sprintf(
@@ -834,11 +834,11 @@ server <- function(input, output, session) {
     }
   })
   
-  output$accuracy_take_profit_dist <- renderUI({
+  output$accuracy_captured_dist <- renderUI({
     req(rv$accuracy)
     
-    accuracy_take_profit <- rv$accuracy %>% filter(t < max(t))
-    dist <- analyse_distribution(accuracy_take_profit$R, groups = c(0))
+    accuracy_captured <- rv$accuracy %>% filter(!is.na(exit_method))
+    dist <- analyse_distribution(accuracy_captured$R, groups = c(0))
     
     HTML(sprintf(
       "<h5>Distribution</h5>
@@ -855,12 +855,12 @@ server <- function(input, output, session) {
     ))
   })
   
-  # Signal Accuracy - Open Positions
-  output$accuracy_open_metrics <- renderUI({
+  # Signal Accuracy - Uncaptured
+  output$accuracy_uncaptured_metrics <- renderUI({
     req(rv$accuracy)
     
-    accuracy_open <- rv$accuracy %>% filter(t == max(t))
-    metrics <- exit_metrics(accuracy_open, input$side)
+    accuracy_uncaptured <- rv$accuracy %>% filter(is.na(exit_method))
+    metrics <- exit_metrics(accuracy_uncaptured, input$side)
     
     if (input$side == "long") {
       HTML(sprintf(
@@ -897,11 +897,11 @@ server <- function(input, output, session) {
     }
   })
   
-  output$accuracy_open_dist <- renderUI({
+  output$accuracy_uncaptured_dist <- renderUI({
     req(rv$accuracy)
     
-    accuracy_open <- rv$accuracy %>% filter(t == max(t))
-    dist <- analyse_distribution(accuracy_open$R, groups = c(0))
+    accuracy_uncaptured <- rv$accuracy %>% filter(is.na(exit_method))
+    dist <- analyse_distribution(accuracy_uncaptured$R, groups = c(0))
     
     HTML(sprintf(
       "<h5>Distribution</h5>
@@ -987,10 +987,10 @@ server <- function(input, output, session) {
     accuracy_data <- exit_accuracy(rv$dfsr, side = input$breakdown_side)
     
     # Filter based on category
-    if (input$breakdown_category == "Take Profit") {
-      accuracy_data %>% filter(t < max(t))
-    } else if (input$breakdown_category == "Open Positions") {
-      accuracy_data %>% filter(t == max(t))
+    if (input$breakdown_category == "Captured") {
+      accuracy_data %>% filter(!is.na(exit_method))
+    } else if (input$breakdown_category == "Uncaptured") {
+      accuracy_data %>% filter(is.na(exit_method))
     } else {
       # Overall
       accuracy_data

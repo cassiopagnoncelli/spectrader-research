@@ -61,7 +61,7 @@ dfsr <- position_cohort_return(posl, df_signals)
 # Inspect exits
 # _fpt(side = "long), _vats, _thres, _qr
 dfsr %>%
-  filter(t < max(t, na.rm = TRUE)) %>%
+  filter(!is.na(exit_method)) %>%
   slice_sample(n = 0) %>%  # Change n to view more samples
   pull(trade) %>%
   purrr::walk(~ plot_position_cohort_exit_art(posl[[.x]],
@@ -74,8 +74,8 @@ f_star <- kelly_quantile(log(1 + dfsr$R), tau = .32)
 # Signal accuracy analysis
 side <- "long"
 accuracy <- exit_accuracy(dfsr, side = side)
-accuracy_take_profit <- accuracy %>% filter(t < max(t))
-accuracy_open_positions <- accuracy %>% filter(t == max(t))
+accuracy_captured <- accuracy %>% filter(!is.na(exit_method))
+accuracy_uncaptured <- accuracy %>% filter(is.na(exit_method))
 
 # Dates analysis
 df_dates <- dfsr %>%
