@@ -1,8 +1,13 @@
+# Add parameters
+
+- Parameterize y_hat_cutoff, features_days
+
 ## Take profit / Open positions:
 
+- Rename take profit / open positions to captured / uncaptured
+- Add capture_method
 - Open positions being closed ahead of the time
 - Captures: capture SD - take profit / open positions split not correct
-- Rename take profit / open positions to captured / uncaptured
 
 ## Portfolio
 

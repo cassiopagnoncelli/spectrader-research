@@ -57,6 +57,16 @@ position_cohort <- function(symbol_dates,
   })
 }
 
+position_cohort_metrics <- function(pos_data, trade_idx) {
+  if (!tibble::is_tibble(pos_data) && !is.data.frame(pos_data))
+    stop("Input must be a tibble or data frame.")
+
+  idx <- dplyr::coalesce(which(na.omit(pos_data$exit))[1], dplyr::last(na.omit(pos_data$t)))
+  R <- pos_data$S[idx] - 1
+  r <- log(pos_data$S[idx])
+  tibble::tibble(trade = trade_idx, t = idx - 1, R, r)
+}
+
 position_cohort_return <- function(posl, df_signals) {
   if (!is.list(posl)) {
     stop("Input must be a list of tibbles/data frames.")
@@ -64,17 +74,11 @@ position_cohort_return <- function(posl, df_signals) {
   if (length(posl) == 0) {
     return(tibble::tibble(idx = integer(), r = numeric()))
   }
-  result_list <- lapply(seq_along(posl), function(i) {
-    pos_data <- posl[[i]]
-    if (!tibble::is_tibble(pos_data) && !is.data.frame(pos_data)) {
-      stop(sprintf("Element %d must be a tibble or data frame.", i))
-    }
-    idx <- dplyr::coalesce(which(na.omit(pos_data$exit))[1], dplyr::last(na.omit(pos_data$t)))
-    R <- pos_data$S[idx] - 1
-    r <- log(pos_data$S[idx])
-    tibble::tibble(trade = i, t = idx - 1, R, r)
-  })
-  df_returns <- dplyr::bind_rows(result_list)
+  position_cohort_metrics_list <- lapply(
+    seq_along(posl),
+    function(i) position_cohort_metrics(posl[[i]], i)
+  )
+  df_returns <- dplyr::bind_rows(position_cohort_metrics_list)
   # Combine with signals data frame.
   if (nrow(df_signals) != nrow(df_returns)) {
     stop("signals and returns data frames must have the same number of rows")
