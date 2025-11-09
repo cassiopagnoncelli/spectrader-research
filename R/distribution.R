@@ -76,24 +76,29 @@ plot_distribution <- function(data, bins = NULL, vline = 0, title = "Distributio
       linetype = "dashed",
       linewidth = .35
     ) +
-    ggplot2::geom_text(
-      aes(x = mean_val, y = Inf, label = sprintf("μ=%.2f", mean_val)),
+    ggplot2::annotate(
+      "text", x = mean_val, y = Inf,
+      label = sprintf("μ=%.2f", mean_val),
       vjust = 1.5, hjust = 0.5, size = 5, color = "#000000"
     ) +
-    ggplot2::geom_text(
-      aes(x = mean_val + sd_val, y = Inf, label = sprintf("+1σ=%.2f", mean_val + sd_val)),
+    ggplot2::annotate(
+      "text", x = mean_val + sd_val, y = Inf,
+      label = sprintf("+1σ=%.2f", mean_val + sd_val),
       vjust = 1.5, hjust = 0.5, size = 4.5, color = "#4e4e4e"
     ) +
-    ggplot2::geom_text(
-      aes(x = mean_val - sd_val, y = Inf, label = sprintf("-1σ=%.2f", mean_val - sd_val)),
+    ggplot2::annotate(
+      "text", x = mean_val - sd_val, y = Inf,
+      label = sprintf("-1σ=%.2f", mean_val - sd_val),
       vjust = 1.5, hjust = 0.5, size = 4.5, color = "#4e4e4e"
     ) +
-    ggplot2::geom_text(
-      aes(x = mean_val + 2 * sd_val, y = Inf, label = sprintf("+2σ=%.2f", mean_val + 2 * sd_val)),
+    ggplot2::annotate(
+      "text", x = mean_val + 2 * sd_val, y = Inf,
+      label = sprintf("+2σ=%.2f", mean_val + 2 * sd_val),
       vjust = 1.5, hjust = 0.5, size = 4.5, color = "#a3a3a3"
     ) +
-    ggplot2::geom_text(
-      aes(x = mean_val - 2 * sd_val, y = Inf, label = sprintf("-2σ=%.2f", mean_val - 2 * sd_val)),
+    ggplot2::annotate(
+      "text", x = mean_val - 2 * sd_val, y = Inf,
+      label = sprintf("-2σ=%.2f", mean_val - 2 * sd_val),
       vjust = 1.5, hjust = 0.5, size = 4.5, color = "#a3a3a3"
     ) +
     ggplot2::labs(title = title, x = "Value", y = "Density") +
