@@ -1,3 +1,14 @@
+# Helper function to keep only the first TRUE in a logical vector.
+keep_first_true_only <- function(x) {
+  idx <- which(x)[1]
+  if (is.na(idx))
+    return(x)
+
+  xx <- rep(FALSE, length(x))
+  xx[idx] <- TRUE
+  xx
+}
+
 # State of the Art exiting rule using Quantile Regression, VATS, and FPT.
 exit_art <- function(
   # Quantile Regression Exit parameters
@@ -70,7 +81,14 @@ exit_art <- function(
         exit_qr_aggr = S >= qhat_aggr & t >= aggr_t & t < cons_t & S > 1,
         exit_qr_cons = S >= qhat_cons & t >= cons_t & S > 1,
         # Combined exit signal
-        exit = exit_vats | exit_fpt | exit_qr_extr | exit_qr_aggr | exit_qr_cons
+        # exit = exit_vats | exit_fpt | exit_qr_extr | exit_qr_aggr | exit_qr_cons
+        exit = (
+          1 * cumsum(exit_vats) +
+            1 * cumsum(exit_fpt) +
+            1 * cumsum(exit_qr_extr) +
+            1 * cumsum(exit_qr_aggr) +
+            1 * cumsum(exit_qr_cons) >= 1
+        ) %>% keep_first_true_only(),
       ) %>%
       dplyr::select(-c(vats_Smax, vats_stop, vats_s_1, vats_stop_1, fpt_boundary))
   }

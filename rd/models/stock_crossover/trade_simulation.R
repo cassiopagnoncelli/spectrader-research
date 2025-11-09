@@ -8,7 +8,7 @@ df_train <- tibble(
 )
 
 exit_qr_fits <- df_train %>%
-  filter(yhat > 1.28) %>%
+  filter(yhat > 1.2) %>%
   filter_signals(within_days = 20) %>%
   arrange(date) %>%
   train_trifecta_qr( # 8-10 min training.
@@ -28,7 +28,7 @@ df_test <- tibble(
 
 # Generate trading signals, discarding the ones within a month apart
 df_signals <- df_test %>%
-  filter(yhat > 1.31) %>%
+  filter(yhat > 1.35) %>%
   filter_signals(within_days = 20) %>%
   arrange(date)
 

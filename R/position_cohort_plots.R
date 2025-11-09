@@ -11,6 +11,13 @@ plot_position_cohort_exit_art <- function(position, side = c("long", "short"), p
     ) +
     ggplot2::coord_cartesian(ylim = if (is.null(ylim)) NULL else ylim) +
     ggplot2::geom_point(
+      data = subset(position, exit),
+      aes(y = S),
+      color = "#000000",
+      size = 12,
+      shape = 4
+    ) +
+    ggplot2::geom_point(
       data = subset(position, exit_vats),
       aes(y = S),
       color = "#2eec2e",

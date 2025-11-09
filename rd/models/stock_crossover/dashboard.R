@@ -77,7 +77,7 @@ ui <- dashboardPage(
         fluidRow(
           box(
             width = 12,
-            title = "Captured Position Exits (Quantile Regression)",
+            title = "Position Exits — Inspect",
             status = "info",
             fluidRow(
               column(
@@ -347,17 +347,35 @@ ui <- dashboardPage(
               column(
                 width = 6,
                 h4("Parameters"),
-                numericInput("surface_max_position_days", "Feature Days:", value = 22, min = 1, max = 100, step = 1),
+                numericInput(
+                  "surface_max_position_days", "Max Position Days (min tm):",
+                  value = 22,
+                  min = 1,
+                  max = 100,
+                  step = 1
+                ),
                 numericInput("surface_vol_0", "Entry Volatility (σ₀):", value = NA, min = 0.05, max = 3.0, step = 0.05),
                 numericInput("surface_vol_t", "Exit Volatility (σₜ):", value = NA, min = 0.05, max = 3.0, step = 0.05),
-                selectInput("surface_goal", "Goal:",
-                           choices = c("log-portfolio" = "log-portfolio",
-                                     "log-portfolio-kelly" = "log-portfolio-kelly",
-                                     "sharpe" = "sharpe"),
-                           selected = "log-portfolio"),
+                selectInput(
+                  "surface_goal",
+                  "Goal:",
+                  choices = c(
+                    "log-portfolio" = "log-portfolio",
+                    "log-portfolio-kelly" = "log-portfolio-kelly",
+                    "sharpe" = "sharpe"
+                  ),
+                  selected = "log-portfolio"
+                ),
                 conditionalPanel(
                   condition = "input.surface_goal == 'log-portfolio-kelly'",
-                  numericInput("surface_kelly_q", "Kelly Quantile (q):", value = 0.3, min = 0.01, max = 0.99, step = 0.01),
+                  numericInput(
+                    "surface_kelly_q",
+                    "Kelly Quantile (q):",
+                    value = 0.3,
+                    min = 0.01,
+                    max = 0.99,
+                    step = 0.01
+                  ),
                   numericInput("surface_kelly_cap", "Kelly Cap:", value = 0.4, min = 0.01, max = 1.0, step = 0.01)
                 ),
                 conditionalPanel(

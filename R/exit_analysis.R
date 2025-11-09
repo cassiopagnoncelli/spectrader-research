@@ -89,3 +89,30 @@ exit_metrics <- function(accuracy, side = c("long", "short")) {
   
   result
 }
+
+#' Summarize Returns by Exit Method
+#'
+#' Computes summary statistics of returns (R) grouped by exit method.
+#'
+#' @param dfsr A data frame containing columns 'exit_method' and 'R' (returns)
+#' @return A tibble with summary statistics (n, mean, sd, se, median, iqr, quantiles) per exit method
+exit_methods_summary <- function(dfsr) {
+  dfsr %>%
+    dplyr::group_by(exit_method) %>%
+    dplyr::summarise(
+        n        = dplyr::n(),
+        mean_R   = mean(R, na.rm = TRUE),
+        sd_R     = sd(R, na.rm = TRUE),
+        se_R     = sd(R, na.rm = TRUE) / sqrt(dplyr::n()),
+        median_R = median(R, na.rm = TRUE),
+        iqr_R    = IQR(R, na.rm = TRUE),
+        min_R    = min(R, na.rm = TRUE),
+        q05_R    = quantile(R, 0.05, na.rm = TRUE),
+        q32_R    = quantile(R, 0.32, na.rm = TRUE),
+        q68_R    = quantile(R, 0.68, na.rm = TRUE),
+        q95_R    = quantile(R, 0.95, na.rm = TRUE),
+        max_R    = max(R, na.rm = TRUE),
+        .groups  = "drop"
+    ) %>%
+    dplyr::ungroup()
+}
