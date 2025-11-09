@@ -254,7 +254,7 @@ ui <- dashboardPage(
             title = "Uncaptured Positions",
             status = "warning",
             solidHeader = TRUE,
-            DT::dataTableOutput("capture_methods_uncaptured_table")
+            uiOutput("capture_methods_uncaptured_cards")
           )
         ),
         fluidRow(
@@ -263,7 +263,7 @@ ui <- dashboardPage(
             title = "Captured Positions (by Exit Method)",
             status = "success",
             solidHeader = TRUE,
-            DT::dataTableOutput("capture_methods_captured_table")
+            uiOutput("capture_methods_captured_cards")
           )
         )
       ),
@@ -1267,68 +1267,114 @@ server <- function(input, output, session) {
     )
   })
   
-  # Capture Methods Tables - Split into Uncaptured and Captured
-  output$capture_methods_uncaptured_table <- DT::renderDataTable({
+  # Capture Methods Cards - Uncaptured
+  output$capture_methods_uncaptured_cards <- renderUI({
     req(rv$dfsr)
     
     summary_data <- exit_methods_summary(rv$dfsr) %>%
       filter(is.na(exit_method))
     
     if (nrow(summary_data) == 0) {
-      # Create empty dataframe with message
-      empty_df <- data.frame(Message = "No uncaptured positions found")
-      DT::datatable(
-        empty_df,
-        options = list(dom = 't', ordering = FALSE),
-        rownames = FALSE
-      )
-    } else {
-      DT::datatable(
-        summary_data,
-        options = list(
-          dom = 't',
-          scrollX = TRUE,
-          ordering = FALSE
-        ),
-        rownames = FALSE,
-        class = "display compact"
-      ) %>%
-        DT::formatRound(columns = which(sapply(summary_data, is.numeric)), digits = 4)
+      return(HTML("<p style='text-align: center; padding: 20px;'>No uncaptured positions found</p>"))
     }
+    
+    # Create card for uncaptured
+    row <- summary_data[1, ]
+    div(
+      style = "background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin-bottom: 15px;",
+      h4(style = "margin-top: 0; color: #d9534f;", "Uncaptured (NA)"),
+      fluidRow(
+        column(4,
+          h5("Count & Probability"),
+          tags$table(style = "width: 100%; font-size: 14px;",
+            tags$tr(tags$td(strong("Count:")), tags$td(style = "text-align: right;", sprintf("%d", row$n))),
+            tags$tr(tags$td(strong("Overall Prob:")), tags$td(style = "text-align: right;", sprintf("%.2f%%", row$overall_probability * 100))),
+            tags$tr(tags$td(strong("Capture Prob:")), tags$td(style = "text-align: right;", sprintf("%.2f%%", row$capture_probability * 100)))
+          )
+        ),
+        column(4,
+          h5("Returns"),
+          tags$table(style = "width: 100%; font-size: 14px;",
+            tags$tr(tags$td(strong("Mean R:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$mean_R))),
+            tags$tr(tags$td(strong("Median R:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$median_R))),
+            tags$tr(tags$td(strong("SD:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$sd_R)))
+          )
+        ),
+        column(4,
+          h5("Expected Values"),
+          tags$table(style = "width: 100%; font-size: 14px;",
+            tags$tr(tags$td(strong("Expected:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$expected))),
+            tags$tr(tags$td(strong("Expected|Capture:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$expected_given_capture))),
+            tags$tr(tags$td(strong("Min/Max:")), tags$td(style = "text-align: right;", sprintf("%.3f / %.3f", row$min_R, row$max_R)))
+          )
+        )
+      )
+    )
   })
   
-  output$capture_methods_captured_table <- DT::renderDataTable({
+  # Capture Methods Cards - Captured
+  output$capture_methods_captured_cards <- renderUI({
     req(rv$dfsr)
     
     summary_data <- exit_methods_summary(rv$dfsr) %>%
-      filter(!is.na(exit_method))
+      filter(!is.na(exit_method)) %>%
+      arrange(desc(expected_given_capture))
     
     if (nrow(summary_data) == 0) {
-      # Create empty dataframe with message
-      empty_df <- data.frame(Message = "No captured positions found")
-      DT::datatable(
-        empty_df,
-        options = list(dom = 't', ordering = FALSE),
-        rownames = FALSE
-      )
-    } else {
-      DT::datatable(
-        summary_data,
-        options = list(
-          pageLength = 25,
-          scrollX = TRUE,
-          scrollY = "400px",
-          scrollCollapse = TRUE,
-          searching = TRUE,
-          ordering = TRUE,
-          lengthMenu = c(10, 25, 50, 100)
-        ),
-        filter = "top",
-        rownames = FALSE,
-        class = "display compact"
-      ) %>%
-        DT::formatRound(columns = which(sapply(summary_data, is.numeric)), digits = 4)
+      return(HTML("<p style='text-align: center; padding: 20px;'>No captured positions found</p>"))
     }
+    
+    # Create cards for each exit method
+    cards <- lapply(1:nrow(summary_data), function(i) {
+      row <- summary_data[i, ]
+      
+      # Color based on mean return
+      card_color <- if (row$mean_R > 0) "#d4edda" else "#f8d7da"
+      text_color <- if (row$mean_R > 0) "#155724" else "#721c24"
+      
+      div(
+        style = sprintf("background-color: %s; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin-bottom: 15px;", card_color),
+        h4(style = sprintf("margin-top: 0; color: %s;", text_color), as.character(row$exit_method)),
+        fluidRow(
+          column(3,
+            h5("Count & Probability"),
+            tags$table(style = "width: 100%; font-size: 14px;",
+              tags$tr(tags$td(strong("Count:")), tags$td(style = "text-align: right;", sprintf("%d", row$n))),
+              tags$tr(tags$td(strong("Overall Prob:")), tags$td(style = "text-align: right;", sprintf("%.2f%%", row$overall_probability * 100))),
+              tags$tr(tags$td(strong("Capture Prob:")), tags$td(style = "text-align: right;", sprintf("%.2f%%", row$capture_probability * 100)))
+            )
+          ),
+          column(3,
+            h5("Returns"),
+            tags$table(style = "width: 100%; font-size: 14px;",
+              tags$tr(tags$td(strong("Mean R:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$mean_R))),
+              tags$tr(tags$td(strong("Median R:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$median_R))),
+              tags$tr(tags$td(strong("SD:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$sd_R))),
+              tags$tr(tags$td(strong("SE:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$se_R)))
+            )
+          ),
+          column(3,
+            h5("Expected Values"),
+            tags$table(style = "width: 100%; font-size: 14px;",
+              tags$tr(tags$td(strong("Expected:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$expected))),
+              tags$tr(tags$td(strong("Expected|Capt:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$expected_given_capture))),
+              tags$tr(tags$td(strong("IQR:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$iqr_R)))
+            )
+          ),
+          column(3,
+            h5("Quantiles"),
+            tags$table(style = "width: 100%; font-size: 14px;",
+              tags$tr(tags$td(strong("Q05:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$q05_R))),
+              tags$tr(tags$td(strong("Q32:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$q32_R))),
+              tags$tr(tags$td(strong("Q68:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$q68_R))),
+              tags$tr(tags$td(strong("Q95:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$q95_R)))
+            )
+          )
+        )
+      )
+    })
+    
+    do.call(tagList, cards)
   })
   
   # Signals, Returns Table
