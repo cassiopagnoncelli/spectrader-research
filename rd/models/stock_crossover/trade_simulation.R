@@ -43,22 +43,7 @@ posl <- position_cohort(
   df_signals,
   before_days = 30,
   after_days = position_max_days,
-  fun = exit_trifecta(
-    # QR params
-    qrfit_extr = exit_qr_fits$q92,
-    qrfit_aggr = exit_qr_fits$q82,
-    qrfit_cons = exit_qr_fits$q32,
-    extr_t = 2,
-    aggr_t = 7,
-    cons_t = 30,
-    # VATS params
-    vats_k = 1.5,
-    vats_t = 20,
-    # FPT params
-    fpt_maturity = 15 / 365,
-    fpt_side = "long",
-    fpt_t = 20
-  )
+  fun = exit_dqr(exit_qr_fits, max_position_days = position_max_days)
 )
 
 # Signals & Returns
@@ -70,7 +55,7 @@ dfsr %>%
   filter(!is.na(exit_method)) %>%
   slice_sample(n = 0) %>%  # Change n to view more samples
   pull(trade) %>%
-  purrr::walk(~ plot_position_cohort_exit_trifecta(posl[[.x]],
+  purrr::walk(~ plot_position_cohort_exit_dqr(posl[[.x]],
                                               side = "long",
                                               ylim = c(.8, 1.5)))
 
@@ -89,5 +74,5 @@ df_dates <- dfsr %>%
   select(trade, symbol, entry, exit, R, t)
 
 # Dashboard
-# devtools::load_all()
-# shiny::runApp("rd/models/stock_crossover/dashboard.R")
+devtools::load_all()
+shiny::runApp("rd/models/stock_crossover/dashboard.R")

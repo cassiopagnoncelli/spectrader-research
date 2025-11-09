@@ -9,7 +9,69 @@ keep_first_true_only <- function(x) {
   xx
 }
 
+# Decaying Quantile Regression Exit
+exit_dqr <- function(exit_qr_fits, max_position_days,
+                     sigma_short = 6, sigma_long = 20, ent_short = 9, ent_long = 20) {
+  function(data, history = FALSE) {
+    # Feature engineering
+    result <- data %>%
+      dplyr::mutate(
+        S_1 = dplyr::lag(S, 1),
+        S_2 = dplyr::lag(S, 2),
+        sd_short = RcppRoll::roll_sd(r, n = sigma_short, fill = NA, align = "right"),
+        sd_long = RcppRoll::roll_sd(r, n = sigma_long, fill = NA, align = "right"),
+        sd_ratio = sd_short / sd_long,
+        h_short = runH(r, ent_short),
+        h_long = runH(r, ent_long),
+        h_ratio = h_short / h_long,
+        sd_short_1 = dplyr::lag(sd_short, 1),
+        sd_long_1 = dplyr::lag(sd_long, 1),
+        sd_ratio_1 = dplyr::lag(sd_ratio, 1),
+        h_short_1 = dplyr::lag(h_short, 1),
+        h_long_1 = dplyr::lag(h_long, 1),
+        h_ratio_1 = dplyr::lag(h_ratio, 1),
+        vol_vix = sd_short / vix,
+        cr_3 = RcppRoll::roll_sum(r, n = 3, fill = NA, align = "right"),
+        cr_8 = RcppRoll::roll_sum(r, n = 8, fill = NA, align = "right")
+      ) %>%
+      dplyr::filter(t >= ifelse(history, -Inf, 0))
+
+    if (is.null(exit_qr_fits$q92) || is.null(exit_qr_fits$q82) || is.null(exit_qr_fits$q32))
+      return(result)
+
+    result$qhat_extr <- predict(exit_qr_fits$q92, result)
+    result$qhat_aggr <- predict(exit_qr_fits$q82, result)
+    result$qhat_cons <- predict(exit_qr_fits$q32, result)
+
+    result %>%
+      dplyr::mutate(
+        exit_qr_extr = S >= qhat_extr & t >= extr_t & t < aggr_t & S > 1,
+        exit_qr_aggr = S >= qhat_aggr & t >= aggr_t & t < cons_t & S > 1,
+        exit_qr_cons = S >= qhat_cons & t >= cons_t & S > 1,
+        exit = exit_qr_extr | exit_qr_aggr | exit_qr_cons
+      )
+  }
+}
+
 # Trifecta exiting rule using Quantile Regression, VATS, and FPT.
+# Use as
+# > exit_trifecta(
+#     # QR params
+#     qrfit_extr = exit_qr_fits$q92,
+#     qrfit_aggr = exit_qr_fits$q82,
+#     qrfit_cons = exit_qr_fits$q32,
+#     extr_t = 2,
+#     aggr_t = 7,
+#     cons_t = 30,
+#     # VATS params
+#     vats_k = 1.5,
+#     vats_t = 20,
+#     # FPT params
+#     fpt_maturity = 15 / 365,
+#     fpt_side = "long",
+#     fpt_t = 20
+#   )
+#
 exit_trifecta <- function(
   # Quantile Regression Exit parameters
   qrfit_extr = NULL, qrfit_aggr = NULL, qrfit_cons = NULL,
@@ -169,11 +231,11 @@ exit_fpt <- function(interest_rate = 0.0425, maturity = 15 / 365, side = "long")
   }
 }
 
-# Quantile Regression Exit
-exit_qr <- function(qrfit_extr = NULL, qrfit_aggr = NULL, qrfit_cons = NULL,
-                    extr_t = 2, aggr_t = 7, cons_t = 30,
-                    sigma_short = 6, sigma_long = 20,
-                    ent_short = 9, ent_long = 20) {
+# Trifecta Quantile Regression Exit
+exit_trifecta_qr <- function(qrfit_extr = NULL, qrfit_aggr = NULL, qrfit_cons = NULL,
+                             extr_t = 2, aggr_t = 7, cons_t = 30,
+                             sigma_short = 6, sigma_long = 20,
+                             ent_short = 9, ent_long = 20) {
   function(data, history = FALSE) {
     # Feature engineering
     result <- data %>%

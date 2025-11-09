@@ -19,27 +19,82 @@ plot_distribution <- function(data, bins = NULL, vline = 0, title = "Distributio
     bins <- ceiling(3.3 * log10(n) + 1)
   }
 
+  # Calculate statistics for labels
+  mean_val <- mean(data$value, na.rm = TRUE)
+  sd_val <- sd(data$value, na.rm = TRUE)
+  
   # Create histogram with density scale and smoothing curve
   ggplot2::ggplot(data, ggplot2::aes(x = value)) +
     ggplot2::geom_histogram(
       aes(y = ggplot2::after_stat(density)),
       bins = bins,
-      fill = "pink",
-      color = "pink",
-      alpha = 0.4
+      fill = "#851d91",
+      # color = "#676cce",
+      alpha = 0.7
     ) +
     ggplot2::geom_density(
       aes(y = ggplot2::after_stat(density)),
-      fill = "lightblue",
-      alpha = 0.7,
-      color = "lightblue",
+      fill = "#1d9146",
+      # color = "#2a965a",
+      alpha = .55,
       linewidth = .2
     ) +
     ggplot2::geom_vline(
       xintercept = vline,
-      color = "grey70",
+      color = "#ff0000",
       linetype = "solid",
-      linewidth = .4
+      linewidth = .4,
+      alpha = .85
+    ) +
+    ggplot2::geom_vline(
+      xintercept = mean_val,
+      color = "#000000",
+      linetype = "dashed",
+      linewidth = .8
+    ) +
+    ggplot2::geom_vline(
+      xintercept = mean_val + sd_val,
+      color = "#4e4e4e",
+      linetype = "dashed",
+      linewidth = .5
+    ) +
+    ggplot2::geom_vline(
+      xintercept = mean_val - sd_val,
+      color = "#4e4e4e",
+      linetype = "dashed",
+      linewidth = .5
+    ) +
+    ggplot2::geom_vline(
+      xintercept = mean_val + 2 * sd_val,
+      color = "#a3a3a3",
+      linetype = "dashed",
+      linewidth = .35
+    ) +
+    ggplot2::geom_vline(
+      xintercept = mean_val - 2 * sd_val,
+      color = "#a3a3a3",
+      linetype = "dashed",
+      linewidth = .35
+    ) +
+    ggplot2::geom_text(
+      aes(x = mean_val, y = Inf, label = sprintf("μ=%.2f", mean_val)),
+      vjust = 1.5, hjust = 0.5, size = 5, color = "#000000"
+    ) +
+    ggplot2::geom_text(
+      aes(x = mean_val + sd_val, y = Inf, label = sprintf("+1σ=%.2f", mean_val + sd_val)),
+      vjust = 1.5, hjust = 0.5, size = 4.5, color = "#4e4e4e"
+    ) +
+    ggplot2::geom_text(
+      aes(x = mean_val - sd_val, y = Inf, label = sprintf("-1σ=%.2f", mean_val - sd_val)),
+      vjust = 1.5, hjust = 0.5, size = 4.5, color = "#4e4e4e"
+    ) +
+    ggplot2::geom_text(
+      aes(x = mean_val + 2 * sd_val, y = Inf, label = sprintf("+2σ=%.2f", mean_val + 2 * sd_val)),
+      vjust = 1.5, hjust = 0.5, size = 4.5, color = "#a3a3a3"
+    ) +
+    ggplot2::geom_text(
+      aes(x = mean_val - 2 * sd_val, y = Inf, label = sprintf("-2σ=%.2f", mean_val - 2 * sd_val)),
+      vjust = 1.5, hjust = 0.5, size = 4.5, color = "#a3a3a3"
     ) +
     ggplot2::labs(title = title, x = "Value", y = "Density") +
     ggplot2::theme_minimal() +
@@ -91,12 +146,7 @@ analyse_distribution <- function(data, groups = c(0)) {
     }
   }
 
-  # Calculate statistics for each group
-  quantile_probs <- c(0, 0.01, 0.05, 0.32, 0.5, 0.68, 0.95, 0.99, 1)
-
-  # Get total dataset size
   total_n <- nrow(data)
-
   group_results <- data |>
     dplyr::group_by(group) |>
     dplyr::summarise(
@@ -127,8 +177,10 @@ analyse_distribution <- function(data, groups = c(0)) {
       n = nrow(data)
     )
 
-  return(list(
-    overall_results = overall_results,
-    group_results = group_results
-  ))
+  return(
+    list(
+      overall_results = overall_results,
+      group_results = group_results
+    )
+  )
 }
