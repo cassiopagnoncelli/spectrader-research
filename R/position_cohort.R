@@ -64,7 +64,16 @@ position_cohort_metrics <- function(pos_data, trade_idx) {
   idx <- dplyr::coalesce(which(na.omit(pos_data$exit))[1], dplyr::last(na.omit(pos_data$t)))
   R <- pos_data$S[idx] - 1
   r <- log(pos_data$S[idx])
-  tibble::tibble(trade = trade_idx, t = idx - 1, R, r)
+
+  exit_method <- "none"
+  
+  tibble::tibble(
+    trade = trade_idx,
+    t = idx - 1,
+    exit_method,
+    R,
+    r
+  )
 }
 
 position_cohort_return <- function(posl, df_signals) {
