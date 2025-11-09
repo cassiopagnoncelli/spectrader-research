@@ -57,23 +57,51 @@ position_cohort <- function(symbol_dates,
   })
 }
 
-position_cohort_metrics <- function(pos_data, trade_idx) {
+position_cohort_exit_method <- function(pos_data) {
+  if (!tibble::is_tibble(pos_data) && !is.data.frame(pos_data))
+    stop("Input must be a tibble or data frame.")
+
+  # Find all columns matching exit_*
+  exit_cols <- grep("^exit_", names(pos_data), value = TRUE)
+  
+  if (length(exit_cols) == 0) {
+    return(NA_character_)
+  }
+  
+  # For each exit column, find the minimum index where value is TRUE
+  min_indices <- sapply(exit_cols, function(col) {
+    true_indices <- which(pos_data[[col]] == TRUE)
+    if (length(true_indices) == 0) {
+      return(NA_integer_)
+    } else {
+      return(min(true_indices))
+    }
+  })
+  
+  # Find the column with the smallest minimum index
+  # Remove NA values when finding the minimum
+  valid_indices <- min_indices[!is.na(min_indices)]
+  
+  if (length(valid_indices) == 0) {
+    return(NA_character_)
+  }
+  
+  earliest_col <- names(which.min(min_indices))
+  
+  # Remove "exit_" prefix from the name
+  exit_method <- sub("^exit_", "", earliest_col)
+  exit_method
+}
+
+position_cohort_metrics <- function(pos_data, trade) {
   if (!tibble::is_tibble(pos_data) && !is.data.frame(pos_data))
     stop("Input must be a tibble or data frame.")
 
   idx <- dplyr::coalesce(which(na.omit(pos_data$exit))[1], dplyr::last(na.omit(pos_data$t)))
   R <- pos_data$S[idx] - 1
   r <- log(pos_data$S[idx])
-
-  exit_method <- "none"
-  
-  tibble::tibble(
-    trade = trade_idx,
-    t = idx - 1,
-    exit_method,
-    R,
-    r
-  )
+  exit_method <- position_cohort_exit_method(pos_data)
+  tibble::tibble(trade, t = idx - 1, exit_method, R, r)
 }
 
 position_cohort_return <- function(posl, df_signals) {
