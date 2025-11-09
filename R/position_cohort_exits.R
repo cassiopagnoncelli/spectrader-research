@@ -89,8 +89,9 @@ exit_vats <- function(sd_short = 6, sd_long = 20, k = 2.5) {
       dplyr::mutate(
         Smax = cummax(S),
         stop = Smax * exp(-k * sd_long),
-        exit = S < stop &
-          lag(S, default = first(S)) >= lag(stop, default = first(stop))
+        exit_vats = S < stop &
+          lag(S, default = first(S)) >= lag(stop, default = first(stop)),
+        exit = exit_vats
       ) %>%
       dplyr::select(-c(sd_short, sd_long, Smax))
   }
@@ -103,7 +104,8 @@ exit_thres <- function(k = .2) {
       dplyr::mutate() %>%
       dplyr::filter(t >= ifelse(history, -Inf, 0)) %>%
       dplyr::mutate(
-        exit = S > 1.2
+        exit_thres = S > 1.2,
+        exit = exit_thres
       )
   }
 }
@@ -143,7 +145,8 @@ exit_fpt <- function(interest_rate = 0.0425, maturity = 15 / 365, side = "long")
           t = maturity,
           side = side
         ),
-        exit = if (side == "long") X > boundary else X < boundary
+        exit_fpt = if (side == "long") X > boundary else X < boundary,
+        exit = exit
       )
   }
 }
