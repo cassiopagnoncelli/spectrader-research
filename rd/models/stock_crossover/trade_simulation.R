@@ -8,13 +8,17 @@ df_train <- tibble(
 )
 
 exit_qr_fits <- df_train %>%
-  filter(yhat > 1.3) %>%
+  filter(yhat > 1.2) %>%
   filter_signals(within_days = 20) %>%
   arrange(date) %>%
-  train_trifecta_qr( # 8-10 min training.
-    tau_extr = .92,
-    tau_aggr = .82,
-    tau_cons = .32
+  train_qr(
+    taus = c(.92, .82, .32),
+    formulas = list(
+      S ~ S_1 + t + sd_short + h_short + h_ratio + cr_3 + cr_8 + vix + vol_vix,
+      S ~ S_1 + t + sd_short + h_short + h_ratio + cr_3 + cr_8 + vix + vol_vix,
+      S ~ S_1 + t + sd_short + h_short + h_ratio + cr_3 + cr_8 + vix + vol_vix
+    ),
+    max_position_days = 30
   )
 
 # Test subset
@@ -41,9 +45,9 @@ posl <- position_cohort(
   after_days = position_max_days,
   fun = exit_trifecta(
     # QR params
-    qrfit_extr = exit_qr_fits$extr,
-    qrfit_aggr = exit_qr_fits$aggr,
-    qrfit_cons = exit_qr_fits$cons,
+    qrfit_extr = exit_qr_fits$q92,
+    qrfit_aggr = exit_qr_fits$q82,
+    qrfit_cons = exit_qr_fits$q32,
     extr_t = 2,
     aggr_t = 7,
     cons_t = 30,
@@ -85,5 +89,5 @@ df_dates <- dfsr %>%
   select(trade, symbol, entry, exit, R, t)
 
 # Dashboard
-devtools::load_all()
-shiny::runApp("rd/models/stock_crossover/dashboard.R")
+# devtools::load_all()
+# shiny::runApp("rd/models/stock_crossover/dashboard.R")
