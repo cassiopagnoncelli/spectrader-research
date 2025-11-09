@@ -380,7 +380,7 @@ ui <- dashboardPage(
             title = "3D Surface Plot",
             status = "info",
             solidHeader = TRUE,
-            plotly::plotlyOutput("surface_plot", height = "600px")
+            plotly::plotlyOutput("surface_plot", height = "800px")
           )
         )
       ),
