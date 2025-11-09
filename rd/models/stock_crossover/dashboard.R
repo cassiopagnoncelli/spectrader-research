@@ -22,6 +22,7 @@ ui <- dashboardPage(
       menuItem("Signals & Returns", tabName = "signals_returns", icon = icon("table")),
       hr(),
       menuItem("Options Returns", tabName = "options_returns", icon = icon("dollar-sign")),
+      menuItem("Options Kelly", tabName = "options_kelly", icon = icon("calculator")),
       hr(),
       menuItem("Signal Model", tabName = "models", icon = icon("chart-bar")),
       hr(),
@@ -328,6 +329,41 @@ ui <- dashboardPage(
             status = "info",
             solidHeader = TRUE,
             DT::dataTableOutput("options_returns_table")
+          )
+        )
+      ),
+      
+      # Options Kelly Tab
+      tabItem(
+        tabName = "options_kelly",
+        fluidRow(
+          box(
+            width = 12,
+            title = "Options Kelly Analysis",
+            status = "primary",
+            solidHeader = TRUE,
+            p(
+              style = "background-color: #f0f0f0; padding: 10px; border-radius: 5px; margin-bottom: 15px;",
+              strong("Note: "), "American Option Pricing is non-deterministic when volatilities (vol_0, vol_t) are not explicitly set. ",
+              "The model will estimate volatilities from the data, which can produce slightly different results on each calculation."
+            ),
+            fluidRow(
+              column(
+                width = 6,
+                h4("Parameters"),
+                numericInput("options_kelly_K", "Strike Multiplier (K):", value = 1.25, min = 0.1, max = 2.0, step = 0.05),
+                numericInput("options_kelly_tm", "Days to Maturity (tm):", value = 21, min = 1, max = 100, step = 1),
+                numericInput("options_kelly_tau", "quantile τ:", value = 0.3, min = 0.01, max = 0.99, step = 0.01),
+                numericInput("options_kelly_cap", "Kelly cap:", value = 0.4, min = 0.01, max = 1.0, step = 0.01),
+                numericInput("options_kelly_vol_0", "Entry Volatility (vol<sub>0</sub>):", value = NA, min = 0.05, max = 3.0, step = 0.05),
+                numericInput("options_kelly_vol_t", "Exit Volatility (vol<sub>t</sub>):", value = NA, min = 0.05, max = 3.0, step = 0.05)
+              ),
+              column(
+                width = 6,
+                h4("Values"),
+                htmlOutput("options_kelly_values")
+              )
+            )
           )
         )
       ),
@@ -1175,6 +1211,68 @@ server <- function(input, output, session) {
       class = "display compact"
     ) %>%
       DT::formatRound(columns = which(sapply(options_data, is.numeric)), digits = 4)
+  })
+  
+  # Options Kelly - Reactive expressions for proper dependency management
+  options_kelly_opt_R <- reactive({
+    req(rv$dfsr, input$options_kelly_K, input$options_kelly_tm)
+    
+    # Build parameter list (dfsr is first positional argument)
+    params <- list(
+      rv$dfsr,
+      K = input$options_kelly_K,
+      tm = input$options_kelly_tm
+    )
+    
+    # Add volatility parameters if they are set (not NA)
+    if (!is.na(input$options_kelly_vol_0)) {
+      params$vol_0 <- input$options_kelly_vol_0
+    }
+    if (!is.na(input$options_kelly_vol_t)) {
+      params$vol_t <- input$options_kelly_vol_t
+    }
+    
+    # Call american_optprice_returns with parameters
+    do.call(american_optprice_returns, params) %>% pull(opt_R)
+  })
+  
+  options_kelly_f_star <- reactive({
+    req(options_kelly_opt_R())
+    kelly_fraction(options_kelly_opt_R())
+  })
+  
+  options_kelly_f_star_q <- reactive({
+    req(options_kelly_opt_R(), input$options_kelly_tau, input$options_kelly_cap)
+    kelly_quantile(options_kelly_opt_R(), tau = input$options_kelly_tau, cap = input$options_kelly_cap)
+  })
+  
+  options_kelly_log_portfolio <- reactive({
+    req(options_kelly_f_star(), options_kelly_opt_R())
+    log(prod(1 + options_kelly_f_star() * options_kelly_opt_R()))
+  })
+  
+  options_kelly_log_portfolio_q <- reactive({
+    req(options_kelly_f_star_q(), options_kelly_opt_R())
+    log(prod(1 + options_kelly_f_star_q() * options_kelly_opt_R()))
+  })
+  
+  # Options Kelly Values - Display
+  output$options_kelly_values <- renderUI({
+    req(options_kelly_f_star(), options_kelly_f_star_q(), 
+        options_kelly_log_portfolio(), options_kelly_log_portfolio_q())
+    
+    HTML(sprintf(
+      "<table class='table table-bordered' style='font-size: 18px;'>
+        <tr><td><strong>F<sup>*</sup>:</strong></td><td style='text-align: right;'>%.6f</td></tr>
+        <tr><td><strong>F<sub>q</sub><sup>*</sup>:</strong></td><td style='text-align: right;'>%.6f</td></tr>
+        <tr><td><strong>Log P<sub>n</sub>:</strong></td><td style='text-align: right;'>%.6f</td></tr>
+        <tr><td><strong>Log P<sub>n,q=τ</sub>:</strong></td><td style='text-align: right;'>%.6f</td></tr>
+      </table>",
+      options_kelly_f_star(),
+      options_kelly_f_star_q(),
+      options_kelly_log_portfolio(),
+      options_kelly_log_portfolio_q()
+    ))
   })
   
   # Data Status Check
