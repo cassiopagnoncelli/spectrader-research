@@ -9,8 +9,8 @@ keep_first_true_only <- function(x) {
   xx
 }
 
-# State of the Art exiting rule using Quantile Regression, VATS, and FPT.
-exit_art <- function(
+# Trifecta exiting rule using Quantile Regression, VATS, and FPT.
+exit_trifecta <- function(
   # Quantile Regression Exit parameters
   qrfit_extr = NULL, qrfit_aggr = NULL, qrfit_cons = NULL,
   extr_t = 2, aggr_t = 7, cons_t = 30,

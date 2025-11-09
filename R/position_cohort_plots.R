@@ -1,4 +1,4 @@
-plot_position_cohort_exit_art <- function(position, side = c("long", "short"), plot = TRUE, ylim = NULL) {
+plot_position_cohort_exit_trifecta <- function(position, side = c("long", "short"), plot = TRUE, ylim = NULL) {
   if (!tibble::is_tibble(position) && !is.data.frame(position)) {
     stop("Input must be a tibble or data frame.")
   }
@@ -57,7 +57,7 @@ plot_position_cohort_exit_art <- function(position, side = c("long", "short"), p
     ggplot2::labs(
       x = "t",
       y = "Value",
-      title = "State of the Art Exit - Position"
+      title = "Trifecta Exit - Position"
     )
 
   if (plot) {

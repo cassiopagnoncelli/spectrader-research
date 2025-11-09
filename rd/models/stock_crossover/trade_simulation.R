@@ -8,7 +8,7 @@ df_train <- tibble(
 )
 
 exit_qr_fits <- df_train %>%
-  filter(yhat > 1.2) %>%
+  filter(yhat > 1.3) %>%
   filter_signals(within_days = 20) %>%
   arrange(date) %>%
   train_trifecta_qr( # 8-10 min training.
@@ -28,7 +28,7 @@ df_test <- tibble(
 
 # Generate trading signals, discarding the ones within a month apart
 df_signals <- df_test %>%
-  filter(yhat > 1.35) %>%
+  filter(yhat > 1.4) %>%
   filter_signals(within_days = 20) %>%
   arrange(date)
 
@@ -39,7 +39,7 @@ posl <- position_cohort(
   df_signals,
   before_days = 30,
   after_days = position_max_days,
-  fun = exit_art(
+  fun = exit_trifecta(
     # QR params
     qrfit_extr = exit_qr_fits$extr,
     qrfit_aggr = exit_qr_fits$aggr,
@@ -66,7 +66,7 @@ dfsr %>%
   filter(!is.na(exit_method)) %>%
   slice_sample(n = 0) %>%  # Change n to view more samples
   pull(trade) %>%
-  purrr::walk(~ plot_position_cohort_exit_art(posl[[.x]],
+  purrr::walk(~ plot_position_cohort_exit_trifecta(posl[[.x]],
                                               side = "long",
                                               ylim = c(.8, 1.5)))
 

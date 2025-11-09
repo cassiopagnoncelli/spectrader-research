@@ -657,7 +657,7 @@ server <- function(input, output, session) {
     current_idx <- rv$current_chart_index
     trade_id <- rv$sample_trades[current_idx]
     
-    plot_position_cohort_exit_art(rv$posl[[trade_id]], ylim = c(.7, 1.7))
+    plot_position_cohort_exit_trifecta(rv$posl[[trade_id]], ylim = c(.7, 1.7))
   })
   
   # Overview Metrics
@@ -753,7 +753,7 @@ server <- function(input, output, session) {
       plotname <- paste0("exit_plot_", i)
       
       output[[plotname]] <- renderPlot({
-        plot_position_cohort_exit_art(rv$posl[[trade_id]], ylim = c(.7, 1.7))
+        plot_position_cohort_exit_trifecta(rv$posl[[trade_id]], ylim = c(.7, 1.7))
       })
     })
   })
