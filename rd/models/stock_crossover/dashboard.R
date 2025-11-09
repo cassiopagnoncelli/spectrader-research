@@ -245,16 +245,25 @@ ui <- dashboardPage(
             title = "Exit Methods Summary",
             status = "primary",
             solidHeader = TRUE,
-            p("Summary statistics for different exit methods grouped by exit method type.")
+            p("Summary statistics for different exit methods. Uncaptured positions have no exit method (NA), while captured positions exited via specific strategies.")
           )
         ),
         fluidRow(
           box(
             width = 12,
-            title = "Exit Methods Summary Table",
-            status = "info",
+            title = "Uncaptured Positions",
+            status = "warning",
             solidHeader = TRUE,
-            DT::dataTableOutput("capture_methods_table")
+            DT::dataTableOutput("capture_methods_uncaptured_table")
+          )
+        ),
+        fluidRow(
+          box(
+            width = 12,
+            title = "Captured Positions (by Exit Method)",
+            status = "success",
+            solidHeader = TRUE,
+            DT::dataTableOutput("capture_methods_captured_table")
           )
         )
       ),
@@ -1258,29 +1267,68 @@ server <- function(input, output, session) {
     )
   })
   
-  # Capture Methods Table
-  output$capture_methods_table <- DT::renderDataTable({
+  # Capture Methods Tables - Split into Uncaptured and Captured
+  output$capture_methods_uncaptured_table <- DT::renderDataTable({
     req(rv$dfsr)
     
-    summary_data <- exit_methods_summary(rv$dfsr)
+    summary_data <- exit_methods_summary(rv$dfsr) %>%
+      filter(is.na(exit_method))
     
-    DT::datatable(
-      summary_data,
-      options = list(
-        pageLength = 25,
-        scrollX = TRUE,
-        scrollY = "600px",
-        scrollCollapse = TRUE,
-        searching = TRUE,
-        ordering = TRUE,
-        lengthMenu = c(10, 25, 50, 100),
-        autoWidth = TRUE
-      ),
-      filter = "top",
-      rownames = FALSE,
-      class = "display compact"
-    ) %>%
-      DT::formatRound(columns = which(sapply(summary_data, is.numeric)), digits = 4)
+    if (nrow(summary_data) == 0) {
+      # Create empty dataframe with message
+      empty_df <- data.frame(Message = "No uncaptured positions found")
+      DT::datatable(
+        empty_df,
+        options = list(dom = 't', ordering = FALSE),
+        rownames = FALSE
+      )
+    } else {
+      DT::datatable(
+        summary_data,
+        options = list(
+          dom = 't',
+          scrollX = TRUE,
+          ordering = FALSE
+        ),
+        rownames = FALSE,
+        class = "display compact"
+      ) %>%
+        DT::formatRound(columns = which(sapply(summary_data, is.numeric)), digits = 4)
+    }
+  })
+  
+  output$capture_methods_captured_table <- DT::renderDataTable({
+    req(rv$dfsr)
+    
+    summary_data <- exit_methods_summary(rv$dfsr) %>%
+      filter(!is.na(exit_method))
+    
+    if (nrow(summary_data) == 0) {
+      # Create empty dataframe with message
+      empty_df <- data.frame(Message = "No captured positions found")
+      DT::datatable(
+        empty_df,
+        options = list(dom = 't', ordering = FALSE),
+        rownames = FALSE
+      )
+    } else {
+      DT::datatable(
+        summary_data,
+        options = list(
+          pageLength = 25,
+          scrollX = TRUE,
+          scrollY = "400px",
+          scrollCollapse = TRUE,
+          searching = TRUE,
+          ordering = TRUE,
+          lengthMenu = c(10, 25, 50, 100)
+        ),
+        filter = "top",
+        rownames = FALSE,
+        class = "display compact"
+      ) %>%
+        DT::formatRound(columns = which(sapply(summary_data, is.numeric)), digits = 4)
+    }
   })
   
   # Signals, Returns Table
