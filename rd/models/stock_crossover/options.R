@@ -44,12 +44,4 @@ plotly::plot_ly() %>%
   )
 
 # Returns
-opt_R <- american_optprice_returns(dfsr, K = 1.25, tm = 21) %>% pull(opt_R)
-tibble(
-  f_star = kelly_fraction(opt_R),
-  f_star_q = kelly_quantile(opt_R, tau = 0.3, cap = .4),
-  log_portfolio = log(prod(1 + f_star * opt_R)),
-  log_portfolio_q = log(prod(1 + f_star_q * opt_R))
-)
-
 print(options_optim_maximal(options_surface_grid)) # Maximum
