@@ -59,13 +59,13 @@ fe_base_feature_definitions <- list(
   },
   
   cr_short = function(data, params) {
-    n <- params$cr_short_period
+    n <- params$cumret_short
     if (is.null(n)) n <- 3  # default to 3
     RcppRoll::roll_sum(data$r, n = n, fill = NA, align = "right")
   },
   
   cr_long = function(data, params) {
-    n <- params$cr_long_period
+    n <- params$cumret_long
     if (is.null(n)) n <- 8  # default to 8
     RcppRoll::roll_sum(data$r, n = n, fill = NA, align = "right")
   }
@@ -195,7 +195,7 @@ fe <- function(data, features, ...) {
 }
 
 fe_dqr <- function(
-  data, sigma_short = 6, sigma_long = 20, ent_short = 9, ent_long = 20, cr_short_period = 3, cr_long_period = 8
+  data, sigma_short = 6, sigma_long = 20, ent_short = 9, ent_long = 20, cumret_short = 3, cumret_long = 8
 ) {
   fe(
     data,
@@ -209,7 +209,7 @@ fe_dqr <- function(
     sigma_long = sigma_long,
     ent_short = ent_short,
     ent_long = ent_long,
-    cr_short_period = cr_short_period,
-    cr_long_period = cr_long_period
+    cumret_short = cumret_short,
+    cumret_long = cumret_long
   )
 }

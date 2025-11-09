@@ -41,7 +41,7 @@ max_position_days <- 20
 posl <- position_cohort(
   df_signals,
   before_days = 30,
-  after_days = position_max_days,
+  after_days = max_position_days,
   fun = exit_dqr(dqr_fits, max_position_days = max_position_days)
 )
 
