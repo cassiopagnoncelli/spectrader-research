@@ -36,7 +36,7 @@ df_signals <- df_test %>%
 posl <- position_cohort(
   df_signals,
   before_days = 30,
-  after_days = 60,
+  after_days = 20,
   fun = exit_art(
     # QR params
     qrfit_extr = exit_qr_fits$extr,
