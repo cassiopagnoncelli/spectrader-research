@@ -355,8 +355,8 @@ ui <- dashboardPage(
                 numericInput("options_kelly_tm", "Days to Maturity (tm):", value = 21, min = 1, max = 100, step = 1),
                 numericInput("options_kelly_tau", "quantile τ:", value = 0.3, min = 0.01, max = 0.99, step = 0.01),
                 numericInput("options_kelly_cap", "Kelly cap:", value = 0.4, min = 0.01, max = 1.0, step = 0.01),
-                numericInput("options_kelly_vol_0", "Entry Volatility (vol<sub>0</sub>):", value = NA, min = 0.05, max = 3.0, step = 0.05),
-                numericInput("options_kelly_vol_t", "Exit Volatility (vol<sub>t</sub>):", value = NA, min = 0.05, max = 3.0, step = 0.05)
+                numericInput("options_kelly_vol_0", "Entry Volatility (σ₀):", value = NA, min = 0.05, max = 3.0, step = 0.05),
+                numericInput("options_kelly_vol_t", "Exit Volatility (σₜ):", value = NA, min = 0.05, max = 3.0, step = 0.05)
               ),
               column(
                 width = 6,
