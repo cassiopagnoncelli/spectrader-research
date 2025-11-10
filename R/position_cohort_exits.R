@@ -7,6 +7,7 @@ exit_dqr <- function(dqr_fits, max_position_days) {
     qnames <- rev(sort(names(dqr_fits)))
     qhat_cols <- paste0("qhat_", qnames)
     exit_cols <- paste0("exit_", qnames)
+    taus <- exit_dqr_extract_quantiles(dqr_fits)
 
     # Feature engineering
     result <- data %>%
@@ -19,15 +20,15 @@ exit_dqr <- function(dqr_fits, max_position_days) {
       result[[qhat_cols[i]]] <- predict(dqr_fits[[qhat_cols[i]]], result)
     }
 
+    ...
+
     # Create exit signals for each quantile
-    exit_signals <- list()
     for (i in seq_along(qnames)) {
       result[[exit_cols[i]]] <- result$S >= result[[qhat_cols[i]]]
-      exit_signals[[exit_cols[i]]] <- result[[exit_cols[i]]]
     }
 
     # Combine all exit signals with OR logic
-    combined_signals <- Reduce(`|`, exit_signals)
+    combined_signals <- Reduce(`|`, result[exit_cols])
     result$exit <- result %>%
       dplyr::mutate(exit = combined_signals & S > 1 & t >= 3) %>%
       dplyr::pull(exit)
