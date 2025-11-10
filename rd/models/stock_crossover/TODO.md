@@ -2,6 +2,11 @@
 
 - Realistic portfolio growth simulation with wallet concurrency
 - Add params: y_hat_cutoff, position_max_days
+- Volatility Analysis in Options
+
+## ETL
+
+- Download volatility (IV) data
 
 ## Exit model
 
