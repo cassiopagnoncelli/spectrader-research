@@ -64,11 +64,11 @@ train_dqr <- function(signals, taus, formulas, max_position_days = 60) {
 #' @param method Decay method: "gaussian", "laplace" (default), or "half-cosine"
 #' @param ... Additional arguments (currently unused)
 #' @return Numeric decay weight between 0 and 1
-exit_dqr_dc <- function(t_norm, method = "laplace", ...) {
+exit_dqr_dc <- function(t_norm, method = "laplace", alpha = .4) {
   if (method == "gaussian") {
     exp(-t_norm^2 / 2)
   } else if (method == "laplace") { # Double-exponential
-    exp(-sqrt(.07 * t_norm))
+    exp(-sqrt(alpha * t_norm))
   } else if (method == "half-cosine") {
     0.5 * (1 + cos(pi * t_norm / 2))
   }
@@ -107,20 +107,31 @@ exit_dqr_extract_quantiles <- function(dqr_fits) {
   as.numeric(sub("q", "", qnames)) / 100
 }
 
-exit_dqr_weight_prob <- function(t_norm, taus) {
-  if (!all(taus == rev(sort(taus)))) {
+exit_dqr_weight_prob <- function(t_norm, taus, method = "laplace", ...) {
+  if (!all(taus == rev(sort(taus))))
     stop("taus must be in descending order")
-  }
+
+  decay_curve <- exit_dqr_dc(t_norm, method = method, ...)
   sds <- rep(abs(mean(diff(c(1, taus)))), length(taus))^2
-  densities <- sapply(
-    seq_along(taus),
-    \(i) dnorm(t_norm, mean = taus[i], sd = sds[i])
-  )
-  densities <- setNames(densities, taus)
-  densities <- densities / sum(densities)
-  round(densities, 8)
-}
-
-exit_dqr_w <- function(t_norm, taus) {
-
+  
+  # Create column names based on taus
+  col_names <- paste0("q", sprintf("%.0f", taus * 100))
+  
+  # Calculate densities for all t_norm values
+  result_matrix <- t(sapply(decay_curve, function(t) {
+    densities <- sapply(
+      seq_along(taus),
+      \(i) dnorm(t, mean = taus[i], sd = sds[i])
+    )
+    densities <- densities / sum(densities)
+    densities
+  }))
+  
+  # Convert to data frame with proper column names and rownames
+  result <- as.data.frame(result_matrix)
+  colnames(result) <- col_names
+  rownames(result) <- as.character(t_norm)
+  
+  # Convert to tibble while preserving rownames
+  tibble::as_tibble(result, rownames = NA)
 }
