@@ -27,6 +27,7 @@ ui <- dashboardPage(
       menuItem("Options Surface", tabName = "options_surface", icon = icon("cube")),
       hr(),
       menuItem("Signal Model", tabName = "models", icon = icon("chart-bar")),
+      menuItem("DQR models", tabName = "dqr_models", icon = icon("chart-line")),
       hr(),
       menuItem("Settings", tabName = "settings", icon = icon("cog"))
     )
@@ -504,6 +505,23 @@ ui <- dashboardPage(
         )
       ),
       
+      # DQR Models Tab
+      tabItem(
+        tabName = "dqr_models",
+        fluidRow(
+          box(
+            width = 12,
+            title = "DQR Models Analysis",
+            status = "primary",
+            solidHeader = TRUE,
+            p("Decaying Quantile Regression models for risk management. Each model represents a fitted quantile regression for different risk thresholds.")
+          )
+        ),
+        fluidRow(
+          uiOutput("dqr_models_cards")
+        )
+      ),
+      
       # Settings Tab
       tabItem(
         tabName = "settings",
@@ -553,7 +571,8 @@ server <- function(input, output, session) {
     sample_trades = NULL,
     current_chart_index = 1,
     model_signal = NULL,
-    current_model_plot_index = 1
+    current_model_plot_index = 1,
+    dqr_fits = NULL
   )
   
   # Define model plot names
@@ -583,6 +602,9 @@ server <- function(input, output, session) {
     }
     if (exists("model_signal", envir = .GlobalEnv)) {
       rv$model_signal <- get("model_signal", envir = .GlobalEnv)
+    }
+    if (exists("dqr_fits", envir = .GlobalEnv)) {
+      rv$dqr_fits <- get("dqr_fits", envir = .GlobalEnv)
     }
   })
   
@@ -1596,6 +1618,50 @@ server <- function(input, output, session) {
       )
   })
   
+  # DQR Models Cards
+  output$dqr_models_cards <- renderUI({
+    req(rv$dqr_fits)
+    
+    # Check if dqr_fits is a list
+    if (!is.list(rv$dqr_fits) || length(rv$dqr_fits) == 0) {
+      return(HTML("<p style='text-align: center; padding: 20px;'>No DQR models found in dqr_fits</p>"))
+    }
+    
+    # Get model names
+    model_names <- names(rv$dqr_fits)
+    if (is.null(model_names)) {
+      model_names <- paste0("Model ", seq_along(rv$dqr_fits))
+    }
+    
+    # Create cards for each DQR model
+    cards <- lapply(seq_along(rv$dqr_fits), function(i) {
+      model <- rv$dqr_fits[[i]]
+      model_name <- model_names[i]
+      
+      # Get summary as text
+      summary_text <- paste(capture.output(summary(model)), collapse = "\n")
+      
+      box(
+        width = 12,
+        title = model_name,
+        status = "info",
+        solidHeader = TRUE,
+        collapsible = TRUE,
+        verbatimTextOutput(paste0("dqr_summary_", i))
+      )
+    })
+    
+    # Create dynamic outputs for each summary
+    lapply(seq_along(rv$dqr_fits), function(i) {
+      output_name <- paste0("dqr_summary_", i)
+      output[[output_name]] <- renderPrint({
+        summary(rv$dqr_fits[[i]])
+      })
+    })
+    
+    do.call(tagList, cards)
+  })
+  
   # Data Status Check
   observeEvent(input$check_data, {
     output$data_status <- renderPrint({
@@ -1620,6 +1686,13 @@ server <- function(input, output, session) {
         cat("✓ f_star found:", f_star, "\n")
       } else {
         cat("✗ f_star not found\n")
+      }
+      
+      if (exists("dqr_fits", envir = .GlobalEnv)) {
+        dqr_fits <- get("dqr_fits", envir = .GlobalEnv)
+        cat("✓ dqr_fits found:", length(dqr_fits), "models\n")
+      } else {
+        cat("✗ dqr_fits not found\n")
       }
       
       cat("\nNote: Run the trade_simulation.R script to generate the required data objects.")
