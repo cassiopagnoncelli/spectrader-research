@@ -117,7 +117,7 @@ exit_dqr_extract_quantiles <- function(dqr_fits) {
 #' @param method Decay method: "gaussian", "laplace" (default), or "half-cosine"
 #' @param ... Additional arguments passed to exit_dqr_dc
 #' @return Tibble with quantile probability columns (q92, q82, etc.) and t_norm as rownames
-exit_dqr_weight_prob <- function(t_norm, taus, method = "laplace", ...) {
+exit_dqr_weighted_probs <- function(t_norm, taus, method = "laplace", ...) {
   if (!all(taus == rev(sort(taus))))
     stop("taus must be in descending order")
 
