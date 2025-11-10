@@ -17,10 +17,19 @@ exit_dqr <- function(dqr_fits, max_position_days) {
 
     # Generate predictions for all quantile fits
     for (i in seq_along(qnames)) {
-      result[[qhat_cols[i]]] <- predict(dqr_fits[[qhat_cols[i]]], result)
+      result[[qhat_cols[i]]] <- predict(dqr_fits[[qnames[i]]], result)
     }
 
-    ...
+    # Compute weighted combination of quantile predictions
+    # M := matrix of all qhat predictions
+    M <- as.matrix(result[qhat_cols])
+    
+    # w := weights from decay curve (one row per observation)
+    weights_df <- exit_dqr_weighted_probs(result$t_norm, taus)
+    w <- as.matrix(weights_df)
+    
+    # qhat := row-wise weighted sum of quantile predictions
+    result$qhat <- rowSums(M * w)
 
     # Create exit signals for each quantile
     for (i in seq_along(qnames)) {
@@ -28,9 +37,8 @@ exit_dqr <- function(dqr_fits, max_position_days) {
     }
 
     # Combine all exit signals with OR logic
-    combined_signals <- Reduce(`|`, result[exit_cols])
     result$exit <- result %>%
-      dplyr::mutate(exit = combined_signals & S > 1 & t >= 3) %>%
+      dplyr::mutate(exit = keep_first_true_only(S > qhat & S > 1 & t >= 3)) %>%
       dplyr::pull(exit)
 
     result
