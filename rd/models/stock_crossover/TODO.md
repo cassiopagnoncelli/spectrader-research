@@ -9,6 +9,11 @@
 
 - Download volatility (IV) data
 
+## Functions
+
+- Consolidate features into fe
+- Improve fe efficiency with data.table
+
 ## Exit model
 
 Goals: shortfall expectation maximisation or long/short capture
