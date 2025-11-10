@@ -3,20 +3,17 @@ devtools::load_all()
 source("rd/models/stock_crossover/entry.R")
 source("rd/models/stock_crossover/exit.R")
 
+max_position_days <- 20
+
 # Generate trading signals
 df_signals <- df_test %>%
   filter(yhat > 1.4) %>%
-  filter_signals(within_days = 20) %>% # Discard signals too close to each other
+  filter_signals(within_days = max_position_days) %>% # Discard nearby signals
   arrange(date)
 
 # Exits for each position
-max_position_days <- 20
-posl <- position_cohort(
-  df_signals,
-  before_days = 30,
-  after_days = max_position_days,
-  fun = exit_dqr(dqr_fits, max_position_days = max_position_days)
-)
+posl_neutral <- position_cohort(df_signals, before_days = 30, max_position_days)
+posl <- exit_dqr(dqr_fits, max_position_days = max_position_days)(posl_neutral)
 
 # Signals & Returns
 dfsr <- position_cohort_return(posl, df_signals)
