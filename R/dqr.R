@@ -94,3 +94,15 @@ exit_dqr_q <- function(t_norm, q, method = "laplace") {
     val
   })
 }
+
+#' Extract quantile values from fitted DQR models
+#'
+#' @param dqr_fits Named list of fitted models with names matching 'qXX' (e.g., q92, q82)
+#' @return Numeric vector of quantile values in descending order
+exit_dqr_extract_quantiles <- function(dqr_fits) {
+  if (!all(grepl("^q[0-9]{2}$", names(dqr_fits))))
+    stop("All dqr_fits elements must match pattern 'qXX' where XX are 2 digits")
+
+  qnames <- rev(sort(names(dqr_fits)))
+  as.numeric(sub("q", "", qnames)) / 100
+}
