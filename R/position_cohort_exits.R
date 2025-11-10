@@ -10,9 +10,31 @@ keep_first_true_only <- function(x) {
 }
 
 # Decaying Quantile Regression Exit
+exit_dqr_dc <- function(x, method = "laplace", ...) {
+  if (method == "gaussian") {
+    exp(-x^2 / 2)
+  } else if (method == "laplace") { # Double-exponential
+    exp(-sqrt(.07 * x))
+  } else if (method == "half-cosine") {
+    0.5 * (1 + cos(pi * x / 2))
+  }
+}
+
+exit_dqr_q <- function(x, q, method = "laplace") {
+  sapply(exit_dqr_dc(x, method = method), function(yi) {
+    qs <- q[q < yi]
+    if (length(qs) == 0) return(NA_real_)
+    max(qs)
+  })
+}
+
 exit_dqr <- function(dqr_fits, max_position_days) {
   if (!is.list(dqr_fits) || length(dqr_fits) == 0)
     stop("dqr_fits must be a list of fitted quantile regression models.")
+  
+  # Time-decaying curve
+  dcx <- seq(0, max_position_days) / max_position_days
+  dcy <- exit_dqr_dc(dcx, method = "laplace")
 
   function(data, history = FALSE) {
     # Feature engineering

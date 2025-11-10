@@ -24,9 +24,9 @@ NULL
 #   vix + vol_vix +
 #   cr_short + cr_long
 #
-# form_extr <- S ~ S_1 + t + h_short + h_ratio + cr_long
-# form_aggr <- S ~ S_1 + t + h_short + h_ratio + cr_long
-# form_cons <- S ~ S_1 + t + h_long + cr_long + vix
+# q92 <- S ~ S_1 + t + h_short + h_ratio + cr_long
+# q82 <- S ~ S_1 + t + h_short + h_ratio + cr_long
+# q32 <- S ~ S_1 + t + h_long + cr_long + vix
 #
 train_dqr <- function(signals, taus, formulas, max_position_days = 60) {
   if (length(taus) != length(formulas))
