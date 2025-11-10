@@ -533,24 +533,6 @@ ui <- dashboardPage(
             solidHeader = TRUE,
             htmlOutput("dqr_model_diagnostics")
           )
-        ),
-        fluidRow(
-          box(
-            width = 12,
-            title = "Main Path Plot",
-            status = "info",
-            solidHeader = TRUE,
-            plotOutput("dqr_main_path_plot", height = 500)
-          )
-        ),
-        fluidRow(
-          box(
-            width = 12,
-            title = "Calibration Plot",
-            status = "info",
-            solidHeader = TRUE,
-            plotOutput("dqr_calibration_plot", height = 500)
-          )
         )
       ),
       

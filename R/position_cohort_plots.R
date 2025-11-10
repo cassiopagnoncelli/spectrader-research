@@ -50,6 +50,16 @@ plot_position_cohort_exit <- function(position, plot = TRUE, ylim = NULL) {
     }
   }
   
+  # Add qhat line if yhat column exists
+  if ("qhat" %in% names(position)) {
+    p <- p + ggplot2::geom_line(
+      ggplot2::aes(y = qhat),
+      color = "red",
+      linewidth = 0.7,
+      linetype = "dashed"
+    )
+  }
+  
   p <- p +
     ggplot2::geom_hline(
       yintercept = 1,
