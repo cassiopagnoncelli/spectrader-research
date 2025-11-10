@@ -107,6 +107,16 @@ exit_dqr_extract_quantiles <- function(dqr_fits) {
   as.numeric(sub("q", "", qnames)) / 100
 }
 
+#' Compute quantile weights based on decay curve
+#'
+#' Calculates probability weights for each quantile using a decay curve approach
+#' with Gaussian density functions centered at each quantile.
+#'
+#' @param t_norm Numeric vector of normalized time values between 0 and 1
+#' @param taus Numeric vector of quantile values in descending order (e.g., c(0.92, 0.82, 0.32))
+#' @param method Decay method: "gaussian", "laplace" (default), or "half-cosine"
+#' @param ... Additional arguments passed to exit_dqr_dc
+#' @return Tibble with quantile probability columns (q92, q82, etc.) and t_norm as rownames
 exit_dqr_weight_prob <- function(t_norm, taus, method = "laplace", ...) {
   if (!all(taus == rev(sort(taus))))
     stop("taus must be in descending order")
