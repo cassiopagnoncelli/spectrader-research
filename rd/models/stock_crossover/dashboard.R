@@ -91,7 +91,7 @@ ui <- dashboardPage(
                 )
               )
             ),
-            plotOutput("current_exit_plot", height = 400)
+            plotOutput("current_exit_plot", height = 670)
           )
         )
       ),
