@@ -514,11 +514,18 @@ ui <- dashboardPage(
             title = "DQR Models Analysis",
             status = "primary",
             solidHeader = TRUE,
-            p("Decaying Quantile Regression models for risk management. Each model represents a fitted quantile regression for different risk thresholds.")
+            p("Decaying Quantile Regression models for risk management. Each model represents a fitted quantile regression for different risk thresholds."),
+            selectInput("dqr_model_select", "Select Model:", choices = NULL)
           )
         ),
         fluidRow(
-          uiOutput("dqr_models_cards")
+          box(
+            width = 12,
+            title = textOutput("dqr_model_title"),
+            status = "info",
+            solidHeader = TRUE,
+            verbatimTextOutput("dqr_model_summary")
+          )
         )
       ),
       
@@ -1618,48 +1625,50 @@ server <- function(input, output, session) {
       )
   })
   
-  # DQR Models Cards
-  output$dqr_models_cards <- renderUI({
-    req(rv$dqr_fits)
+  # DQR Models - Update dropdown choices when dqr_fits is loaded
+  observe({
+    if (!is.null(rv$dqr_fits) && is.list(rv$dqr_fits) && length(rv$dqr_fits) > 0) {
+      model_names <- names(rv$dqr_fits)
+      if (is.null(model_names)) {
+        model_names <- paste0("Model ", seq_along(rv$dqr_fits))
+        names(rv$dqr_fits) <- model_names
+      }
+      
+      updateSelectInput(session, "dqr_model_select", 
+                       choices = model_names,
+                       selected = model_names[1])
+    }
+  })
+  
+  # DQR Models - Render model title
+  output$dqr_model_title <- renderText({
+    req(input$dqr_model_select)
+    input$dqr_model_select
+  })
+  
+  # DQR Models - Render model summary
+  output$dqr_model_summary <- renderPrint({
+    req(rv$dqr_fits, input$dqr_model_select)
     
-    # Check if dqr_fits is a list
     if (!is.list(rv$dqr_fits) || length(rv$dqr_fits) == 0) {
-      return(HTML("<p style='text-align: center; padding: 20px;'>No DQR models found in dqr_fits</p>"))
+      cat("No DQR models found in dqr_fits")
+      return(invisible(NULL))
     }
     
-    # Get model names
     model_names <- names(rv$dqr_fits)
     if (is.null(model_names)) {
       model_names <- paste0("Model ", seq_along(rv$dqr_fits))
     }
     
-    # Create cards for each DQR model
-    cards <- lapply(seq_along(rv$dqr_fits), function(i) {
-      model <- rv$dqr_fits[[i]]
-      model_name <- model_names[i]
-      
-      # Get summary as text
-      summary_text <- paste(capture.output(summary(model)), collapse = "\n")
-      
-      box(
-        width = 12,
-        title = model_name,
-        status = "info",
-        solidHeader = TRUE,
-        collapsible = TRUE,
-        verbatimTextOutput(paste0("dqr_summary_", i))
-      )
-    })
+    # Find the selected model
+    selected_idx <- which(model_names == input$dqr_model_select)
+    if (length(selected_idx) == 0) {
+      cat("Selected model not found")
+      return(invisible(NULL))
+    }
     
-    # Create dynamic outputs for each summary
-    lapply(seq_along(rv$dqr_fits), function(i) {
-      output_name <- paste0("dqr_summary_", i)
-      output[[output_name]] <- renderPrint({
-        summary(rv$dqr_fits[[i]])
-      })
-    })
-    
-    do.call(tagList, cards)
+    # Display summary
+    summary(rv$dqr_fits[[selected_idx[1]]])
   })
   
   # Data Status Check
