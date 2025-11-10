@@ -60,6 +60,9 @@ position_cohort <- function(symbol_dates,
 position_cohort_exit_method <- function(pos_data) {
   if (!tibble::is_tibble(pos_data) && !is.data.frame(pos_data))
     stop("Input must be a tibble or data frame.")
+  
+  if (!any(pos_data$exit))
+    return(NA_character_)
 
   exit_cols <- grep("^exit_", names(pos_data), value = TRUE)
   if (length(exit_cols) == 0)
