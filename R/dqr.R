@@ -55,3 +55,42 @@ train_dqr <- function(signals, taus, formulas, max_position_days = 60) {
   names(models) <- paste0("q", sprintf("%.0f", taus * 100))
   models
 }
+
+#' Decay curve for decaying quantile regression
+#'
+#' Computes time-decay weights for exit analysis using various decay methods.
+#'
+#' @param t_norm Normalized time between 0 and 1
+#' @param method Decay method: "gaussian", "laplace" (default), or "half-cosine"
+#' @param ... Additional arguments (currently unused)
+#' @return Numeric decay weight between 0 and 1
+exit_dqr_dc <- function(t_norm, method = "laplace", ...) {
+  if (method == "gaussian") {
+    exp(-t_norm^2 / 2)
+  } else if (method == "laplace") { # Double-exponential
+    exp(-sqrt(.07 * t_norm))
+  } else if (method == "half-cosine") {
+    0.5 * (1 + cos(pi * t_norm / 2))
+  }
+}
+
+#' Select quantile based on decay curve
+#'
+#' Maps decay weights to appropriate quantiles for exit analysis.
+#'
+#' @param t_norm Normalized time between 0 and 1
+#' @param q Numeric vector of quantile values to select from
+#' @param method Decay method: "gaussian", "laplace" (default), or "half-cosine"
+#' @return Named numeric vector of selected quantiles (NA if no valid quantile)
+exit_dqr_q <- function(t_norm, q, method = "laplace") {
+  sapply(exit_dqr_dc(t_norm, method = method), function(yi) {
+    qs <- q[q < yi]
+    if (length(qs) == 0)
+      return(NA_real_)
+
+    val <- max(qs)
+    label <- paste0("q", sprintf("%.0f", val * 100))
+    val <- setNames(val, label)
+    val
+  })
+}

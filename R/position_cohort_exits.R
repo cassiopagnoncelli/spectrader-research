@@ -1,54 +1,44 @@
-# Decaying Quantile Regression Exit
-exit_dqr_dc <- function(t, method = "laplace", ...) {
-  if (method == "gaussian") {
-    exp(-t^2 / 2)
-  } else if (method == "laplace") { # Double-exponential
-    exp(-sqrt(.07 * t))
-  } else if (method == "half-cosine") {
-    0.5 * (1 + cos(pi * t / 2))
-  }
-}
-
-exit_dqr_q <- function(t, q, method = "laplace") {
-  sapply(exit_dqr_dc(t, method = method), function(yi) {
-    qs <- q[q < yi]
-    if (length(qs) == 0) return(NA_real_)
-    val <- max(qs)
-    label <- paste0("q", sprintf("%.0f", val * 100))
-    val <- setNames(val, label)
-    val
-  })
-}
-
+# Decaying Quantile Regression Exit - Decay Curve
 exit_dqr <- function(dqr_fits, max_position_days) {
   if (!is.list(dqr_fits) || length(dqr_fits) == 0)
     stop("dqr_fits must be a list of fitted quantile regression models.")
 
   function(data, history = FALSE) {
+    qnames <- rev(sort(names(dqr_fits)))
+    qhat_cols <- paste0("qhat_", qnames)
+    exit_cols <- paste0("exit_", qnames)
+
     # Feature engineering
     result <- data %>%
       fe_dqr() %>%
-      dplyr::filter(t >= ifelse(history, -Inf, 0))
+      dplyr::filter(t >= ifelse(history, -Inf, 0)) %>%
+      dplyr::mutate(
+        t_norm = t / max_position_days,
+        dqr_dc = exit_dqr_dc(t_norm, method = "laplace"),
+        dqr_q = exit_dqr_q(t_norm),
+        dqr_basal_q_str = ifelse(!is.na(dqr_basal_q),
+                                 paste0("q", sprintf("%.0f", dqr_basal_q * 100)),
+                                 NA_character_)
+      )
 
     # Generate predictions for all quantile fits
-    for (qname in names(dqr_fits)) {
-      qhat_col <- paste0("qhat_", qname)
-      result[[qhat_col]] <- predict(dqr_fits[[qname]], result)
-    }
-    
-    # Create exit signals for each quantile
-    exit_signals <- list()
-    for (qname in names(dqr_fits)) {
-      qhat_col <- paste0("qhat_", qname)
-      exit_col <- paste0("exit_", qname)
-      result[[exit_col]] <- result$S >= result[[qhat_col]] & result$S > 1
-      exit_signals[[exit_col]] <- result[[exit_col]]
+    for (i in seq_along(qnames)) {
+      result[[qhat_cols[i]]] <- predict(dqr_fits[[qhat_cols[i]]], result)
     }
 
-    quantiles <- names(exit_dqr_dc(result$t / max_position_days, method = "laplace"))
-    
+    # Create exit signals for each quantile
+    exit_signals <- list()
+    for (i in seq_along(qnames)) {
+      result[[exit_cols[i]]] <- result$S >= result[[qhat_cols[i]]]
+      exit_signals[[exit_cols[i]]] <- result[[exit_cols[i]]]
+    }
+
     # Combine all exit signals with OR logic
-    result$exit <- Reduce(`|`, exit_signals)
+    combined_signals <- Reduce(`|`, exit_signals)
+    result$exit <- result %>%
+      dplyr::mutate(exit = combined_signals & S > 1 & t >= 3) %>%
+      dplyr::pull(exit)
+
     result
   }
 }
