@@ -1704,13 +1704,6 @@ server <- function(input, output, session) {
       return(HTML("<p style='text-align: center; padding: 20px;'>No DQR models found</p>"))
     }
     
-    # Load df_train if available
-    if (!exists("df_train", envir = .GlobalEnv)) {
-      return(HTML("<p style='text-align: center; padding: 20px;'>df_train not found in global environment</p>"))
-    }
-    
-    train_df <- get("df_train", envir = .GlobalEnv)
-    
     model_names <- names(rv$dqr_fits)
     if (is.null(model_names)) {
       model_names <- paste0("Model ", seq_along(rv$dqr_fits))
@@ -1723,53 +1716,26 @@ server <- function(input, output, session) {
     
     model <- rv$dqr_fits[[selected_idx[1]]]
     
-    # Get tau from model
-    tau <- model$tau
-    
     # Try to compute diagnostics with detailed error handling
     tryCatch({
-      # Check if fe_dqr function exists
-      if (!exists("fe_dqr")) {
-        stop("fe_dqr() function not found in environment")
+      # Get actual, predicted, and tau as per user specifications
+      actual <- model$y
+      predicted <- predict(model)
+      tau <- exit_dqr_extract_quantiles(rv$dqr_fits)[selected_idx[1]]
+      
+      # Validate data
+      if (is.null(actual) || is.null(predicted)) {
+        stop("Model does not contain y component or predict() returned NULL")
       }
       
-      # Enrich data
-      train_df_enriched <- tryCatch({
-        train_df %>% fe_dqr()
-      }, error = function(e) {
-        stop(paste("Error in fe_dqr():", e$message))
-      })
-      
-      # Try to predict
-      pred <- tryCatch({
-        predict(model, train_df_enriched)
-      }, error = function(e) {
-        stop(paste("Error in predict():", e$message))
-      })
-      
-      # Validate predictions
-      if (is.null(pred)) {
-        stop("predict() returned NULL - model may not have a predict method or data structure is incompatible")
+      if (length(actual) != length(predicted)) {
+        stop(sprintf("Length mismatch: actual (%d) vs predicted (%d)", length(actual), length(predicted)))
       }
       
-      if (length(pred) == 0) {
-        stop("predict() returned empty vector")
-      }
-      
-      if (!is.numeric(pred)) {
-        stop(paste("predict() returned non-numeric type:", class(pred)))
-      }
-      
-      actual <- train_df_enriched$S
-      
-      # Compute diagnostics
-      rho <- function(u, tau) sum(u * (tau - (u < 0)))
-      rho_full <- rho(actual - pred, tau)
-      rho_null <- rho(actual - quantile(actual, tau), tau)
-      R2_pseudo <- 1 - rho_full / rho_null
-      
-      pinball_loss <- mean((tau - (actual < pred)) * (actual - pred))
-      coverage <- mean(actual <= pred)
+      # Compute DQR metrics using the new functions
+      pinball_loss <- exit_dqr_pinball_loss(actual, predicted, tau)
+      pseudo_r2 <- exit_dqr_pseudo_r2(actual, predicted, tau)
+      coverage <- exit_dqr_coverage(actual, predicted)
     
       HTML(sprintf(
         "<h4>Diagnostics (τ = %.2f)</h4>
@@ -1783,26 +1749,25 @@ server <- function(input, output, session) {
           <strong>Pinball Loss:</strong> Lower is better (quantile-specific loss function)<br>
           <strong>Pseudo-R²:</strong> Higher is better (1 = perfect, 0 = no better than constant)
         </p>",
-        tau, R2_pseudo, pinball_loss, coverage
+        tau, pseudo_r2, pinball_loss, coverage
       ))
     }, error = function(e) {
       HTML(sprintf(
         "<div style='padding: 20px;'>
-          <h4>Diagnostics (τ = %.2f)</h4>
+          <h4>Diagnostics</h4>
           <div style='background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px; padding: 15px; margin-top: 10px;'>
             <p style='color: #721c24; margin: 0;'><strong>⚠ Error:</strong> %s</p>
           </div>
           <div style='margin-top: 15px; padding: 10px; background-color: #f0f0f0; border-radius: 4px;'>
             <p style='margin: 0; font-size: 14px;'><strong>Troubleshooting:</strong></p>
             <ul style='margin-bottom: 0; font-size: 13px;'>
-              <li>Ensure <code>fe_dqr()</code> function is loaded</li>
-              <li>Ensure <code>df_train</code> has the correct structure</li>
-              <li>Check that the model has a valid <code>predict()</code> method</li>
-              <li>Model class: <code>%s</code></li>
+              <li>Ensure <code>dqr_fits</code> contains fitted quantreg models with y component</li>
+              <li>Check that <code>exit_dqr_*</code> functions are loaded from R/dqr.R</li>
+              <li>Verify model structure: Model class: <code>%s</code></li>
             </ul>
           </div>
         </div>",
-        tau, e$message, paste(class(model), collapse = ", ")
+        e$message, paste(class(model), collapse = ", ")
       ))
     })
   })
