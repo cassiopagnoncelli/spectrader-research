@@ -16,6 +16,14 @@ plot_position_cohort_exit <- function(position, plot = TRUE, ylim = NULL) {
       color = "#000000",
       size = 12,
       shape = 4
+    ) +
+    ggplot2::geom_text(
+      data = subset(position, exit),
+      aes(y = S, label = round(S, 4)),
+      color = "#000000",
+      size = 5.5,
+      hjust = 1.5,
+      vjust = .3
     )
   
   # Dynamically add quantile regression exit points with gradient colors
