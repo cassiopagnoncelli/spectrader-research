@@ -56,22 +56,43 @@ train_dqr <- function(signals, taus, formulas, max_position_days = 60) {
   models
 }
 
-#' Decay curve for decaying quantile regression
+#' Pinball loss for quantile regression
 #'
-#' Computes time-decay weights for exit analysis using various decay methods.
+#' Computes the asymmetric pinball loss function for evaluating quantile predictions.
 #'
-#' @param t_norm Normalized time between 0 and 1
-#' @param method Decay method: "gaussian", "laplace" (default), or "half-cosine"
-#' @param ... Additional arguments (currently unused)
-#' @return Numeric decay weight between 0 and 1
-exit_dqr_dc <- function(t_norm, method = "laplace", alpha = .4) {
-  if (method == "gaussian") {
-    exp(-t_norm^2 / 2)
-  } else if (method == "laplace") { # Double-exponential
-    exp(-sqrt(alpha * t_norm))
-  } else if (method == "half-cosine") {
-    0.5 * (1 + cos(pi * t_norm / 2))
-  }
+#' @param actual Numeric vector of observed values
+#' @param predicted Numeric vector of predicted quantile values
+#' @param tau Quantile level (e.g., 0.5 for median)
+#' @return Numeric scalar of mean pinball loss
+exit_dqr_pinball_loss <- function(actual, predicted, tau) {
+  residuals <- actual - predicted
+  mean(ifelse(residuals >= 0, tau * residuals, (tau - 1) * residuals))
+}
+
+#' Pseudo-R² for quantile regression (Koenker-Machado)
+#'
+#' Calculates goodness-of-fit measure for quantile regression models.
+#'
+#' @param actual Numeric vector of observed values
+#' @param predicted Numeric vector of predicted quantile values
+#' @param tau Quantile level (e.g., 0.5 for median)
+#' @return Numeric scalar between 0 and 1 (higher is better fit)
+exit_dqr_pseudo_r2 <- function(actual, predicted, tau) {
+  rho <- function(u, tau) sum(u * (tau - (u < 0)))
+  rho_full <- rho(actual - predicted, tau)
+  rho_null <- rho(actual - quantile(actual, tau), tau)
+  1 - (rho_full / rho_null)
+}
+
+#' Coverage probability for quantile predictions
+#'
+#' Proportion of observations at or below the predicted quantile.
+#'
+#' @param actual Numeric vector of observed values
+#' @param predicted Numeric vector of predicted quantile values
+#' @return Numeric scalar representing coverage probability
+exit_dqr_coverage <- function(actual, predicted) {
+  mean(actual <= predicted)
 }
 
 #' Select quantile based on decay curve
@@ -93,6 +114,28 @@ exit_dqr_q <- function(t_norm, taus, method = "laplace") {
     val <- setNames(val, label)
     val
   })
+}
+
+##
+## Position helpers
+##
+
+#' Decay curve for decaying quantile regression
+#'
+#' Computes time-decay weights for exit analysis using various decay methods.
+#'
+#' @param t_norm Normalized time between 0 and 1
+#' @param method Decay method: "gaussian", "laplace" (default), or "half-cosine"
+#' @param ... Additional arguments (currently unused)
+#' @return Numeric decay weight between 0 and 1
+exit_dqr_dc <- function(t_norm, method = "laplace", alpha = .4) {
+  if (method == "gaussian") {
+    exp(-t_norm^2 / 2)
+  } else if (method == "laplace") { # Double-exponential
+    exp(-sqrt(alpha * t_norm))
+  } else if (method == "half-cosine") {
+    0.5 * (1 + cos(pi * t_norm / 2))
+  }
 }
 
 #' Extract quantile values from fitted DQR models
