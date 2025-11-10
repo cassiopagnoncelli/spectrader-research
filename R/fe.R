@@ -1,5 +1,53 @@
 # Feature Engineering.
 
+# Helper function to check if a feature is an acceleration version
+fe_is_acceleration_feature <- function(feature_name) {
+  grepl("_accel_\\d+$", feature_name)
+}
+
+# Helper function to parse acceleration feature name
+fe_parse_acceleration_feature <- function(feature_name) {
+  if (!fe_is_acceleration_feature(feature_name)) {
+    return(NULL)
+  }
+  # Extract the acceleration lag number
+  parts <- strsplit(feature_name, "_")[[1]]
+  lag_value <- as.integer(parts[length(parts)])
+  
+  # Remove "_accel_N" to get base name
+  base_name <- sub("_accel_\\d+$", "", feature_name)
+  
+  return(list(
+    base = base_name,
+    vel1 = lag_value,      # e.g., 0 in ma_accel_0
+    vel2 = lag_value + 1   # e.g., 1 in ma_accel_0
+  ))
+}
+
+# Helper function to check if a feature is a velocity version
+fe_is_velocity_feature <- function(feature_name) {
+  grepl("_vel_\\d+$", feature_name)
+}
+
+# Helper function to parse velocity feature name
+fe_parse_velocity_feature <- function(feature_name) {
+  if (!fe_is_velocity_feature(feature_name)) {
+    return(NULL)
+  }
+  # Extract the velocity lag number
+  parts <- strsplit(feature_name, "_")[[1]]
+  lag_value <- as.integer(parts[length(parts)])
+  
+  # Remove "_vel_N" to get base name
+  base_name <- sub("_vel_\\d+$", "", feature_name)
+  
+  return(list(
+    base = base_name,
+    lag1 = lag_value,      # e.g., 0 in ma_vel_0
+    lag2 = lag_value + 1   # e.g., 1 in ma_vel_0
+  ))
+}
+
 # Helper function to check if a feature is a lagged version
 fe_is_lagged_feature <- function(feature_name) {
   grepl("_\\d+$", feature_name)
@@ -20,6 +68,10 @@ fe_parse_lagged_feature <- function(feature_name) {
 fe_base_feature_definitions <- list(
   S = function(data, params) {
     data$S
+  },
+  
+  vix = function(data, params) {
+    data$vix
   },
   
   sd_short = function(data, params) {
@@ -74,24 +126,45 @@ fe_base_feature_definitions <- list(
 # Base feature dependencies
 fe_base_feature_dependencies <- list(
   S = character(0),
+  vix = character(0),
   sd_short = character(0),
   sd_long = character(0),
   sd_ratio = c("sd_short", "sd_long"),
   h_short = character(0),
   h_long = character(0),
   h_ratio = c("h_short", "h_long"),
-  vol_vix = c("sd_short"),
+  vol_vix = c("sd_short", "vix"),
   cr_short = character(0),
   cr_long = character(0)
 )
 
-# Function to get dependencies for a feature (including lagged features)
+# Function to get dependencies for a feature (including acceleration, velocity and lagged features)
 fe_get_dependencies <- function(feature_name) {
+  # Check acceleration feature first (highest precedence)
+  accel_info <- fe_parse_acceleration_feature(feature_name)
+  if (!is.null(accel_info)) {
+    # Acceleration feature depends on two velocity versions of base feature
+    vel1_feature <- paste0(accel_info$base, "_vel_", accel_info$vel1)
+    vel2_feature <- paste0(accel_info$base, "_vel_", accel_info$vel2)
+    return(c(vel1_feature, vel2_feature))
+  }
+  
+  # Check velocity feature
+  velocity_info <- fe_parse_velocity_feature(feature_name)
+  if (!is.null(velocity_info)) {
+    # Velocity feature depends on two lagged versions of base feature
+    lag1_feature <- paste0(velocity_info$base, "_", velocity_info$lag1)
+    lag2_feature <- paste0(velocity_info$base, "_", velocity_info$lag2)
+    return(c(lag1_feature, lag2_feature))
+  }
+  
+  # Check lagged feature
   lagged_info <- fe_parse_lagged_feature(feature_name)
   if (!is.null(lagged_info)) {
     # Lagged feature depends on its base feature
     return(lagged_info$base)
   }
+  
   # Base feature - look up its dependencies
   deps <- fe_base_feature_dependencies[[feature_name]]
   if (is.null(deps)) return(character(0))
@@ -154,16 +227,34 @@ fe <- function(data, features, ...) {
   # Validate requested features (check base features exist)
   invalid_features <- character(0)
   for (feature in features) {
-    lagged_info <- fe_parse_lagged_feature(feature)
-    if (!is.null(lagged_info)) {
+    # Check acceleration feature first (highest precedence)
+    accel_info <- fe_parse_acceleration_feature(feature)
+    if (!is.null(accel_info)) {
       # Check if base feature exists
-      if (!(lagged_info$base %in% names(fe_base_feature_definitions))) {
+      if (!(accel_info$base %in% names(fe_base_feature_definitions))) {
         invalid_features <- c(invalid_features, feature)
       }
     } else {
-      # Check if base feature exists
-      if (!(feature %in% names(fe_base_feature_definitions))) {
-        invalid_features <- c(invalid_features, feature)
+      # Check velocity feature
+      velocity_info <- fe_parse_velocity_feature(feature)
+      if (!is.null(velocity_info)) {
+        # Check if base feature exists
+        if (!(velocity_info$base %in% names(fe_base_feature_definitions))) {
+          invalid_features <- c(invalid_features, feature)
+        }
+      } else {
+        lagged_info <- fe_parse_lagged_feature(feature)
+        if (!is.null(lagged_info)) {
+          # Check if base feature exists
+          if (!(lagged_info$base %in% names(fe_base_feature_definitions))) {
+            invalid_features <- c(invalid_features, feature)
+          }
+        } else {
+          # Check if base feature exists
+          if (!(feature %in% names(fe_base_feature_definitions))) {
+            invalid_features <- c(invalid_features, feature)
+          }
+        }
       }
     }
   }
@@ -177,13 +268,31 @@ fe <- function(data, features, ...) {
   # Compute features in order
   result <- data
   for (feature_name in computation_order) {
-    lagged_info <- fe_parse_lagged_feature(feature_name)
-    if (!is.null(lagged_info)) {
-      # This is a lagged feature - apply lag to base feature
-      result[[feature_name]] <- dplyr::lag(result[[lagged_info$base]], lagged_info$lag)
+    # Check acceleration feature first (highest precedence)
+    accel_info <- fe_parse_acceleration_feature(feature_name)
+    if (!is.null(accel_info)) {
+      # This is an acceleration feature - compute difference between two velocities
+      vel1_col <- paste0(accel_info$base, "_vel_", accel_info$vel1)
+      vel2_col <- paste0(accel_info$base, "_vel_", accel_info$vel2)
+      result[[feature_name]] <- result[[vel1_col]] - result[[vel2_col]]
     } else {
-      # This is a base feature - compute it
-      result[[feature_name]] <- fe_base_feature_definitions[[feature_name]](result, params)
+      # Check velocity feature
+      velocity_info <- fe_parse_velocity_feature(feature_name)
+      if (!is.null(velocity_info)) {
+        # This is a velocity feature - compute difference between two lags
+        lag1_col <- paste0(velocity_info$base, "_", velocity_info$lag1)
+        lag2_col <- paste0(velocity_info$base, "_", velocity_info$lag2)
+        result[[feature_name]] <- result[[lag1_col]] - result[[lag2_col]]
+      } else {
+        lagged_info <- fe_parse_lagged_feature(feature_name)
+        if (!is.null(lagged_info)) {
+          # This is a lagged feature - apply lag to base feature
+          result[[feature_name]] <- dplyr::lag(result[[lagged_info$base]], lagged_info$lag)
+        } else {
+          # This is a base feature - compute it
+          result[[feature_name]] <- fe_base_feature_definitions[[feature_name]](result, params)
+        }
+      }
     }
   }
   
@@ -203,7 +312,8 @@ fe_dqr <- function(
       "h_short", "h_long", "h_ratio",
       "sd_short_1", "sd_long_1", "sd_ratio_1",
       "h_short_1", "h_long_1", "h_ratio_1",
-      "vol_vix", "cr_short", "cr_long"
+      "vol_vix", "vix_vel_0", "vix_accel_0",
+      "cr_short", "cr_long"
     ),
     sigma_short = sigma_short,
     sigma_long = sigma_long,
