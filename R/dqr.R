@@ -82,9 +82,9 @@ exit_dqr_dc <- function(t_norm, method = "laplace", ...) {
 #' @param q Numeric vector of quantile values to select from
 #' @param method Decay method: "gaussian", "laplace" (default), or "half-cosine"
 #' @return Named numeric vector of selected quantiles (NA if no valid quantile)
-exit_dqr_q <- function(t_norm, q, method = "laplace") {
+exit_dqr_q <- function(t_norm, taus, method = "laplace") {
   sapply(exit_dqr_dc(t_norm, method = method), function(yi) {
-    qs <- q[q < yi]
+    qs <- taus[taus < yi]
     if (length(qs) == 0)
       return(NA_real_)
 
@@ -105,4 +105,22 @@ exit_dqr_extract_quantiles <- function(dqr_fits) {
 
   qnames <- rev(sort(names(dqr_fits)))
   as.numeric(sub("q", "", qnames)) / 100
+}
+
+exit_dqr_weight_prob <- function(t_norm, taus) {
+  if (!all(taus == rev(sort(taus)))) {
+    stop("taus must be in descending order")
+  }
+  sds <- rep(abs(mean(diff(c(1, taus)))), length(taus))^2
+  densities <- sapply(
+    seq_along(taus),
+    \(i) dnorm(t_norm, mean = taus[i], sd = sds[i])
+  )
+  densities <- setNames(densities, taus)
+  densities <- densities / sum(densities)
+  round(densities, 8)
+}
+
+exit_dqr_w <- function(t_norm, taus) {
+
 }

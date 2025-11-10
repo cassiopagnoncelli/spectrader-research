@@ -12,14 +12,7 @@ exit_dqr <- function(dqr_fits, max_position_days) {
     result <- data %>%
       fe_dqr() %>%
       dplyr::filter(t >= ifelse(history, -Inf, 0)) %>%
-      dplyr::mutate(
-        t_norm = t / max_position_days,
-        dqr_dc = exit_dqr_dc(t_norm, method = "laplace"),
-        dqr_q = exit_dqr_q(t_norm),
-        dqr_basal_q_str = ifelse(!is.na(dqr_basal_q),
-                                 paste0("q", sprintf("%.0f", dqr_basal_q * 100)),
-                                 NA_character_)
-      )
+      dplyr::mutate(t_norm = t / max_position_days)
 
     # Generate predictions for all quantile fits
     for (i in seq_along(qnames)) {
