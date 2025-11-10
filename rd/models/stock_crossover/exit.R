@@ -29,7 +29,7 @@ formula_32 <- S ~ t + S_1 + S_2 +
 
 # Fit exit dqr on train subset
 dqr_fits <- df_train %>%
-  filter(yhat > 1.2) %>%
+  filter(yhat > 1.25) %>%
   filter_signals(within_days = 20) %>%
   arrange(date) %>%
   train_dqr(

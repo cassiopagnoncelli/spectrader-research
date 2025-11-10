@@ -22,9 +22,9 @@ ui <- dashboardPage(
       menuItem("Concurrency", tabName = "concurrency", icon = icon("layer-group")),
       menuItem("Signals & Returns", tabName = "signals_returns", icon = icon("table")),
       hr(),
-      menuItem("Options Returns", tabName = "options_returns", icon = icon("dollar-sign")),
       menuItem("Options Kelly", tabName = "options_kelly", icon = icon("calculator")),
       menuItem("Options Surface", tabName = "options_surface", icon = icon("cube")),
+      menuItem("Options Returns", tabName = "options_returns", icon = icon("dollar-sign")),
       hr(),
       menuItem("Signal Model", tabName = "models", icon = icon("chart-bar")),
       menuItem("DQR models", tabName = "dqr_models", icon = icon("chart-line")),
@@ -520,11 +520,36 @@ ui <- dashboardPage(
         ),
         fluidRow(
           box(
-            width = 12,
+            width = 6,
             title = textOutput("dqr_model_title"),
             status = "info",
             solidHeader = TRUE,
             verbatimTextOutput("dqr_model_summary")
+          ),
+          box(
+            width = 6,
+            title = "Model Diagnostics",
+            status = "info",
+            solidHeader = TRUE,
+            htmlOutput("dqr_model_diagnostics")
+          )
+        ),
+        fluidRow(
+          box(
+            width = 12,
+            title = "Main Path Plot",
+            status = "info",
+            solidHeader = TRUE,
+            plotOutput("dqr_main_path_plot", height = 500)
+          )
+        ),
+        fluidRow(
+          box(
+            width = 12,
+            title = "Calibration Plot",
+            status = "info",
+            solidHeader = TRUE,
+            plotOutput("dqr_calibration_plot", height = 500)
           )
         )
       ),
@@ -1669,6 +1694,231 @@ server <- function(input, output, session) {
     
     # Display summary
     summary(rv$dqr_fits[[selected_idx[1]]])
+  })
+  
+  # DQR Models - Render diagnostics
+  output$dqr_model_diagnostics <- renderUI({
+    req(rv$dqr_fits, input$dqr_model_select)
+    
+    if (!is.list(rv$dqr_fits) || length(rv$dqr_fits) == 0) {
+      return(HTML("<p style='text-align: center; padding: 20px;'>No DQR models found</p>"))
+    }
+    
+    # Load df_train if available
+    if (!exists("df_train", envir = .GlobalEnv)) {
+      return(HTML("<p style='text-align: center; padding: 20px;'>df_train not found in global environment</p>"))
+    }
+    
+    train_df <- get("df_train", envir = .GlobalEnv)
+    
+    model_names <- names(rv$dqr_fits)
+    if (is.null(model_names)) {
+      model_names <- paste0("Model ", seq_along(rv$dqr_fits))
+    }
+    
+    selected_idx <- which(model_names == input$dqr_model_select)
+    if (length(selected_idx) == 0) {
+      return(HTML("<p style='text-align: center; padding: 20px;'>Selected model not found</p>"))
+    }
+    
+    model <- rv$dqr_fits[[selected_idx[1]]]
+    
+    # Get tau from model
+    tau <- model$tau
+    
+    # Try to compute diagnostics with detailed error handling
+    tryCatch({
+      # Check if fe_dqr function exists
+      if (!exists("fe_dqr")) {
+        stop("fe_dqr() function not found in environment")
+      }
+      
+      # Enrich data
+      train_df_enriched <- tryCatch({
+        train_df %>% fe_dqr()
+      }, error = function(e) {
+        stop(paste("Error in fe_dqr():", e$message))
+      })
+      
+      # Try to predict
+      pred <- tryCatch({
+        predict(model, train_df_enriched)
+      }, error = function(e) {
+        stop(paste("Error in predict():", e$message))
+      })
+      
+      # Validate predictions
+      if (is.null(pred)) {
+        stop("predict() returned NULL - model may not have a predict method or data structure is incompatible")
+      }
+      
+      if (length(pred) == 0) {
+        stop("predict() returned empty vector")
+      }
+      
+      if (!is.numeric(pred)) {
+        stop(paste("predict() returned non-numeric type:", class(pred)))
+      }
+      
+      actual <- train_df_enriched$S
+      
+      # Compute diagnostics
+      rho <- function(u, tau) sum(u * (tau - (u < 0)))
+      rho_full <- rho(actual - pred, tau)
+      rho_null <- rho(actual - quantile(actual, tau), tau)
+      R2_pseudo <- 1 - rho_full / rho_null
+      
+      pinball_loss <- mean((tau - (actual < pred)) * (actual - pred))
+      coverage <- mean(actual <= pred)
+    
+      HTML(sprintf(
+        "<h4>Diagnostics (τ = %.2f)</h4>
+        <table class='table table-bordered' style='font-size: 18px;'>
+          <tr><td><strong>Pseudo-R² (Koenker–Machado):</strong></td><td style='text-align: right;'>%.4f</td></tr>
+          <tr><td><strong>Pinball Loss:</strong></td><td style='text-align: right;'>%.6f</td></tr>
+          <tr><td><strong>Coverage:</strong></td><td style='text-align: right;'>%.4f</td></tr>
+        </table>
+        <p style='margin-top: 15px; font-size: 14px; color: #666;'>
+          <strong>Coverage:</strong> Proportion of actual values ≤ predicted quantile (should be close to τ)<br>
+          <strong>Pinball Loss:</strong> Lower is better (quantile-specific loss function)<br>
+          <strong>Pseudo-R²:</strong> Higher is better (1 = perfect, 0 = no better than constant)
+        </p>",
+        tau, R2_pseudo, pinball_loss, coverage
+      ))
+    }, error = function(e) {
+      HTML(sprintf(
+        "<div style='padding: 20px;'>
+          <h4>Diagnostics (τ = %.2f)</h4>
+          <div style='background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px; padding: 15px; margin-top: 10px;'>
+            <p style='color: #721c24; margin: 0;'><strong>⚠ Error:</strong> %s</p>
+          </div>
+          <div style='margin-top: 15px; padding: 10px; background-color: #f0f0f0; border-radius: 4px;'>
+            <p style='margin: 0; font-size: 14px;'><strong>Troubleshooting:</strong></p>
+            <ul style='margin-bottom: 0; font-size: 13px;'>
+              <li>Ensure <code>fe_dqr()</code> function is loaded</li>
+              <li>Ensure <code>df_train</code> has the correct structure</li>
+              <li>Check that the model has a valid <code>predict()</code> method</li>
+              <li>Model class: <code>%s</code></li>
+            </ul>
+          </div>
+        </div>",
+        tau, e$message, paste(class(model), collapse = ", ")
+      ))
+    })
+  })
+  
+  # DQR Models - Render main path plot
+  output$dqr_main_path_plot <- renderPlot({
+    req(rv$dqr_fits, input$dqr_model_select)
+    
+    if (!is.list(rv$dqr_fits) || length(rv$dqr_fits) == 0) {
+      return(NULL)
+    }
+    
+    # Load df_train if available
+    if (!exists("df_train", envir = .GlobalEnv)) {
+      return(NULL)
+    }
+    
+    train_df <- get("df_train", envir = .GlobalEnv)
+    
+    model_names <- names(rv$dqr_fits)
+    if (is.null(model_names)) {
+      model_names <- paste0("Model ", seq_along(rv$dqr_fits))
+    }
+    
+    selected_idx <- which(model_names == input$dqr_model_select)
+    if (length(selected_idx) == 0) {
+      return(NULL)
+    }
+    
+    model <- rv$dqr_fits[[selected_idx[1]]]
+    tau <- model$tau
+    
+    tryCatch({
+      # Enrich df_train with feature engineering
+      train_df_enriched <- train_df %>% fe_dqr()
+      
+      # Compute predictions and add to train_df
+      train_df_plot <- train_df_enriched %>%
+        mutate(
+          qhat = predict(model, train_df_enriched),
+          exit_flag = S >= qhat
+        )
+      
+      ggplot(train_df_plot, aes(x = t, y = S)) +
+        geom_line(aes(color = factor(position_id)), linewidth = 0.7, alpha = 0.6) +
+        geom_line(aes(y = qhat), color = "black", linewidth = 0.9, linetype = "dashed") +
+        geom_point(data = subset(train_df_plot, exit_flag),
+                   color = "magenta", size = 1.8, alpha = 0.8) +
+        labs(
+          title = paste0("Quantile Regression Upper Envelope (τ = ", tau, ")"),
+          subtitle = "Dashed = fitted quantile; magenta dots = exit triggers",
+          x = "Time (t)", y = "Normalised Price (S)"
+        ) +
+        theme_minimal(base_size = 12) +
+        theme(legend.position = "none")
+    }, error = function(e) {
+      ggplot() +
+        annotate("text", x = 0.5, y = 0.5, 
+                 label = paste0("Error generating plot:\n", e$message),
+                 size = 5, color = "red") +
+        theme_void()
+    })
+  })
+  
+  # DQR Models - Render calibration plot
+  output$dqr_calibration_plot <- renderPlot({
+    req(rv$dqr_fits, input$dqr_model_select)
+    
+    if (!is.list(rv$dqr_fits) || length(rv$dqr_fits) == 0) {
+      return(NULL)
+    }
+    
+    # Load df_train if available
+    if (!exists("df_train", envir = .GlobalEnv)) {
+      return(NULL)
+    }
+    
+    train_df <- get("df_train", envir = .GlobalEnv)
+    
+    model_names <- names(rv$dqr_fits)
+    if (is.null(model_names)) {
+      model_names <- paste0("Model ", seq_along(rv$dqr_fits))
+    }
+    
+    selected_idx <- which(model_names == input$dqr_model_select)
+    if (length(selected_idx) == 0) {
+      return(NULL)
+    }
+    
+    model <- rv$dqr_fits[[selected_idx[1]]]
+    tau <- model$tau
+    
+    tryCatch({
+      # Enrich df_train with feature engineering
+      train_df_enriched <- train_df %>% fe_dqr()
+      
+      # Compute predictions
+      pred <- predict(model, train_df_enriched)
+      actual <- train_df_enriched$S
+      
+      ggplot(data.frame(pred = pred, actual = actual), aes(x = pred, y = actual)) +
+        geom_point(alpha = 0.25, color = "gray40") +
+        geom_abline(intercept = 0, slope = 1, color = "red", linewidth = 0.8) +
+        labs(
+          title = paste0("Predicted vs Actual (τ = ", tau, ")"),
+          subtitle = "Red line = perfect calibration",
+          x = "Predicted Quantile", y = "Actual S"
+        ) +
+        theme_minimal(base_size = 12)
+    }, error = function(e) {
+      ggplot() +
+        annotate("text", x = 0.5, y = 0.5, 
+                 label = paste0("Error generating plot:\n", e$message),
+                 size = 5, color = "red") +
+        theme_void()
+    })
   })
   
   # Data Status Check
