@@ -1,3 +1,13 @@
+#' @title Prepare date columns for trades
+#' @description Transforms trade data by creating entry/exit date columns and selecting relevant fields.
+#' @param dfsr Data frame with columns: date, t (holding period), plus trade, symbol, R.
+#' @return Data frame with columns: trade, symbol, entry, exit, R, t.
+prepare_df_dates <- function(dfsr) {
+  dfsr %>%
+    dplyr::mutate(entry = date, exit = add_business_days(date, t)) %>%
+    dplyr::select(trade, symbol, entry, exit, R, t)
+}
+
 #' @title Prepare overlap data
 #' @description Internal helper that expands trade dates, computes overlap matrix, and daily concurrency.
 #' @param df_dates Data frame with columns: trade, symbol, entry, exit, R, t.
@@ -39,6 +49,10 @@ prepare_overlap_data <- function(df_dates) {
        overlap_matrix = overlap_matrix, overlap_days = overlap_days)
 }
 
+#' @title Compute concurrency summary statistics
+#' @description Calculates summary statistics of concurrent trades over time.
+#' @param df_dates Data frame with columns: trade, symbol, entry, exit, R, t.
+#' @return Data frame with mean, median, quantiles, max concurrent trades, and pct_time_multi.
 concurrency_summary <- function(df_dates) {
   d <- prepare_overlap_data(df_dates)
   d$df_overlap %>%

@@ -1,10 +1,10 @@
-devtools::load_all()
+# devtools::load_all()
 
 options(scipen = 999)
 
 source("rd/models/stock_crossover/features.R")
-source("rd/models/stock_crossover/regression_model.R")
-source("rd/models/stock_crossover/regression_plots.R")
+source("rd/models/stock_crossover/entry_model.R")
+source("rd/models/stock_crossover/entry_plots.R")
 
 #
 # ETL.
