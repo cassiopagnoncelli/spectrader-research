@@ -72,14 +72,6 @@ ui <- dashboardPage(
                          "Uncaptured" = "uncaptured"),
               selected = "all"
             ),
-            selectInput(
-              "plot_type",
-              "Plot Type:",
-              choices = c("DQR" = "dqr",
-                         "Trifecta" = "trifecta", 
-                         "Quantile Regression" = "qr"),
-              selected = "dqr"
-            ),
             actionButton("refresh_samples", "Refresh Samples", icon = icon("refresh"))
           )
         ),
@@ -660,17 +652,13 @@ server <- function(input, output, session) {
   
   # Carousel - Render Current Chart
   output$current_exit_plot <- renderPlot({
-    req(rv$sample_trades, rv$posl, input$plot_type)
+    req(rv$sample_trades, rv$posl)
     
     current_idx <- rv$current_chart_index
     trade_id <- rv$sample_trades[current_idx]
     
-    # Select plot function based on user selection
-    switch(input$plot_type,
-      "trifecta" = plot_position_cohort_exit_trifecta(rv$posl[[trade_id]], ylim = c(.7, 1.7)),
-      "dqr" = plot_position_cohort_exit_dqr(rv$posl[[trade_id]], ylim = c(.7, 1.7)),
-      "qr" = plot_position_cohort_exit_qr(rv$posl[[trade_id]], ylim = c(.7, 1.7))
-    )
+    # Use unified plot function
+    plot_position_cohort_exit(rv$posl[[trade_id]], ylim = c(.7, 1.7))
   })
   
   # Overview Metrics
