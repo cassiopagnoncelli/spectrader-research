@@ -23,20 +23,20 @@ prepare_fwd <- function(fetl, methods, days = 15, companies = 300, cache = NULL)
   fwd_lines <- sapply(seq_along(methods), function(i) {
     method <- methods[i]
     if (i == 1) {
-      sprintf("      fwd('%s', c.symbol, q.date, %d) AS y", method, days)
+      sprintf("fwd('%s', c.symbol, q.date, %d) AS y", method, days)
     } else {
-      sprintf("      fwd('%s', c.symbol, q.date, %d) AS y_%d", method, days, i - 1)
+      sprintf("fwd('%s', c.symbol, q.date, %d) AS y_%d", method, days, i - 1)
     }
   })
 
   # Join lines with comma
-  fwd_cols_sql <- paste(fwd_lines, collapse = ",\n")
+  fwd_cols_sql <- paste(fwd_lines, collapse = ",\n      ")
   fwd_sql <- sprintf("
     SELECT
       c.symbol,
       q.date,
       q.close,
-%s,
+      %s,
       fredu.vix
     FROM quotes q
     JOIN companies c ON q.company_id = c.id
