@@ -41,7 +41,21 @@ entry_profiler_matrix <- function(series,
 
   # Normalize each row by t0
   norm_quotes <- sweep(quotes, 1, t0, "/") - 1
-  return(norm_quotes)
+  norm_quotes
+}
+
+entry_profiler_posm <- function(posl_raw, lookback = NA) {
+  if (length(posl_raw) == 0)
+    stop("No position objects provided")
+
+  times <- posl_raw[[1]]$t
+  mat <- t(sapply(seq_along(posl_raw), \(i) posl_raw[[i]]$S))
+  colnames(mat) <- paste0("t", times)
+  t0 <- which(times == 0)
+  lb <- ifelse(is.na(lookback), t0 - 1, lookback)
+  colrange <- seq(t0 - lb, length(times))
+  mat <- mat[, colrange]
+  mat
 }
 
 entry_profiler_metrics <- function(position_df) {
@@ -71,7 +85,7 @@ entry_profiler_metrics <- function(position_df) {
     "q99", "max"
   )
 
-  return(metrics_df)
+  metrics_df
 }
 
 entry_profiler_density <- function(position_df) {
@@ -193,7 +207,7 @@ plot_entry_profiler <- function(metrics_df, density_arr, lookback = 15) {
     paper_bgcolor = "white"
   )
 
-  return(p)
+  p
 }
 
 #' @description
@@ -226,5 +240,5 @@ entry_profiler <- function(aggregates,
   density_arr <- entry_profiler_density(position_df)
 
   plot <- plot_entry_profiler(metrics_df, density_arr, lookback = lookback)
-  print(plot)
+  plot
 }
