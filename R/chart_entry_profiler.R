@@ -49,7 +49,7 @@ entry_profiler_posm <- function(posl_raw, lookback = NA) {
     stop("No position objects provided")
 
   times <- posl_raw[[1]]$t
-  mat <- t(sapply(seq_along(posl_raw), \(i) posl_raw[[i]]$S))
+  mat <- t(sapply(seq_along(posl_raw), \(i) posl_raw[[i]]$S)) - 1
   colnames(mat) <- paste0("t", times)
   t0 <- which(times == 0)
   lb <- ifelse(is.na(lookback), t0 - 1, lookback)

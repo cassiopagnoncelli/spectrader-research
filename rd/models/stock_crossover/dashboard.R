@@ -13,6 +13,7 @@ ui <- dashboardPage(
   dashboardSidebar(
     sidebarMenu(
       menuItem("Overview", tabName = "overview", icon = icon("dashboard")),
+      menuItem("Position Cohort", tabName = "position_cohort", icon = icon("chart-area")),
       menuItem("Kelly Criterion", tabName = "kelly", icon = icon("balance-scale")),
       menuItem("Returns Analysis", tabName = "returns", icon = icon("chart-area")),
       menuItem("Captures", tabName = "accuracy", icon = icon("bullseye")),
@@ -326,6 +327,30 @@ ui <- dashboardPage(
             title = "Weekly Trade Concurrency (Punchcard View)",
             status = "info",
             plotOutput("concurrency_punchcard", height = 400)
+          )
+        )
+      ),
+      
+      # Position Cohort Tab
+      tabItem(
+        tabName = "position_cohort",
+        fluidRow(
+          box(
+            width = 12,
+            title = "Position Cohort Entry Profiler",
+            status = "primary",
+            solidHeader = TRUE,
+            numericInput("cohort_lookback", "Lookback:", value = 5, min = 1, max = 50, step = 1),
+            p("Entry profiler analysis showing aggregated position behavior after entry across all trades.")
+          )
+        ),
+        fluidRow(
+          box(
+            width = 12,
+            title = "Entry Profiler Chart",
+            status = "info",
+            solidHeader = TRUE,
+            plotly::plotlyOutput("position_cohort_plot", height = "600px")
           )
         )
       ),
@@ -1255,6 +1280,45 @@ server <- function(input, output, session) {
   output$concurrency_punchcard <- renderPlot({
     req(df_dates())
     plot_concurrency_punchcard(df_dates(), plot = FALSE)$plot
+  })
+  
+  # Position Cohort - Render Entry Profiler Plot
+  output$position_cohort_plot <- plotly::renderPlotly({
+    req(rv$posl, input$cohort_lookback)
+    
+    # Load posl_raw from global environment if it exists
+    if (exists("posl_raw", envir = .GlobalEnv)) {
+      posl_raw <- get("posl_raw", envir = .GlobalEnv)
+      
+      # Compute position matrix with specified lookback
+      posm <- entry_profiler_posm(posl_raw, lookback = input$cohort_lookback)
+      
+      # Compute metrics and density
+      posm_metrics <- entry_profiler_metrics(posm)
+      posm_density <- entry_profiler_density(posm)
+      
+      # Generate the plot
+      plot_entry_profiler(posm_metrics, posm_density, lookback = input$cohort_lookback)
+    } else {
+      # If posl_raw doesn't exist, show a message
+      plotly::plot_ly() %>%
+        plotly::layout(
+          title = "posl_raw object not found in global environment",
+          xaxis = list(visible = FALSE),
+          yaxis = list(visible = FALSE),
+          annotations = list(
+            list(
+              text = "Please ensure 'posl_raw' exists in the global environment.\nRun the trade simulation script to generate this data.",
+              xref = "paper",
+              yref = "paper",
+              x = 0.5,
+              y = 0.5,
+              showarrow = FALSE,
+              font = list(size = 16, color = "red")
+            )
+          )
+        )
+    }
   })
   
   # Models Carousel Navigation - Previous Button
