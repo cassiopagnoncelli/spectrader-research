@@ -1,86 +1,91 @@
-# devtools::load_all()
+devtools::load_all()
 
 options(scipen = 999)
 
-source("rd/models/stock_crossover/features.R")
 source("rd/models/stock_crossover/entry_model.R")
 source("rd/models/stock_crossover/entry_plots.R")
 
 #
 # ETL.
 #
-fetl <- Fetl$new()
+fetl <- fets::Fetl$new()
+vix <- fets::get_vix(fetl)
+q <- fets::get_quotes(fetl)
 
-features_params <- list(
-  companies = 13000,          # Cached: 13000
-  days = 22,                  # Cached: 10, 15, 22, 44
-  methods = c(
-    "extreme_high_identity",  # y
-    "extreme_low_identity",   # y_1
-    "mass_high_log",          # y_2
-    "mass_low_log",           # y_3
-    "dm_log",                 # y_4
-    "sharpe_high",            # y_5
-    "sharpe_low",             # y_6
-    "close_identity"          # y_7
-  )
-)
-ckf <- cache_key(params = features_params, ext = "rds", fun = "prepare_fwd")
-features <- prepare_fwd(
-  fetl,
-  companies = features_params$companies,
-  days = features_params$days,
-  methods = features_params$methods,
-  cache = ckf
-)
-fwd <- features$fwd
-fwd_metadata <- features$fwd_metadata
-fwd_joint <- tibble(fwd_metadata, fwd)
-# fwd_joint %>% glimpse
+#
+# FEATURE ENGINEERING.
+#
+fets::fwd(q, inplace = TRUE)
+fets::add_vix(q, vix)
+q <- fets::fe(q, inplace = FALSE) %>% na.omit
 
 #
 # PREPROCESSING.
-# XyN are data frames with target variable y_N and features X, each requiring
-# a model to predict y_N. y_N are strong predictors of future movements, like
-# extremes, mass movements, and sharpe ratios.
 #
-X <- fwd %>%
-  select(-y, -y_1, -y_2, -y_3, -y_4, -y_5, -y_6, -y_7)
+q_metadata <- q[, .(symbol, date)]
+q_targets <- q[, .SD, .SDcols = fets::fwd_methods()]
+q_X <- q[, .SD, .SDcols = !c("symbol", "date", "close", fets::fwd_methods())]
 
-Xy1 <- cbind(y = fwd$y_1, X)
-Xy2 <- cbind(y = fwd$y_2, X)
-Xy3 <- cbind(y = fwd$y_3, X)
-Xy4 <- cbind(y = fwd$y_4, X)
-Xy5 <- cbind(y = fwd$y_5, X)
-Xy6 <- cbind(y = fwd$y_6, X)
+# Set splits.
+train_indices <- which(q$date <= as.Date("2024-01-30"))
+val_indices <- which(q$date > as.Date("2024-01-30") & q$date <= as.Date("2024-12-31"))
+test_indices <- which(q$date >= as.Date("2025-01-01"))
 
-train_indices <- which(fwd_metadata$date <= as.Date("2024-06-30"))
-val_indices <- which(fwd_metadata$date > as.Date("2024-06-30") &
-                       fwd_metadata$date <= as.Date("2024-12-31"))
-test_indices <- which(fwd_metadata$date >= as.Date("2025-01-20"))
-
-train_data <- fwd[train_indices, ]
-val_data <- fwd[val_indices, ]
-test_data <- fwd[test_indices, ]
+train_data <- q_X[train_indices, ]
+val_data <- q_X[val_indices, ]
+test_data <- q_X[test_indices, ]
 
 #
-# TRAINING.
-# Stacked model.
+# Training
 #
-ckm <- cache_key(existing_key = ckf$key, ext = "rds", fun = "stacked_xgboost")
+model_name <- "stock_crossover__entry__extreme_low_identity"
+ckm <- cache_key(existing_key = "-500rounds-", ext = "rds", fun = model_name)
 model_signal <- train_stacked_model(
-  X = X,
-  fwd = fwd,
   train_indices = train_indices,
   val_indices = val_indices,
   test_indices = test_indices,
-  Xy1 = Xy1,
-  Xy2 = Xy2,
-  Xy3 = Xy3,
-  Xy4 = Xy4,
-  Xy5 = Xy5,
-  Xy6 = Xy6,
-  cache = ckm
+  X = q_X,
+  y = q_targets$extreme_high_log,
+  aux = list(
+    y1 = q_targets$extreme_low_log,
+    y2 = q_targets$mass_high_identity,
+    y3 = q_targets$mass_low_identity,
+    y4 = q_targets$sharpe_high,
+    y5 = q_targets$sharpe_low,
+    y6 = q_targets$close_log,
+    y7 = q_targets$mean_log,
+    y8 = q_targets$de_log,
+    y9 = q_targets$dm_log
+  ),
+  cache = ckm,
+  verbose = TRUE
+)
+
+#
+# EVALUATION.
+#
+df_train <- tibble(
+  symbol = q_metadata$symbol[train_indices],
+  date = q_metadata$date[train_indices],
+  y = model_signal$actuals$train,
+  yhat = model_signal$predictions$train,
+  close = q_targets$close_log[train_indices]
+)
+
+df_val <- tibble(
+  symbol = q_metadata$symbol[val_indices],
+  date = q_metadata$date[val_indices],
+  y = model_signal$actuals$val,
+  yhat = model_signal$predictions$val,
+  close = q_targets$close_log[val_indices]
+)
+
+df_test <- tibble(
+  symbol = q_metadata$symbol[test_indices],
+  date = q_metadata$date[test_indices],
+  y = model_signal$actuals$test,
+  yhat = model_signal$predictions$test,
+  close = q_targets$close_log[test_indices]
 )
 
 #
@@ -97,32 +102,8 @@ if (FALSE) {
   plot_residuals(model_signal, "val")
   plot_predictions_vs_actuals(model_signal, "train")
   plot_residuals(model_signal, "train")
-  plot_xgboost_trees(model_signal, tree_indices = c(0, 1, 2, 3, 4))
+  if (FALSE) {
+    plot_xgboost_trees(model_signal, tree_indices = c(0, 1, 2, 3, 4))
+  }
 }
 
-#
-# Data sets
-#
-df_train <- tibble(
-  symbol = fwd_metadata$symbol[train_indices],
-  date = fwd_metadata$date[train_indices],
-  y = model_signal$actuals$train,
-  yhat = model_signal$predictions$train,
-  close = fwd$y_7[train_indices]
-)
-
-df_val <- tibble(
-  symbol = fwd_metadata$symbol[val_indices],
-  date = fwd_metadata$date[val_indices],
-  y = model_signal$actuals$val,
-  yhat = model_signal$predictions$val,
-  close = fwd$y_7[val_indices]
-)
-
-df_test <- tibble(
-  symbol = fwd_metadata$symbol[test_indices],
-  date = fwd_metadata$date[test_indices],
-  y = model_signal$actuals$test,
-  yhat = model_signal$predictions$test,
-  close = fwd$y_7[test_indices]
-)

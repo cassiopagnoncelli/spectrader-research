@@ -3,7 +3,6 @@
 - Realistic portfolio growth simulation with wallet concurrency
 - Add params: y_hat_cutoff, position_max_days
 - Volatility Analysis in Options
-- Add Event Profiler
 
 ## ETL
 
@@ -12,7 +11,6 @@
 ## Functions
 
 - Consolidate features into fe
-- Improve fe efficiency with data.table
 
 ## Exit model
 
