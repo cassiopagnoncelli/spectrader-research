@@ -39,24 +39,24 @@ test_data <- q_X[test_indices, ]
 # Training
 #
 model_name <- "stock_crossover__entry__extreme_low_identity"
-ckm <- cache_key(existing_key = "-500rounds-", ext = "rds", fun = model_name)
+ckm <- cache_key(existing_key = "-1500rounds-", ext = "rds", fun = model_name)
 model_signal <- train_stacked_model(
   train_indices = train_indices,
   val_indices = val_indices,
   test_indices = test_indices,
   X = q_X,
-  y = q_targets$extreme_high_log,
-  aux = list(
-    y1 = q_targets$extreme_low_log,
-    y2 = q_targets$mass_high_identity,
-    y3 = q_targets$mass_low_identity,
-    y4 = q_targets$sharpe_high,
-    y5 = q_targets$sharpe_low,
-    y6 = q_targets$close_log,
-    y7 = q_targets$mean_log,
-    y8 = q_targets$de_log,
-    y9 = q_targets$dm_log
-  ),
+  y = q_targets$extreme_low_identity,
+  # aux = list(
+  #   y1 = q_targets$extreme_high_identity,
+  #   y2 = q_targets$mass_high_identity,
+  #   y3 = q_targets$mass_low_identity,
+  #   y4 = q_targets$sharpe_high,
+  #   y5 = q_targets$sharpe_low,
+  #   y6 = q_targets$close_log,
+  #   y7 = q_targets$mean_log,
+  #   y8 = q_targets$de_log,
+  #   y9 = q_targets$dm_log
+  # ),
   cache = ckm,
   verbose = TRUE
 )

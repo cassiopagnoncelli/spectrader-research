@@ -60,7 +60,14 @@ perform_train_stacked_model <- function(
   models_level1 <- list()
   for (i in seq_along(aux)) {
     model_name <- sprintf("Model %s", names(aux)[i])
-    models_level1[[i]] <- train_level1_model(X, aux[[i]], train_indices, val_indices, model_name, verbose = verbose)
+    models_level1[[i]] <- train_level1_model(
+      X,
+      aux[[i]],
+      train_indices,
+      val_indices,
+      model_name,
+      verbose = verbose
+    )
   }
 
   # Generate predictions from first-level models on all splits
@@ -76,12 +83,9 @@ perform_train_stacked_model <- function(
     level1_preds[[i]] <- predict(models_level1[[i]], dmatrix_all)
   }
 
-  if (verbose) {
-    cat(sprintf("Level 1 predictions generated for all %d models\n", n_aux))
-  }
-
   # LEVEL 2: Create stacked dataset with X + predictions
   if (verbose) {
+    cat(sprintf("✓ Level 1 predictions generated for all %d models\n", n_aux))
     cat("\n=== LEVEL 2: Preparing Stacked Dataset ===\n")
   }
 
@@ -93,12 +97,10 @@ perform_train_stacked_model <- function(
   if (verbose) {
     cat(sprintf("Stacked features: %d (original) + %d (predictions) = %d total\n",
                 ncol(X), n_aux, ncol(X_stacked)))
+    cat("\n=== Training Final Stacked Model ===\n")
   }
 
   # Train final XGBoost model
-  if (verbose) {
-    cat("\n=== Training Final Stacked Model ===\n")
-  }
   X_train_stacked <- as.matrix(X_stacked[train_indices, ])
   y_train <- y[train_indices]
   X_val_stacked <- as.matrix(X_stacked[val_indices, ])
@@ -111,10 +113,10 @@ perform_train_stacked_model <- function(
   model_final <- xgboost::xgb.train(
     params = sm_level_2_hyperparams(),
     data = dtrain_final,
-    nrounds = 500,
+    nrounds = 15500,
     watchlist = watchlist_final,
     early_stopping_rounds = 20,
-    verbose = 1
+    verbose = ifelse(verbose, 1, 0)
   )
 
   if (verbose) {
