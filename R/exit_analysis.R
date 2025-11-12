@@ -90,6 +90,36 @@ exit_metrics <- function(accuracy, side = c("long", "short")) {
   result
 }
 
+#' Calculate Maximum Drawdown
+#'
+#' Computes the maximum drawdown from a series of returns.
+#' Maximum drawdown is the largest peak-to-trough decline in cumulative portfolio value.
+#'
+#' @param returns A numeric vector of returns
+#' @param na.rm Logical, whether to remove NA values (default: TRUE)
+#' @return A single numeric value representing the maximum drawdown (as a negative percentage)
+max_drawdown <- function(returns, na.rm = TRUE) {
+  if (na.rm) {
+    returns <- returns[!is.na(returns)]
+  }
+  
+  if (length(returns) == 0) {
+    return(NA_real_)
+  }
+  
+  # Calculate cumulative returns (portfolio value over time)
+  cum_returns <- cumprod(1 + returns)
+  
+  # Calculate running maximum
+  running_max <- cummax(cum_returns)
+  
+  # Calculate drawdown at each point
+  drawdown <- (cum_returns - running_max) / running_max
+  
+  # Return the maximum (most negative) drawdown
+  min(drawdown, na.rm = TRUE)
+}
+
 #' Summarize Returns by Exit Method
 #'
 #' Computes summary statistics of returns (R) grouped by exit method.

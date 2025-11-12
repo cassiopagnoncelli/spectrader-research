@@ -56,9 +56,10 @@ ui <- dashboardPage(
           valueBoxOutput("sharpe_ratio", width = 3)
         ),
         fluidRow(
-          valueBoxOutput("profit_factor", width = 4),
-          valueBoxOutput("capture_rate", width = 4),
-          valueBoxOutput("avg_holding_period", width = 4)
+          valueBoxOutput("profit_factor", width = 3),
+          valueBoxOutput("capture_rate", width = 3),
+          valueBoxOutput("avg_holding_period", width = 3),
+          valueBoxOutput("max_drawdown", width = 3)
         )
       ),
       
@@ -821,6 +822,17 @@ server <- function(input, output, session) {
       "Avg Holding Period",
       icon = icon("clock"),
       color = "blue"
+    )
+  })
+  
+  output$max_drawdown <- renderValueBox({
+    req(rv$dfsr)
+    dd <- max_drawdown(rv$dfsr$R, na.rm = TRUE)
+    valueBox(
+      sprintf("%.2f%%", dd * 100),
+      "Max Drawdown",
+      icon = icon("arrow-down"),
+      color = if (dd > -0.10) "green" else if (dd > -0.20) "yellow" else "red"
     )
   })
   
