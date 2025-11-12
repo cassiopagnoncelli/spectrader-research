@@ -1,13 +1,12 @@
 devtools::load_all()
 
-source("rd/models/stock_crossover/entry.R")
-source("rd/models/stock_crossover/exit.R")
+source("rd/models/stock_crossover/enter.R")
 
 max_position_days <- 20
 
 # Generate trading signals
 df_signals <- df_test %>%
-  filter(yhat > 1.35) %>%
+  filter(exp(yhat) > 1.25) %>%
   filter_signals(within_days = max_position_days) %>% # Discard nearby signals
   arrange(date)
 

@@ -2,20 +2,22 @@
 
 # Stacked XGBoost Model for Stock Crossover Prediction
 # This file contains the model training logic with caching support
-train_stacked_model <- function(X, fwd, train_indices, val_indices, test_indices,
-                                Xy1, Xy2, Xy3, Xy4, Xy5, Xy6,
-                                cache = NULL) {
+train_stacked_model <- function(train_indices, val_indices, test_indices,
+                                X, y, aux = list(),
+                                cache = NULL,
+                                verbose = TRUE) {
   if (!is.null(cache)) {
     results <- load_cache(cache)
     if (!is.null(results)) {
-      stacked_model_metrics(results)
+      print_stacked_model_metrics(results)
       return(results)
     }
     cat("Cache miss, proceeding to train a new model...\n")
   }
   results <- perform_train_stacked_model(
-    X, fwd, train_indices, val_indices, test_indices,
-    Xy1, Xy2, Xy3, Xy4, Xy5, Xy6
+    train_indices, val_indices, test_indices,
+    X, y, aux,
+    verbose = verbose
   )
   if (!is.null(cache)) {
     save_cache(cache, results)
@@ -24,106 +26,70 @@ train_stacked_model <- function(X, fwd, train_indices, val_indices, test_indices
 }
 
 perform_train_stacked_model <- function(
-  X, fwd, train_indices, val_indices, test_indices, Xy1, Xy2, Xy3, Xy4, Xy5, Xy6
+  train_indices, val_indices, test_indices, X, y, aux, verbose = TRUE
 ) {
-  # LEVEL 1: Train 6 XGBoost models to predict y_1, ..., y_6
-  cat("\n=== LEVEL 1: Training First-Level Models ===\n")
-
-  # Function to train a single first-level model
-  train_level1_model <- function(Xy_data, train_idx, val_idx, model_name) {
-    cat(sprintf("\nTraining %s...\n", model_name))
-
-    # Prepare data
-    X_train <- as.matrix(Xy_data[train_idx, -1])
-    y_train <- Xy_data[train_idx, 1]
-    X_val <- as.matrix(Xy_data[val_idx, -1])
-    y_val <- Xy_data[val_idx, 1]
-
-    # Create DMatrix
-    dtrain <- xgboost::xgb.DMatrix(data = X_train, label = y_train)
-    dval <- xgboost::xgb.DMatrix(data = X_val, label = y_val)
-
-    # Set hyperparameters
-    params <- list(
-      objective = "reg:squarederror",
-      eta = 0.05,
-      max_depth = 6,
-      min_child_weight = 3,
-      subsample = 0.8,
-      colsample_bytree = 0.8
-    )
-
-    # Train with early stopping
-    watchlist <- list(train = dtrain, val = dval)
-    model <- xgboost::xgb.train(
-      params = params,
-      data = dtrain,
-      nrounds = 500,
-      watchlist = watchlist,
-      early_stopping_rounds = 20,
-      verbose = 0
-    )
-
-    cat(sprintf("  Best iteration: %d\n", model$best_iteration))
-    cat(sprintf("  Train RMSE: %.6f\n", model$evaluation_log$train_rmse_mean[model$best_iteration]))
-    cat(sprintf("  Val RMSE: %.6f\n", model$evaluation_log$val_rmse_mean[model$best_iteration]))
-
-    model
+  # LEVEL 1: Train XGBoost models for each auxiliary target
+  n_aux <- length(aux)
+  if (verbose) {
+    cat(sprintf("\n=== LEVEL 1: Training %d First-Level Models ===\n", n_aux))
   }
 
-  # Train all 6 first-level models
+  # Train all first-level models dynamically based on aux list
   models_level1 <- list()
-  models_level1[[1]] <- train_level1_model(Xy1, train_indices, val_indices, "Model y_1")
-  models_level1[[2]] <- train_level1_model(Xy2, train_indices, val_indices, "Model y_2")
-  models_level1[[3]] <- train_level1_model(Xy3, train_indices, val_indices, "Model y_3")
-  models_level1[[4]] <- train_level1_model(Xy4, train_indices, val_indices, "Model y_4")
-  models_level1[[5]] <- train_level1_model(Xy5, train_indices, val_indices, "Model y_5")
-  models_level1[[6]] <- train_level1_model(Xy6, train_indices, val_indices, "Model y_6")
+  for (i in seq_along(aux)) {
+    model_name <- sprintf("Model %s", names(aux)[i])
+    models_level1[[i]] <- train_level1_model(X, aux[[i]], train_indices, val_indices, model_name, verbose = verbose)
+  }
 
   # Generate predictions from first-level models on all splits
-  cat("\n=== Generating Level 1 Predictions ===\n")
+  if (verbose) {
+    cat("\n=== Generating Level 1 Predictions ===\n")
+  }
   X_matrix <- as.matrix(X)
   dmatrix_all <- xgboost::xgb.DMatrix(data = X_matrix)
 
-  y_1_pred <- predict(models_level1[[1]], dmatrix_all)
-  y_2_pred <- predict(models_level1[[2]], dmatrix_all)
-  y_3_pred <- predict(models_level1[[3]], dmatrix_all)
-  y_4_pred <- predict(models_level1[[4]], dmatrix_all)
-  y_5_pred <- predict(models_level1[[5]], dmatrix_all)
-  y_6_pred <- predict(models_level1[[6]], dmatrix_all)
+  # Generate predictions dynamically for all auxiliary models
+  level1_preds <- list()
+  for (i in seq_along(models_level1)) {
+    level1_preds[[i]] <- predict(models_level1[[i]], dmatrix_all)
+  }
 
-  cat("Level 1 predictions generated for all data points\n")
+  if (verbose) {
+    cat(sprintf("Level 1 predictions generated for all %d models\n", n_aux))
+  }
 
   # LEVEL 2: Create stacked dataset with X + predictions
-  cat("\n=== LEVEL 2: Preparing Stacked Dataset ===\n")
-  X_stacked <- cbind(
-    X,
-    y_1_pred = y_1_pred,
-    y_2_pred = y_2_pred,
-    y_3_pred = y_3_pred,
-    y_4_pred = y_4_pred,
-    y_5_pred = y_5_pred,
-    y_6_pred = y_6_pred
-  )
+  if (verbose) {
+    cat("\n=== LEVEL 2: Preparing Stacked Dataset ===\n")
+  }
 
-  cat(sprintf("Stacked features: %d (original) + 6 (predictions) = %d total\n",
-              ncol(X), ncol(X_stacked)))
+  # Combine original features with level 1 predictions
+  pred_matrix <- do.call(cbind, level1_preds)
+  colnames(pred_matrix) <- paste0(names(aux), "_pred")
+  X_stacked <- cbind(X, pred_matrix)
+
+  if (verbose) {
+    cat(sprintf("Stacked features: %d (original) + %d (predictions) = %d total\n",
+                ncol(X), n_aux, ncol(X_stacked)))
+  }
 
   # Train final XGBoost model
-  cat("\n=== Training Final Stacked Model ===\n")
+  if (verbose) {
+    cat("\n=== Training Final Stacked Model ===\n")
+  }
   X_train_stacked <- as.matrix(X_stacked[train_indices, ])
-  y_train <- fwd$y[train_indices]
+  y_train <- y[train_indices]
   X_val_stacked <- as.matrix(X_stacked[val_indices, ])
-  y_val <- fwd$y[val_indices]
+  y_val <- y[val_indices]
 
   dtrain_final <- xgboost::xgb.DMatrix(data = X_train_stacked, label = y_train)
   dval_final <- xgboost::xgb.DMatrix(data = X_val_stacked, label = y_val)
 
   params_final <- list(
     objective = "reg:squarederror",
-    eta = 0.05,
-    max_depth = 6,
-    min_child_weight = 3,
+    eta = 0.04,           # conservative: <.1, aggressive: >.1
+    max_depth = 7,        # default: 5
+    min_child_weight = 2, # default: 3
     subsample = 0.8,
     colsample_bytree = 0.8
   )
@@ -138,7 +104,9 @@ perform_train_stacked_model <- function(
     verbose = 1
   )
 
-  cat(sprintf("\nBest iteration: %d\n", model_final$best_iteration))
+  if (verbose) {
+    cat(sprintf("\nBest iteration: %d\n", model_final$best_iteration))
+  }
 
   # EVALUATION
   # Predictions on all splits
@@ -151,7 +119,7 @@ perform_train_stacked_model <- function(
   pred_val <- predict(model_final, X_val_stacked_dm)
   pred_test <- predict(model_final, X_test_stacked_dm)
 
-  y_test <- fwd$y[test_indices]
+  y_test <- y[test_indices]
 
   # Calculate metrics
   rmse_train <- sqrt(mean((pred_train - y_train)^2))
@@ -167,9 +135,7 @@ perform_train_stacked_model <- function(
   r2_test <- 1 - sum((pred_test - y_test)^2) / sum((y_test - mean(y_test))^2)
 
   # Feature importance
-  cat("\n=== Feature Importance (Top 20) ===\n")
   importance_matrix <- xgboost::xgb.importance(model = model_final)
-  print(head(importance_matrix, 20))
 
   # Prepare results
   results <- list(
@@ -193,24 +159,74 @@ perform_train_stacked_model <- function(
     importance = importance_matrix
   )
 
-  # Print final metrics
-  stacked_model_metrics(results)
+
+  print_stacked_model_metrics(results)
 
   results
 }
 
-stacked_model_metrics <- function(results) {
-  cat("Stacked Model: performance metrics\n")
-  cat(sprintf("Train - RMSE: %.6f, MAE: %.6f, R²: %.4f\n",
-              results$metrics$train["rmse"],
-              results$metrics$train["mae"],
-              results$metrics$train["r2"]))
-  cat(sprintf("Val   - RMSE: %.6f, MAE: %.6f, R²: %.4f\n",
-              results$metrics$val["rmse"],
-              results$metrics$val["mae"],
-              results$metrics$val["r2"]))
-  cat(sprintf("Test  - RMSE: %.6f, MAE: %.6f, R²: %.4f\n",
-              results$metrics$test["rmse"],
-              results$metrics$test["mae"],
-              results$metrics$test["r2"]))
+print_stacked_model_metrics <- function(results) {
+  cat(sprintf(
+    paste0(
+      "Stacked Model: performance metrics\n",
+      "Train - RMSE: %.6f, MAE: %.6f, R²: %.4f\n",
+      "Val   - RMSE: %.6f, MAE: %.6f, R²: %.4f\n",
+      "Test  - RMSE: %.6f, MAE: %.6f, R²: %.4f\n"
+    ),
+    results$metrics$train["rmse"],
+    results$metrics$train["mae"],
+    results$metrics$train["r2"],
+    results$metrics$val["rmse"],
+    results$metrics$val["mae"],
+    results$metrics$val["r2"],
+    results$metrics$test["rmse"],
+    results$metrics$test["mae"],
+    results$metrics$test["r2"]
+  ))
+}
+
+# Function to train a single first-level model
+train_level1_model <- function(X_data, y_aux, train_idx, val_idx, model_name, verbose = TRUE) {
+  if (verbose) {
+    cat(sprintf("\nTraining %s...\n", model_name))
+  }
+
+  # Prepare data
+  X_train <- as.matrix(X_data[train_idx, ])
+  y_train <- y_aux[train_idx]
+  X_val <- as.matrix(X_data[val_idx, ])
+  y_val <- y_aux[val_idx]
+
+  # Create DMatrix
+  dtrain <- xgboost::xgb.DMatrix(data = X_train, label = y_train)
+  dval <- xgboost::xgb.DMatrix(data = X_val, label = y_val)
+
+  # Set hyperparameters
+  params <- list(
+    objective = "reg:squarederror",
+    eta = 0.04,              # conservative: <.1, aggressive: >.1
+    max_depth = 5,           # default: 5
+    min_child_weight = 5,    # default: 3
+    subsample = 1,           # default: .8
+    colsample_bytree = 1     # default: .8
+  )
+
+  # Train with early stopping
+  watchlist <- list(train = dtrain, val = dval)
+  model <- xgboost::xgb.train(
+    params = params,
+    data = dtrain,
+    nrounds = 1500,
+    watchlist = watchlist,
+    early_stopping_rounds = 30,
+    verbose = ifelse(verbose, 1, 0)
+  )
+
+  if (verbose) {
+    cat(sprintf("  Best iteration: %d\n", model$best_iteration))
+    cat(sprintf("  Train RMSE: %.6f\n", model$evaluation_log$train_rmse_mean[model$best_iteration]))
+    cat(sprintf("  Val RMSE: %.6f\n", model$evaluation_log$val_rmse_mean[model$best_iteration]))
+  }
+
+  model
 }
