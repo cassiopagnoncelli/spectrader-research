@@ -52,51 +52,65 @@ perform_train_stacked_model <- function(
 ) {
   # LEVEL 1: Train XGBoost models for each auxiliary target
   n_aux <- length(aux)
+  
+  # Check if aux is empty - if so, skip Level 1 entirely
+  if (n_aux == 0) {
+    if (verbose) {
+      cat("\n=== No auxiliary models specified, training final model directly ===\n")
+    }
+    # Use original features directly
+    X_stacked <- X
+    models_level1 <- list()
+  } else {
+    if (verbose) {
+      cat(sprintf("\n=== LEVEL 1: Training %d First-Level Models ===\n", n_aux))
+    }
+
+    # Train all first-level models dynamically based on aux list
+    models_level1 <- list()
+    for (i in seq_along(aux)) {
+      model_name <- sprintf("Model %s", names(aux)[i])
+      models_level1[[i]] <- train_level1_model(
+        X,
+        aux[[i]],
+        train_indices,
+        val_indices,
+        model_name,
+        verbose = verbose
+      )
+    }
+
+    # Generate predictions from first-level models on all splits
+    if (verbose) {
+      cat("\n=== Generating Level 1 Predictions ===\n")
+    }
+    X_matrix <- as.matrix(X)
+    dmatrix_all <- xgboost::xgb.DMatrix(data = X_matrix)
+
+    # Generate predictions dynamically for all auxiliary models
+    level1_preds <- list()
+    for (i in seq_along(models_level1)) {
+      level1_preds[[i]] <- predict(models_level1[[i]], dmatrix_all)
+    }
+
+    # LEVEL 2: Create stacked dataset with X + predictions
+    if (verbose) {
+      cat(sprintf("✓ Level 1 predictions generated for all %d models\n", n_aux))
+      cat("\n=== LEVEL 2: Preparing Stacked Dataset ===\n")
+    }
+
+    # Combine original features with level 1 predictions
+    pred_matrix <- do.call(cbind, level1_preds)
+    colnames(pred_matrix) <- paste0(names(aux), "_pred")
+    X_stacked <- cbind(X, pred_matrix)
+
+    if (verbose) {
+      cat(sprintf("Stacked features: %d (original) + %d (predictions) = %d total\n",
+                  ncol(X), n_aux, ncol(X_stacked)))
+    }
+  }
+  
   if (verbose) {
-    cat(sprintf("\n=== LEVEL 1: Training %d First-Level Models ===\n", n_aux))
-  }
-
-  # Train all first-level models dynamically based on aux list
-  models_level1 <- list()
-  for (i in seq_along(aux)) {
-    model_name <- sprintf("Model %s", names(aux)[i])
-    models_level1[[i]] <- train_level1_model(
-      X,
-      aux[[i]],
-      train_indices,
-      val_indices,
-      model_name,
-      verbose = verbose
-    )
-  }
-
-  # Generate predictions from first-level models on all splits
-  if (verbose) {
-    cat("\n=== Generating Level 1 Predictions ===\n")
-  }
-  X_matrix <- as.matrix(X)
-  dmatrix_all <- xgboost::xgb.DMatrix(data = X_matrix)
-
-  # Generate predictions dynamically for all auxiliary models
-  level1_preds <- list()
-  for (i in seq_along(models_level1)) {
-    level1_preds[[i]] <- predict(models_level1[[i]], dmatrix_all)
-  }
-
-  # LEVEL 2: Create stacked dataset with X + predictions
-  if (verbose) {
-    cat(sprintf("✓ Level 1 predictions generated for all %d models\n", n_aux))
-    cat("\n=== LEVEL 2: Preparing Stacked Dataset ===\n")
-  }
-
-  # Combine original features with level 1 predictions
-  pred_matrix <- do.call(cbind, level1_preds)
-  colnames(pred_matrix) <- paste0(names(aux), "_pred")
-  X_stacked <- cbind(X, pred_matrix)
-
-  if (verbose) {
-    cat(sprintf("Stacked features: %d (original) + %d (predictions) = %d total\n",
-                ncol(X), n_aux, ncol(X_stacked)))
     cat("\n=== Training Final Stacked Model ===\n")
   }
 
@@ -228,9 +242,12 @@ train_level1_model <- function(X_data, y_aux, train_idx, val_idx, model_name, ve
   )
 
   if (verbose) {
-    cat(sprintf("  Best iteration: %d\n", model$best_iteration))
-    cat(sprintf("  Train RMSE: %.6f\n", model$evaluation_log$train_rmse_mean[model$best_iteration]))
-    cat(sprintf("  Val RMSE: %.6f\n", model$evaluation_log$val_rmse_mean[model$best_iteration]))
+    cat(sprintf(
+      "  Best iteration: %d\n  Train RMSE: %.6f\n  Val RMSE: %.6f\n",
+      model$best_iteration,
+      model$evaluation_log$train_rmse_mean[model$best_iteration],
+      model$evaluation_log$val_rmse_mean[model$best_iteration]
+    ))
   }
 
   model
