@@ -16,7 +16,7 @@ q <- fets::get_quotes(fetl)
 #
 # FEATURE ENGINEERING.
 #
-fets::fwd(q, inplace = TRUE)
+fets::fwd(q, inplace = TRUE, lookahead = 10)
 fets::add_vix(q, vix)
 q <- fets::fe(q, inplace = FALSE) %>% na.omit
 
@@ -28,8 +28,9 @@ q_targets <- q[, .SD, .SDcols = fets::fwd_methods()]
 q_X <- q[, .SD, .SDcols = !c("symbol", "date", "close", fets::fwd_methods())]
 
 # Set splits.
-train_indices <- which(q$date <= as.Date("2024-01-30"))
-val_indices <- which(q$date > as.Date("2024-01-30") & q$date <= as.Date("2024-12-31"))
+train_indices <- which(q$date <= as.Date("2023-12-31"))
+train_indices <- sample(train_indices, 25000)
+val_indices <- which(q$date > as.Date("2024-01-01") & q$date <= as.Date("2024-12-31"))
 test_indices <- which(q$date >= as.Date("2025-01-01"))
 
 train_data <- q_X[train_indices, ]
@@ -40,7 +41,7 @@ test_data <- q_X[test_indices, ]
 # Training
 #
 model_name <- "stock_crossover__entry__extreme_low_identity"
-params <- list(rounds = 1500, notes = "conservative")
+params <- list(rounds = 200, notes = "neutral")
 ckm <- cache_key(params = params, ext = "rds", fun = model_name)
 aux <- list(
   y1 = q_targets$extreme_high_identity,
@@ -67,6 +68,7 @@ model_signal <- train_stacked_model(
 #
 # EVALUATION.
 #
+
 df_train <- tibble(
   symbol = q_metadata$symbol[train_indices],
   date = q_metadata$date[train_indices],

@@ -11,7 +11,7 @@ formula_exit_complete
 
 # Fit exit dqr on train subset
 df_train_dqr <- df_train %>%
-  filter(yhat < .85) %>%
+  filter(yhat < .8) %>%
   filter_signals(within_days = 20) %>%
   arrange(date)
 

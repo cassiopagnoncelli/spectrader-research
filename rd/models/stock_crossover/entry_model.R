@@ -28,9 +28,9 @@ train_stacked_model <- function(train_indices, val_indices, test_indices,
 sm_level_1_hyperparams <- function() {
   list(
     objective = "reg:squarederror",
-    eta = 0.04,              # conservative: <.1, aggressive: >.1
+    eta = 0.08,              # conservative: <.1, aggressive: >.1
     max_depth = 5,           # default: 5
-    min_child_weight = 5,    # default: 3
+    min_child_weight = 3,    # default: 3
     subsample = 1,           # default: .8
     colsample_bytree = 1     # default: .8
   )
@@ -39,8 +39,8 @@ sm_level_1_hyperparams <- function() {
 sm_level_2_hyperparams <- function() {
   list(
     objective = "reg:squarederror",
-    eta = 0.04,              # conservative: <.1, aggressive: >.1
-    max_depth = 7,           # default: 5
+    eta = 0.08,              # conservative: <.1, aggressive: >.1
+    max_depth = 6,           # default: 5
     min_child_weight = 2,    # default: 3
     subsample = 0.8,
     colsample_bytree = 0.8
@@ -127,9 +127,9 @@ perform_train_stacked_model <- function(
   model_final <- xgboost::xgb.train(
     params = sm_level_2_hyperparams(),
     data = dtrain_final,
-    nrounds = 1500,
+    nrounds = 250,
     watchlist = watchlist_final,
-    early_stopping_rounds = 50,
+    early_stopping_rounds = 20,
     verbose = ifelse(verbose, 1, 0)
   )
 
@@ -235,9 +235,9 @@ train_level1_model <- function(X_data, y_aux, train_idx, val_idx, model_name, ve
   model <- xgboost::xgb.train(
     params = sm_level_1_hyperparams(),
     data = dtrain,
-    nrounds = 1500,
+    nrounds = 200,
     watchlist = watchlist,
-    early_stopping_rounds = 30,
+    early_stopping_rounds = 20,
     verbose = ifelse(verbose, 1, 0)
   )
 
