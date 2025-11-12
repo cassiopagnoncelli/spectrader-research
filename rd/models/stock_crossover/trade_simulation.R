@@ -6,7 +6,7 @@ max_position_days <- 20
 
 # Generate trading signals
 df_signals <- df_test %>%
-  filter(exp(yhat) > 1.25) %>%
+  filter(yhat < .85) %>%
   filter_signals(within_days = max_position_days) %>% # Discard nearby signals
   arrange(date)
 
@@ -21,7 +21,7 @@ dfsr <- position_cohort_return(posl, df_signals)
 df_dates <- prepare_df_dates(dfsr)
 
 # Signal accuracy analysis
-accuracy <- exit_accuracy(dfsr, side = "long")
+accuracy <- exit_accuracy(dfsr, side = "short")
 accuracy_captured <- accuracy %>% filter(!is.na(exit_method))
 accuracy_uncaptured <- accuracy %>% filter(is.na(exit_method))
 

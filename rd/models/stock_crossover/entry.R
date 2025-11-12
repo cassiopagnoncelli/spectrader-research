@@ -107,4 +107,3 @@ if (FALSE) {
     plot_xgboost_trees(model_signal, tree_indices = c(0, 1, 2, 3, 4))
   }
 }
-

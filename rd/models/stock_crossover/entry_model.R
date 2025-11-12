@@ -127,9 +127,9 @@ perform_train_stacked_model <- function(
   model_final <- xgboost::xgb.train(
     params = sm_level_2_hyperparams(),
     data = dtrain_final,
-    nrounds = 15500,
+    nrounds = 1500,
     watchlist = watchlist_final,
-    early_stopping_rounds = 20,
+    early_stopping_rounds = 50,
     verbose = ifelse(verbose, 1, 0)
   )
 

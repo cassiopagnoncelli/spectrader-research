@@ -4,7 +4,7 @@ position_cohort <- function(symbol_dates,
                             before_days,
                             after_days,
                             fun = identity) {
-  fetl <- Fetl$new()
+  fetl <- fets::Fetl$new()
   lapply(seq_len(nrow(symbol_dates)), function(i) {
     # Extract.
     symbol <- symbol_dates$symbol[i]
