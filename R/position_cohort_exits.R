@@ -1,7 +1,10 @@
 # Decaying Quantile Regression Exit - Decay Curve
-exit_dqr <- function(dqr_fits, max_position_days) {
+exit_dqr <- function(dqr_fits, max_position_days, side = "short") {
   if (!is.list(dqr_fits) || length(dqr_fits) == 0)
     stop("dqr_fits must be a list of fitted quantile regression models.")
+  
+  if (side != "long" && side != "short")
+    stop("side must be either 'long' or 'short'.")
 
   function(data, history = FALSE) {
     qnames <- rev(sort(names(dqr_fits)))
@@ -32,13 +35,22 @@ exit_dqr <- function(dqr_fits, max_position_days) {
 
     # Create exit signals for each quantile
     for (i in seq_along(qnames)) {
-      result[[exit_cols[i]]] <- result$S >= result[[qhat_cols[i]]]
+      if (side == "long")
+        result[[exit_cols[i]]] <- result$S >= result[[qhat_cols[i]]]
+      else if (side == "short")
+        result[[exit_cols[i]]] <- result$S <= result[[qhat_cols[i]]]
     }
 
     # Combine all exit signals with OR logic
-    result$exit <- result %>%
-      dplyr::mutate(exit = keep_first_true_only(S > qhat & S > 1 & t >= 3)) %>%
-      dplyr::pull(exit)
+    if (side == "long") {
+      result$exit <- result %>%
+        dplyr::mutate(exit = keep_first_true_only(S > qhat & S > 1 & t >= 3)) %>%
+        dplyr::pull(exit)
+    } else if (side == "short") {
+      result$exit <- result %>%
+        dplyr::mutate(exit = keep_first_true_only(S < qhat & S < 1 & t >= 3)) %>%
+        dplyr::pull(exit)
+    }
 
     result
   }

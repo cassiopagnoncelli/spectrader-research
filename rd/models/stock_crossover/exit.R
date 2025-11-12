@@ -18,7 +18,7 @@ df_train_dqr <- df_train %>%
 dqr_fits <- train_dqr(
   df_train_dqr,
   quotes = q,
-  taus = c(.92, .86, .82, .32),
+  taus = 1 - c(.92, .86, .82, .32),
   formulas = list(
     formula_exit_complete,
     formula_exit_complete,

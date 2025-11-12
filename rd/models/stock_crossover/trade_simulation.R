@@ -14,7 +14,7 @@ df_signals <- df_test %>%
 # Exits for each position
 posl_raw <- position_cohort(df_signals, 100, max_position_days, q)
 posl <- lapply(seq_along(posl_raw), function(i) {
-  exit_dqr(dqr_fits, max_position_days = max_position_days)(posl_raw[[i]])
+  exit_dqr(dqr_fits, max_position_days = max_position_days, side = "short")(posl_raw[[i]])
 })
 
 # Signals & Returns

@@ -54,7 +54,7 @@ train_dqr <- function(signals, quotes, taus, formulas, max_position_days = 60) {
     formulas, taus,
     \(formula, tau) quantreg::rq(formula, tau = tau, data = data)
   )
-  names(models) <- paste0("q", sprintf("%.0f", taus * 100))
+  names(models) <- paste0("q", sprintf("%02.0f", taus * 100))
   models
 }
 
