@@ -6,8 +6,10 @@ source("rd/models/stock_crossover/exit.R")
 max_position_days <- 20
 
 # Generate trading signals
+signal_cutoff <- quantile(df_test$yhat, .999, na.rm = TRUE)
+signal_cutoff
 df_signals <- df_test %>%
-  filter(yhat > 1.37) %>%
+  filter(yhat > signal_cutoff) %>%
   filter_signals(within_days = max_position_days) %>% # Discard nearby signals
   arrange(date)
 

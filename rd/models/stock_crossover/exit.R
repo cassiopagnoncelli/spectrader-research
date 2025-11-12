@@ -5,8 +5,8 @@
 #
 # formula_exit_complete <- as.formula(paste("S ~", paste(rhs_vars, collapse = " + ")))
 
-formula_exit_complete <- S ~ t + S_1 + S_2 + R_1 + R_2 + kurtosis + skewness +
-  H + H_slow + vol + vix
+formula_exit_complete <- S ~ t + S_1 + S_2 + R_1 + R_2 + kurtosis + skewness + H + H_slow + vol + vix
+formula_exit_complete <- S ~ t + S_1 + S_2 + R_1 + R_2 + vix_2 + wh + vix
 formula_exit_complete
 
 # Fit exit dqr on train subset

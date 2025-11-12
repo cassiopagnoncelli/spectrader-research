@@ -16,9 +16,26 @@ q <- fets::get_quotes(fetl)
 #
 # FEATURE ENGINEERING.
 #
-fets::fwd(q, inplace = TRUE, lookahead = 12)
+fets::fwd(q, inplace = TRUE, lookahead = 20)
+
 fets::add_vix(q, vix)
-q <- fets::fe(q, inplace = FALSE) %>% na.omit
+
+qfe <- fets::fe(q, inplace = FALSE) %>% na.omit
+q <- qfe$dt
+
+# Re-engineer features, drilling down to the most important ones
+keep_features <- c(
+  "yt2_pred", "yt3_pred","y2_pred","vix_2","wh",
+  "wh_2","vix_1","vix","vix_vel_0","y1_pred",
+  "wh_vel_1","wh_1","vix_vel_1","H_slow","vix_accel_0",
+  "wh_vel_0","vol_vix_2","y3_pred","wh_accel_0","y4_pred",
+  "signal_fast_ratio_2","H_slow_2","ae_recon_error_2","macro","vol_1",
+  "vol_vix_vel_0","ae_recon_error_1","vol_vix","slow_2","ae_volatility_vel_0",
+  "fast_1","fast_slow_ratio_vel_1","skewness","ae_volatility","cr_7",
+  "slow_1","R_2","slow","vol_vix_vel_1","H_slow_vel_1"
+)
+remove_features <- setdiff(qfe$new_features, keep_features)
+q[, (remove_features) := NULL]
 
 #
 # PREPROCESSING.
@@ -29,10 +46,10 @@ q_X <- q[, .SD, .SDcols = !c("symbol", "date", "close", fets::fwd_methods())]
 
 # Set splits.
 train_end <- as.Date("2023-12-31")
-val_end <- as.Date("2024-07-31")
+val_end <- as.Date("2024-10-31")
 
 train_indices <- which(q$date <= train_end)
-train_indices <- sample(train_indices, 25000) # Train limit for faster training
+train_indices <- sample(train_indices, 35000) # Train limit for faster training
 val_indices <- which(q$date > train_end & q$date <= val_end)
 test_indices <- which(q$date > val_end)
 
@@ -46,29 +63,23 @@ test_data <- q_X[test_indices, ]
 model_name <- "stock_crossover__entry__extreme_high_identity"
 params <- list(rounds = 200, notes = "neutral")
 ckm <- cache_key(params = params, ext = "rds", fun = model_name)
-aux <- list(
+aux_list <- list(
   y1 = q_targets$extreme_high_identity,
-  y2 = q_targets$mass_high_identity,
-  y3 = q_targets$mass_low_identity,
-  y4 = q_targets$sharpe_high,
-  y5 = q_targets$sharpe_low,
-  y6 = q_targets$close_log,
-  y7 = q_targets$mean_log,
-  y8 = q_targets$de_log,
-  y9 = q_targets$dm_log
+  y2 = q_targets$extreme_low_identity,
+  y3 = q_targets$mass_high_identity,
+  y4 = q_targets$mass_low_identity,
+  y5 = q_targets$sharpe_high,
+  y6 = q_targets$sharpe_low,
+  y7 = q_targets$close_log,
+  y8 = q_targets$mean_log,
+  y9 = q_targets$de_log,
+  y10 = q_targets$dm_log,
+  yt1 = q_targets$ma_short_ratio,
+  yt2 = q_targets$ma_long_ratio,
+  yt3 = q_targets$ma_macro_ratio
 )
-aux <- list(
-  y1 = q_targets$ma_short_ratio,
-  y2 = q_targets$ma_long_ratio,
-  y3 = q_targets$ma_macro_ratio
-)
-aux <- list(
-  # y1 = q_targets$extreme_high_identity,
-  y4 = q_targets$sharpe_high,
-  y5 = q_targets$ma_short_ratio,
-  y6 = q_targets$ma_long_ratio,
-  y7 = q_targets$ma_macro_ratio
-)
+aux <- aux_list[c("y1", "y2", "y3", "y4", "yt2", "yt3")]
+aux <- names(aux_list)
 model_signal <- train_stacked_model(
   train_indices = train_indices,
   val_indices = val_indices,
@@ -76,14 +87,14 @@ model_signal <- train_stacked_model(
   X = q_X,
   y = q_targets$extreme_high_identity,
   aux = aux,
-  # cache = ckm,
   verbose = TRUE
 )
+
+feature_importance <- model_signal$importance %>% as_tibble() %>% print(n = Inf)
 
 #
 # EVALUATION.
 #
-
 df_train <- tibble(
   symbol = q_metadata$symbol[train_indices],
   date = q_metadata$date[train_indices],
