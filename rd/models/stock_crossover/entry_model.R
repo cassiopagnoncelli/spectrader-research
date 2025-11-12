@@ -25,6 +25,28 @@ train_stacked_model <- function(train_indices, val_indices, test_indices,
   results
 }
 
+sm_level_1_hyperparams <- function() {
+  list(
+    objective = "reg:squarederror",
+    eta = 0.04,              # conservative: <.1, aggressive: >.1
+    max_depth = 5,           # default: 5
+    min_child_weight = 5,    # default: 3
+    subsample = 1,           # default: .8
+    colsample_bytree = 1     # default: .8
+  )
+}
+
+sm_level_2_hyperparams <- function() {
+  list(
+    objective = "reg:squarederror",
+    eta = 0.04,              # conservative: <.1, aggressive: >.1
+    max_depth = 7,           # default: 5
+    min_child_weight = 2,    # default: 3
+    subsample = 0.8,
+    colsample_bytree = 0.8
+  )
+}
+
 perform_train_stacked_model <- function(
   train_indices, val_indices, test_indices, X, y, aux, verbose = TRUE
 ) {
@@ -85,18 +107,9 @@ perform_train_stacked_model <- function(
   dtrain_final <- xgboost::xgb.DMatrix(data = X_train_stacked, label = y_train)
   dval_final <- xgboost::xgb.DMatrix(data = X_val_stacked, label = y_val)
 
-  params_final <- list(
-    objective = "reg:squarederror",
-    eta = 0.04,           # conservative: <.1, aggressive: >.1
-    max_depth = 7,        # default: 5
-    min_child_weight = 2, # default: 3
-    subsample = 0.8,
-    colsample_bytree = 0.8
-  )
-
   watchlist_final <- list(train = dtrain_final, val = dval_final)
   model_final <- xgboost::xgb.train(
-    params = params_final,
+    params = sm_level_2_hyperparams(),
     data = dtrain_final,
     nrounds = 500,
     watchlist = watchlist_final,
@@ -201,20 +214,10 @@ train_level1_model <- function(X_data, y_aux, train_idx, val_idx, model_name, ve
   dtrain <- xgboost::xgb.DMatrix(data = X_train, label = y_train)
   dval <- xgboost::xgb.DMatrix(data = X_val, label = y_val)
 
-  # Set hyperparameters
-  params <- list(
-    objective = "reg:squarederror",
-    eta = 0.04,              # conservative: <.1, aggressive: >.1
-    max_depth = 5,           # default: 5
-    min_child_weight = 5,    # default: 3
-    subsample = 1,           # default: .8
-    colsample_bytree = 1     # default: .8
-  )
-
   # Train with early stopping
   watchlist <- list(train = dtrain, val = dval)
   model <- xgboost::xgb.train(
-    params = params,
+    params = sm_level_1_hyperparams(),
     data = dtrain,
     nrounds = 1500,
     watchlist = watchlist,
