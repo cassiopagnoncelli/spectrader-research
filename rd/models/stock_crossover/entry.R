@@ -58,6 +58,7 @@ model_signal <- train_stacked_model(
   val_indices = val_indices,
   test_indices = test_indices,
   X = q_X,
+  aux = aux,
   y = q_targets$extreme_low_identity,
   cache = ckm,
   verbose = TRUE
