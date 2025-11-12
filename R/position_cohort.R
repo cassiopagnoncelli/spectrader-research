@@ -7,11 +7,19 @@ position_cohort <- function(symbol_dates,
                             fun = identity) {
   lapply(seq_len(nrow(symbol_dates)), function(i) {
     # Extract.
-    symbol <- symbol_dates$symbol[i]
+    sym <- symbol_dates$symbol[i]
     event_date <- as.Date(symbol_dates$date[i])
 
-    q_sub <- quotes[symbol == symbol_dates$symbol[i]]
+    q_sub <- data.table::copy(quotes[quotes$symbol == sym, ])
     idx <- which(q_sub$date == event_date)
+
+    # Handle case where event_date is not found or multiple matches exist
+    if (length(idx) == 0) {
+      stop(sprintf("Event date %s not found for symbol %s", event_date, sym))
+    }
+    if (length(idx) > 1) {
+      stop(sprintf("Multiple matches for event date %s in symbol %s", event_date, sym))
+    }
 
     window <- seq(idx - before_days, idx + after_days)
 
@@ -43,9 +51,17 @@ position_cohort <- function(symbol_dates,
       dplyr::mutate(
         t = dplyr::row_number() - before_days - 1,
         S = close / close[before_days + 1],
+        S_1 = dplyr::lag(S),
+        S_2 = dplyr::lag(S, 2),
         s = log(S),
-        R = S / lag(S, default = dplyr::first(S)) - 1,
+        s_1 = dplyr::lag(s),
+        s_2 = dplyr::lag(s, 2),
+        R = S / dplyr::lag(S) - 1,
+        R_1 = dplyr::lag(R),
+        R_2 = dplyr::lag(R, 2),
         r = c(NA, diff(log(close))),
+        r_1 = dplyr::lag(r),
+        r_2 = dplyr::lag(r, 2),
         sd_hat = RcppRoll::roll_sd(r, n = before_days, fill = NA, align = "right"),
         mu_hat = RcppRoll::roll_mean(r, n = before_days, fill = NA, align = "right") + 0.5 * sd_hat^2,
         x = r / sd_hat,
@@ -59,7 +75,7 @@ position_cohort_exit_method <- function(pos_data) {
   if (!tibble::is_tibble(pos_data) && !is.data.frame(pos_data))
     stop("Input must be a tibble or data frame.")
 
-  if (!any(pos_data$exit))
+  if (!any(pos_data$exit, na.rm = TRUE))
     return(NA_character_)
 
   exit_cols <- grep("^exit_", names(pos_data), value = TRUE)

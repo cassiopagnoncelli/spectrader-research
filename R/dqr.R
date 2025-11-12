@@ -46,6 +46,7 @@ train_dqr <- function(signals, quotes, taus, formulas, max_position_days = 60) {
     posl[[i]] %>%
       dplyr::filter(t > 0) %>%
       dplyr::mutate(position_id = i, t_norm = t / max(t)) %>%
+      dplyr::select(-c(symbol, date, close, fets::fwd_methods())) %>%
       na.omit()
   })
   
