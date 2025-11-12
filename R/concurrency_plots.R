@@ -67,21 +67,115 @@ plot_concurrency_overlap_matrix <- function(df_dates, plot = TRUE) {
 #' @param plot Logical; if TRUE prints plot.
 #' @return List with data and ggplot.
 plot_concurrency_distribution <- function(df_dates, plot = TRUE) {
-  d <- prepare_overlap_data(df_dates)
-  df_dates <- d$df_dates
-
-  p <- ggplot2::ggplot(df_dates, ggplot2::aes(x = overlap_count)) +
-    ggplot2::geom_histogram(binwidth = 1, fill = "steelblue", color = "white") +
-    ggplot2::labs(
-      title = "Distribution of Overlap Counts",
-      x = "Number of Concurrent Trades", y = "Frequency"
+  d <- prepare_overlap_data(df_dates)$df_overlap
+  
+  # Calculate statistics
+  mean_val <- base::mean(d$active_trades, na.rm = TRUE)
+  sd_val <- stats::sd(d$active_trades, na.rm = TRUE)
+  median_val <- stats::median(d$active_trades, na.rm = TRUE)
+  mode_val <- as.numeric(names(sort(table(d$active_trades), decreasing = TRUE)[1]))
+  
+  # Create histogram with density overlay
+  p <- ggplot2::ggplot(d, ggplot2::aes(x = active_trades)) +
+    # Histogram
+    ggplot2::geom_histogram(
+      ggplot2::aes(y = ggplot2::after_stat(density)),
+      binwidth = 1,
+      boundary = 0.5,
+      center = NULL,
+      fill = "steelblue",
+      color = "white",
+      alpha = 0.7
     ) +
-    ggplot2::theme_minimal()
+    # Density curve
+    ggplot2::geom_density(
+      color = "#E53935",
+      linewidth = 1.2,
+      alpha = 0.3,
+      fill = "#E53935"
+    ) +
+    # Mean line
+    ggplot2::geom_vline(
+      xintercept = mean_val,
+      color = "#FF9800",
+      linetype = "dashed",
+      linewidth = 1
+    ) +
+    # Median line
+    ggplot2::geom_vline(
+      xintercept = median_val,
+      color = "#4CAF50",
+      linetype = "dashed",
+      linewidth = 1
+    ) +
+    # SD lines
+    ggplot2::geom_vline(
+      xintercept = mean_val + sd_val,
+      color = "#FF9800",
+      linetype = "dotted",
+      linewidth = 0.8,
+      alpha = 0.6
+    ) +
+    ggplot2::geom_vline(
+      xintercept = mean_val - sd_val,
+      color = "#FF9800",
+      linetype = "dotted",
+      linewidth = 0.8,
+      alpha = 0.6
+    ) +
+    # Labels
+    ggplot2::labs(
+      title = "Distribution of Active Concurrent Trades",
+      subtitle = base::sprintf(
+        "Mean: %.2f | Median: %.0f | Mode: %.0f | SD: %.2f | N: %d",
+        mean_val, median_val, mode_val, sd_val, base::nrow(d)
+      ),
+      x = "Number of Concurrent Trades",
+      y = "Density"
+    ) +
+    ggplot2::scale_x_continuous(breaks = scales::pretty_breaks()) +
+    ggplot2::expand_limits(x = 0) +
+    ggplot2::theme_minimal(base_size = 12) +
+    ggplot2::theme(
+      plot.title = ggplot2::element_text(face = "bold", size = 14),
+      plot.subtitle = ggplot2::element_text(size = 11, color = "#666666"),
+      panel.grid.minor = ggplot2::element_blank(),
+      legend.position = "right"
+    ) +
+    # Add annotations
+    ggplot2::annotate(
+      "text",
+      x = mean_val,
+      y = base::max(stats::density(d$active_trades)$y) * 0.95,
+      label = "Mean",
+      color = "#FF9800",
+      size = 3.5,
+      vjust = -0.5
+    ) +
+    ggplot2::annotate(
+      "text",
+      x = median_val,
+      y = base::max(stats::density(d$active_trades)$y) * 0.85,
+      label = "Median",
+      color = "#4CAF50",
+      size = 3.5,
+      vjust = -0.5
+    )
 
   if (plot)
     base::print(p)
 
-  list(data = df_dates, plot = p)
+  list(
+    data = d,
+    plot = p,
+    stats = list(
+      mean = mean_val,
+      median = median_val,
+      mode = mode_val,
+      sd = sd_val,
+      n = base::nrow(d)
+    )
+  )
 }
 
 #' @title Plot trade waterfall (Gantt)
