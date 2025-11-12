@@ -53,7 +53,12 @@ ui <- dashboardPage(
           valueBoxOutput("total_trades", width = 3),
           valueBoxOutput("win_rate", width = 3),
           valueBoxOutput("avg_return", width = 3),
-          valueBoxOutput("kelly_fraction", width = 3)
+          valueBoxOutput("sharpe_ratio", width = 3)
+        ),
+        fluidRow(
+          valueBoxOutput("profit_factor", width = 4),
+          valueBoxOutput("capture_rate", width = 4),
+          valueBoxOutput("avg_holding_period", width = 4)
         )
       ),
       
@@ -773,13 +778,49 @@ server <- function(input, output, session) {
     )
   })
   
-  output$kelly_fraction <- renderValueBox({
-    req(rv$f_star)
+  output$sharpe_ratio <- renderValueBox({
+    req(rv$dfsr)
+    sharpe <- sharpe_ratio(rv$dfsr$R, na.rm = TRUE)
     valueBox(
-      sprintf("%.3f", rv$f_star),
-      "Kelly Fraction",
-      icon = icon("balance-scale"),
-      color = "purple"
+      sprintf("%.2f", sharpe),
+      "Sharpe Ratio",
+      icon = icon("chart-line"),
+      color = if (sharpe > 1) "green" else if (sharpe > 0) "yellow" else "red"
+    )
+  })
+  
+  output$profit_factor <- renderValueBox({
+    req(rv$dfsr)
+    gross_profit <- sum(rv$dfsr$R[rv$dfsr$R > 0], na.rm = TRUE)
+    gross_loss <- abs(sum(rv$dfsr$R[rv$dfsr$R <= 0], na.rm = TRUE))
+    pf <- if (gross_loss == 0) Inf else gross_profit / gross_loss
+    valueBox(
+      sprintf("%.2f", pf),
+      "Profit Factor",
+      icon = icon("scale-balanced"),
+      color = if (pf > 1.5) "green" else if (pf > 1) "yellow" else "red"
+    )
+  })
+  
+  output$capture_rate <- renderValueBox({
+    req(rv$dfsr)
+    capture_rate <- mean(!is.na(rv$dfsr$exit_method), na.rm = TRUE) * 100
+    valueBox(
+      sprintf("%.1f%%", capture_rate),
+      "Capture Rate",
+      icon = icon("bullseye"),
+      color = if (capture_rate > 70) "green" else if (capture_rate > 50) "yellow" else "red"
+    )
+  })
+  
+  output$avg_holding_period <- renderValueBox({
+    req(rv$dfsr)
+    avg_days <- mean(rv$dfsr$t, na.rm = TRUE)
+    valueBox(
+      sprintf("%.1f days", avg_days),
+      "Avg Holding Period",
+      icon = icon("clock"),
+      color = "blue"
     )
   })
   

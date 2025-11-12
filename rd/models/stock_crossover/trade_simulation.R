@@ -7,7 +7,7 @@ max_position_days <- 20
 
 # Generate trading signals
 df_signals <- df_test %>%
-  filter(yhat > 1.42) %>%
+  filter(yhat > 1.37) %>%
   filter_signals(within_days = max_position_days) %>% # Discard nearby signals
   arrange(date)
 
