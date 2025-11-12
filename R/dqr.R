@@ -6,6 +6,7 @@ NULL
 #' Fits multiple quantile regression models using position cohort data.
 #'
 #' @param signals Signal data for position cohort generation
+#' @param quotes Quotes data
 #' @param taus Numeric vector of quantile values (e.g., c(0.92, 0.82, 0.32))
 #' @param formulas List of formulas for each quantile (same length as taus)
 #' @param max_position_days Maximum days after position entry (default: 60)
@@ -28,7 +29,7 @@ NULL
 # q82 <- S ~ S_1 + t + h_short + h_ratio + cr_long
 # q32 <- S ~ S_1 + t + h_long + cr_long + vix
 #
-train_dqr <- function(signals, taus, formulas, max_position_days = 60) {
+train_dqr <- function(signals, quotes, taus, formulas, max_position_days = 60) {
   if (length(taus) != length(formulas))
     stop("taus and formulas must have the same length")
   
@@ -37,7 +38,7 @@ train_dqr <- function(signals, taus, formulas, max_position_days = 60) {
     signals,
     before_days = 30,
     after_days = max_position_days,
-    fun = fe_dqr
+    quotes = quotes
   )
 
   # Amalgamate all positions into a single data frame

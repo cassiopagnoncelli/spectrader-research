@@ -1848,7 +1848,7 @@ server <- function(input, output, session) {
     
     tryCatch({
       # Enrich df_train with feature engineering
-      train_df_enriched <- train_df %>% fe_dqr()
+      train_df_enriched <- train_df
       
       # Compute predictions and add to train_df
       train_df_plot <- train_df_enriched %>%
@@ -1908,7 +1908,7 @@ server <- function(input, output, session) {
     
     tryCatch({
       # Enrich df_train with feature engineering
-      train_df_enriched <- train_df %>% fe_dqr()
+      train_df_enriched <- train_df
       
       # Compute predictions
       pred <- predict(model, train_df_enriched)

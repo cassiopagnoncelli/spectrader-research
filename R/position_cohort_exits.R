@@ -11,7 +11,6 @@ exit_dqr <- function(dqr_fits, max_position_days) {
 
     # Feature engineering
     result <- data %>%
-      fe_dqr() %>%
       dplyr::filter(t >= ifelse(history, -Inf, 0)) %>%
       dplyr::mutate(t_norm = t / max_position_days)
 

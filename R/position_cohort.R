@@ -3,33 +3,32 @@
 position_cohort <- function(symbol_dates,
                             before_days,
                             after_days,
+                            quotes,
                             fun = identity) {
-  fetl <- fets::Fetl$new()
   lapply(seq_len(nrow(symbol_dates)), function(i) {
     # Extract.
     symbol <- symbol_dates$symbol[i]
-    event_date <- symbol_dates$date[i]
-    start_date <- event_date - 2 * (before_days + 10)
-    end_date <- event_date + 2 * (after_days + 10)
-    query <- sprintf("
-      SELECT c.symbol, q.date, q.close, fredu.value AS vix
-      FROM quotes q
-      JOIN companies c ON q.company_id = c.id
-      LEFT JOIN LATERAL (
-        SELECT *
-        FROM fred_univariates fu
-        WHERE fu.code = 'VIXCLS'
-          AND fu.freq = 'D'
-          AND fu.date <= q.date
-        ORDER BY fu.date DESC
-        LIMIT 1
-      ) fredu ON TRUE
-      WHERE c.symbol = '%s'
-        AND q.date BETWEEN '%s' AND '%s'
-      ORDER BY q.date
-      ", symbol, start_date, end_date)
-    data <- fetl$send_query(query)
-    fetl$disconnect()
+    event_date <- as.Date(symbol_dates$date[i])
+
+    q_sub <- quotes[symbol == symbol_dates$symbol[i]]
+    idx <- which(q_sub$date == event_date)
+
+    window <- seq(idx - before_days, idx + after_days)
+
+    # Create a tibble of NAs with the expected dimensions
+    n_rows <- before_days + after_days + 1
+    na_template <- q_sub[1, ][rep(1, n_rows), ]
+    na_template[, ] <- NA
+
+    # Determine which window indices are valid and paste q_sub data
+    valid_window <- window >= 1 & window <= nrow(q_sub)
+    valid_indices <- window[valid_window]
+
+    if (length(valid_indices) > 0) {
+      na_template[valid_window, ] <- q_sub[valid_indices, ]
+    }
+
+    data <- tibble::tibble(na_template)
 
     # Transform: filter, fill, normalize.
     event_idx <- which(data$date == event_date)
@@ -38,7 +37,6 @@ position_cohort <- function(symbol_dates,
 
     date_locf <- function(prev, curr) ifelse(is.na(curr), prev + 1, curr)
     data$date <- Reduce(date_locf, data$date, accumulate = TRUE) %>% as.Date
-    row.names(data) <- data$date
 
     data %>%
       dplyr::arrange(date) %>%
@@ -60,22 +58,22 @@ position_cohort <- function(symbol_dates,
 position_cohort_exit_method <- function(pos_data) {
   if (!tibble::is_tibble(pos_data) && !is.data.frame(pos_data))
     stop("Input must be a tibble or data frame.")
-  
+
   if (!any(pos_data$exit))
     return(NA_character_)
 
   exit_cols <- grep("^exit_", names(pos_data), value = TRUE)
   if (length(exit_cols) == 0)
     return(NA_character_)
-  
+
   min_indices <- sapply(exit_cols, function(col) {
     idx <- which(pos_data[[col]] == TRUE)
     ifelse(length(idx) == 0, NA_integer_, min(idx))
   })
-  
+
   if (all(is.na(min_indices)))
     return(NA_character_)
-  
+
   sub("^exit_", "", names(which.min(min_indices)))
 }
 

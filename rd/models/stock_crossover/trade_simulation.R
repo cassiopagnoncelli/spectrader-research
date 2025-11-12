@@ -1,6 +1,7 @@
 devtools::load_all()
 
-source("rd/models/stock_crossover/enter.R")
+source("rd/models/stock_crossover/entry.R")
+source("rd/models/stock_crossover/exit.R")
 
 max_position_days <- 20
 
@@ -11,7 +12,7 @@ df_signals <- df_test %>%
   arrange(date)
 
 # Exits for each position
-posl_raw <- position_cohort(df_signals, before_days = 30, max_position_days)
+posl_raw <- position_cohort(df_signals, 100, max_position_days, q)
 posl <- lapply(seq_along(posl_raw), function(i) {
   exit_dqr(dqr_fits, max_position_days = max_position_days)(posl_raw[[i]])
 })

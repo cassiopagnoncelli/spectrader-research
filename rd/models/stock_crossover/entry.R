@@ -9,6 +9,7 @@ source("rd/models/stock_crossover/entry_plots.R")
 # ETL.
 #
 fetl <- fets::Fetl$new()
+
 vix <- fets::get_vix(fetl)
 q <- fets::get_quotes(fetl)
 
