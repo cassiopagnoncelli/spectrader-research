@@ -52,7 +52,7 @@ perform_train_stacked_model <- function(
 ) {
   # LEVEL 1: Train XGBoost models for each auxiliary target
   n_aux <- length(aux)
-  
+
   # Check if aux is empty - if so, skip Level 1 entirely
   if (n_aux == 0) {
     if (verbose) {
@@ -109,7 +109,7 @@ perform_train_stacked_model <- function(
                   ncol(X), n_aux, ncol(X_stacked)))
     }
   }
-  
+
   if (verbose) {
     cat("\n=== Training Final Stacked Model ===\n")
   }

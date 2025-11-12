@@ -88,7 +88,7 @@ position_cohort_exit_method <- function(pos_data) {
   })
 
   if (all(is.na(min_indices)))
-    return(NA_character_)
+    return("heuristic")
 
   sub("^exit_", "", names(which.min(min_indices)))
 }
@@ -98,9 +98,18 @@ position_cohort_metrics <- function(pos_data, trade) {
     stop("Input must be a tibble or data frame.")
 
   idx <- dplyr::coalesce(which(na.omit(pos_data$exit))[1], dplyr::last(na.omit(pos_data$t)))
-  R <- pos_data$S[idx] - 1
-  r <- log(pos_data$S[idx])
-  exit_method <- position_cohort_exit_method(pos_data)
+  if (is.na(idx)) {
+    stop("No valid exit found in position data.")
+  }
+  if (is.na(pos_data$S[idx])) {
+    R <- tail(na.omit(pos_data$S), 1) - 1
+    r <- log(1 + R)
+    exit_method <- NA_character_
+  } else {
+    R <- pos_data$S[idx] - 1
+    r <- log(pos_data$S[idx])
+    exit_method <- position_cohort_exit_method(pos_data)
+  }
   tibble::tibble(trade, t = idx - 1, exit_method, R, r)
 }
 

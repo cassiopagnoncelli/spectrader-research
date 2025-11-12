@@ -16,7 +16,7 @@ q <- fets::get_quotes(fetl)
 #
 # FEATURE ENGINEERING.
 #
-fets::fwd(q, inplace = TRUE, lookahead = 10)
+fets::fwd(q, inplace = TRUE, lookahead = 12)
 fets::add_vix(q, vix)
 q <- fets::fe(q, inplace = FALSE) %>% na.omit
 
@@ -28,10 +28,13 @@ q_targets <- q[, .SD, .SDcols = fets::fwd_methods()]
 q_X <- q[, .SD, .SDcols = !c("symbol", "date", "close", fets::fwd_methods())]
 
 # Set splits.
-train_indices <- which(q$date <= as.Date("2023-12-31"))
-train_indices <- sample(train_indices, 25000)
-val_indices <- which(q$date > as.Date("2024-01-01") & q$date <= as.Date("2024-12-31"))
-test_indices <- which(q$date >= as.Date("2025-01-01"))
+train_end <- as.Date("2023-12-31")
+val_end <- as.Date("2024-07-31")
+
+train_indices <- which(q$date <= train_end)
+train_indices <- sample(train_indices, 25000) # Train limit for faster training
+val_indices <- which(q$date > train_end & q$date <= val_end)
+test_indices <- which(q$date > val_end)
 
 train_data <- q_X[train_indices, ]
 val_data <- q_X[val_indices, ]
@@ -40,7 +43,7 @@ test_data <- q_X[test_indices, ]
 #
 # Training
 #
-model_name <- "stock_crossover__entry__extreme_low_identity"
+model_name <- "stock_crossover__entry__extreme_high_identity"
 params <- list(rounds = 200, notes = "neutral")
 ckm <- cache_key(params = params, ext = "rds", fun = model_name)
 aux <- list(
@@ -54,14 +57,26 @@ aux <- list(
   y8 = q_targets$de_log,
   y9 = q_targets$dm_log
 )
+aux <- list(
+  y1 = q_targets$ma_short_ratio,
+  y2 = q_targets$ma_long_ratio,
+  y3 = q_targets$ma_macro_ratio
+)
+aux <- list(
+  # y1 = q_targets$extreme_high_identity,
+  y4 = q_targets$sharpe_high,
+  y5 = q_targets$ma_short_ratio,
+  y6 = q_targets$ma_long_ratio,
+  y7 = q_targets$ma_macro_ratio
+)
 model_signal <- train_stacked_model(
   train_indices = train_indices,
   val_indices = val_indices,
   test_indices = test_indices,
   X = q_X,
+  y = q_targets$extreme_high_identity,
   aux = aux,
-  y = q_targets$extreme_low_identity,
-  cache = ckm,
+  # cache = ckm,
   verbose = TRUE
 )
 

@@ -31,7 +31,7 @@ check_data <- function() {
   
   if (has_dfsr && has_posl && has_f_star) {
     cat("✓ All required data objects found in global environment.\n")
-    return(TRUE)
+    TRUE
   } else {
     cat("⚠ Warning: Some required data objects are missing:\n")
     if (!has_dfsr) cat("  - dfsr not found\n")
@@ -39,7 +39,7 @@ check_data <- function() {
     if (!has_f_star) cat("  - f_star not found\n")
     cat("\nPlease run trade_simulation.R first to generate the required data.\n")
     cat("You can do this by running: source('rd/models/stock_crossover/trade_simulation.R')\n\n")
-    return(FALSE)
+    FALSE
   }
 }
 
