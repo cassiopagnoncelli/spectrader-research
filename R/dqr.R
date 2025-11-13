@@ -197,7 +197,7 @@ exit_dqr_weighted_probs <- function(t_norm, taus, method = "laplace", ...) {
 
 
 #' Evaluate DQR models and generate exit signals
-#' 
+#'
 #' Decaying curve is leveled at extreme quantiles progressively lowering the quantiles
 #' as time goes by with occasional bursts when vix levels are high.
 #'
@@ -236,9 +236,10 @@ exit_dqr_eval <- function(data, max_position_days, side, dqr_fits, history = FAL
   M <- as.matrix(result[qhat_cols])
 
   # w := weights from decay curve (one row per observation)
-  w1 <- exit_dqr_weighted_probs(result$t_norm, taus) %>% as.matrix()
-  w2 <- exit_dqr_weighted_probs(result$vix / 100, taus, method = "identity")
-  w <- if (tail(w1, 1) > tail(w2, 1)) w1 else w2
+  vix_norm <- result$vix / 100 - .19458
+  w2 <- exit_dqr_weighted_probs(vix_norm, taus, method = "identity")
+  w1 <- exit_dqr_weighted_probs(result$t_norm, taus)
+  w <- if (tail(w1, 1) > tail(w2, 1)) as.matrix(w1) else as.matrix(w2)
 
   # qhat := row-wise weighted sum of quantile predictions
   result$qhat <- rowSums(M * w)

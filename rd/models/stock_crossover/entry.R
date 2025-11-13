@@ -94,7 +94,7 @@ model_signal <- train_stacked_model(
   test_indices = test_indices,
   X = X,
   y = ys$extreme_high_identity,
-  aux = aux,
+  aux = list(),
   verbose = TRUE
 )
 
