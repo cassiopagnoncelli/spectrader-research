@@ -186,13 +186,12 @@ exit_dqr_weighted_probs <- function(t_norm, taus, method = "laplace", ...) {
     densities
   }))
 
-  # Convert to data frame with proper column names and rownames
+  # Convert to data frame with proper column names
   result <- as.data.frame(result_matrix)
   colnames(result) <- col_names
-  rownames(result) <- as.character(t_norm)
 
-  # Convert to tibble while preserving rownames
-  tibble::as_tibble(result, rownames = NA)
+  # Convert to tibble (row names not needed since they won't be preserved)
+  tibble::as_tibble(result)
 }
 
 
