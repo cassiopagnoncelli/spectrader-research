@@ -106,7 +106,7 @@ plot_distribution <- function(data, bins = NULL, vline = 0, title = "Distributio
     ggplot2::theme(panel.grid = ggplot2::element_blank())
 }
 
-analyse_distribution <- function(data, groups = c(0)) {
+analyse_distribution <- function(data, groups = c(0), extreme_threshold = 1e36) {
   # Handle different input types
   if (is.vector(data) || is.atomic(data)) {
     # If data is a vector, convert to tibble
@@ -125,7 +125,7 @@ analyse_distribution <- function(data, groups = c(0)) {
   na_count <- sum(is.na(data$value))
   inf_count <- sum(is.infinite(data$value), na.rm = TRUE)
   nan_count <- sum(is.nan(data$value))
-  extreme_count <- sum(abs(data$value) > 1e36, na.rm = TRUE)
+  extreme_count <- sum(abs(data$value) > extreme_threshold, na.rm = TRUE)
 
   # Sort groups to ensure proper ordering
   groups <- sort(groups)
@@ -165,11 +165,11 @@ analyse_distribution <- function(data, groups = c(0)) {
       prob = dplyr::n() / total_n,
       mean = mean(value, na.rm = TRUE),
       expected = prob * mean,
-      median = quantile(value, probs = 0.5, na.rm = TRUE),
       sd = sd(value, na.rm = TRUE),
       min = quantile(value, probs = 0, na.rm = TRUE),
       q_0.05 = quantile(value, probs = 0.05, na.rm = TRUE),
       q_0.32 = quantile(value, probs = 0.32, na.rm = TRUE),
+      median = quantile(value, probs = 0.5, na.rm = TRUE),
       q_0.68 = quantile(value, probs = 0.68, na.rm = TRUE),
       q_0.95 = quantile(value, probs = 0.95, na.rm = TRUE),
       max = quantile(value, probs = 1, na.rm = TRUE),
@@ -186,9 +186,9 @@ analyse_distribution <- function(data, groups = c(0)) {
       median = quantile(value, probs = 0.5, na.rm = TRUE),
       sd = sd(value, na.rm = TRUE),
       n = nrow(data),
-      na_count = na_count,
-      inf_count = inf_count,
-      nan_count = nan_count,
+      NA_count = na_count,
+      Inf_count = inf_count,
+      NaN_count = nan_count,
       extreme_count = extreme_count
     )
 
