@@ -121,6 +121,12 @@ analyse_distribution <- function(data, groups = c(0)) {
     data <- tibble::tibble(value = data[[first_numeric]])
   }
 
+  # Count special values before processing
+  na_count <- sum(is.na(data$value))
+  inf_count <- sum(is.infinite(data$value), na.rm = TRUE)
+  nan_count <- sum(is.nan(data$value))
+  extreme_count <- sum(abs(data$value) > 1e36, na.rm = TRUE)
+
   # Sort groups to ensure proper ordering
   groups <- sort(groups)
 
@@ -179,7 +185,11 @@ analyse_distribution <- function(data, groups = c(0)) {
       mean = mean(value, na.rm = TRUE),
       median = quantile(value, probs = 0.5, na.rm = TRUE),
       sd = sd(value, na.rm = TRUE),
-      n = nrow(data)
+      n = nrow(data),
+      na_count = na_count,
+      inf_count = inf_count,
+      nan_count = nan_count,
+      extreme_count = extreme_count
     )
 
   return(
@@ -188,4 +198,20 @@ analyse_distribution <- function(data, groups = c(0)) {
       group_results = group_results
     )
   )
+}
+
+cap_distribution <- function(x, quantiles = c(0.001, 0.999)) {
+  if (length(quantiles) != 2) {
+    stop("quantiles must be a vector of length 2")
+  }
+  if (any(quantiles < 0) || any(quantiles > 1)) {
+    stop("quantiles must be between 0 and 1")
+  }
+  if (quantiles[1] >= quantiles[2]) {
+    stop("the first quantile must be less than the second quantile")
+  }
+  qs <- quantile(x, probs = quantiles, na.rm = TRUE)
+  x[x < qs[1]] <- qs[1]
+  x[x > qs[2]] <- qs[2]
+  return(x)
 }
