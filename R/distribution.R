@@ -1,3 +1,13 @@
+#' Plot distribution with histogram and density overlay
+#'
+#' @param data Numeric vector or data frame with numeric column
+#' @param bins Number of histogram bins (default: NULL, uses Sturges' rule)
+#' @param vline X-coordinate for vertical reference line (default: 0)
+#' @param title Plot title (default: "Distribution")
+#' @return ggplot2 object showing histogram with density curve and statistical markers
+#' @examples
+#' plot_distribution(rnorm(1000))
+#' plot_distribution(data.frame(x = rnorm(500)), vline = 1, title = "My Distribution")
 plot_distribution <- function(data, bins = NULL, vline = 0, title = "Distribution") {
   # Handle different input types
   if (is.vector(data) || is.atomic(data)) {
@@ -106,7 +116,15 @@ plot_distribution <- function(data, bins = NULL, vline = 0, title = "Distributio
     ggplot2::theme(panel.grid = ggplot2::element_blank())
 }
 
-analyse_distribution <- function(data, groups = c(0), extreme_threshold = 1e36) {
+#' Analyse distribution statistics by groups
+#'
+#' @param data Numeric vector or data frame with numeric column
+#' @param groups Numeric vector of threshold values to split data into groups (default: c(0))
+#' @param extreme_threshold Threshold for identifying extreme values (default: 1e15)
+#' @return List with overall_results (summary statistics and special value counts) and group_results (statistics per group)
+#' @examples
+#' analyse_distribution(rnorm(1000), groups = c(-1, 0, 1))
+analyse_distribution <- function(data, groups = c(0), extreme_threshold = 1e15) {
   # Handle different input types
   if (is.vector(data) || is.atomic(data)) {
     # If data is a vector, convert to tibble
@@ -200,6 +218,13 @@ analyse_distribution <- function(data, groups = c(0), extreme_threshold = 1e36) 
   )
 }
 
+#' Cap distribution values at specified quantiles
+#'
+#' @param x Numeric vector to cap
+#' @param quantiles Numeric vector of length 2 with lower and upper quantile thresholds (default: c(0.001, 0.999))
+#' @return Numeric vector with values capped at the specified quantiles
+#' @examples
+#' cap_distribution(c(1:100, 1000), quantiles = c(0.05, 0.95))
 cap_distribution <- function(x, quantiles = c(0.001, 0.999)) {
   if (length(quantiles) != 2) {
     stop("quantiles must be a vector of length 2")
