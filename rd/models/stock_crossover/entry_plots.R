@@ -1,3 +1,22 @@
+#
+# PLOTS.
+#
+if (FALSE) {
+  plot_metrics_comparison(model_signal)
+  plot_feature_importance(model_signal, top_n = 20)
+  plot_all_predictions(model_signal)
+  plot_predictions_vs_actuals(model_signal, "test")
+  plot_residuals(model_signal, "test")
+  plot_residual_distribution(model_signal, "test")
+  plot_predictions_vs_actuals(model_signal, "val")
+  plot_residuals(model_signal, "val")
+  plot_predictions_vs_actuals(model_signal, "train")
+  plot_residuals(model_signal, "train")
+  if (FALSE) {
+    plot_xgboost_trees(model_signal, tree_indices = c(0, 1, 2, 3, 4))
+  }
+}
+
 # Plot predicted vs actual values
 plot_predictions_vs_actuals <- function(results, split = "test", max_points = 10000) {
   predictions <- results$predictions[[split]]

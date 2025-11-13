@@ -11,100 +11,89 @@ source("rd/models/stock_crossover/entry_plots.R")
 fetl <- fets::Fetl$new()
 
 vix <- fets::get_vix(fetl)
-q <- fets::get_quotes(fetl)
+quotes <- fets::get_quotes(fetl)
+fets::add_vix(quotes, vix)
 
 #
 # FEATURE ENGINEERING.
 #
-fets::fwd(q, inplace = TRUE, lookahead = 15)
+fets::fwd(quotes, lookahead = 15, inplace = TRUE)
+Xyfe <- fets::fe(quotes, inplace = TRUE)
+Xy <- Xyfe$X
 
-fets::add_vix(q, vix)
-
-qfe <- fets::fe(q, inplace = FALSE)
-q <- qfe$dt
+Xym <- fets::decomposeXy(Xy, na.rm = TRUE)
+X <- Xym$X
+ys <- Xym$y
+meta <- Xym$meta
+metaX <- cbind(meta, X)
 
 # Re-engineer features, drilling down to the most important ones
-keep_features <- c(
-  paste0("y", c("", 1:4), "_pred"),
-  paste0("ys", c("", 1:3), "_pred"),
-  paste0("yd", c("", 1:2), "_pred"),
-  paste0("yma", c("", 1:3), "_pred"),
-  paste0("yc", c("", 1:3), "_pred"),
-  "vix_2", "wh", "wh_2", "vix_1", "vix", "vix_vel_0", "wh_vel_1", "wh_1",
-  "vix_vel_1", "H_slow", "vix_accel_0", "wh_vel_0", "vol_vix_2", "wh_accel_0",
-  "signal_fast_ratio_2", "H_slow_2", "ae_recon_error_2", "macro", "vol_1",
-  "vol_vix_vel_0", "ae_recon_error_1", "vol_vix", "slow_2", "ae_volatility_vel_0",
-  "fast_1", "fast_slow_ratio_vel_1", "skewness", "ae_volatility", "cr_7",
-  "slow_1", "R_2", "slow", "vol_vix_vel_1", "H_slow_vel_1"
-)
-remove_features <- setdiff(qfe$new_features, keep_features)
-q[, (remove_features) := NULL]
+if (TRUE) {
+  keep_features <- c(
+    names(X)[grepl("^y", names(X))],
+    "vix_2", "wh", "wh_2", "vix_1", "vix", "vix_vel_0", "wh_vel_1", "wh_1",
+    "vix_vel_1", "H_slow", "vix_accel_0", "wh_vel_0", "vol_vix_2", "wh_accel_0",
+    "signal_fast_ratio_2", "H_slow_2", "ae_recon_error_2", "macro", "vol_1",
+    "vol_vix_vel_0", "ae_recon_error_1", "vol_vix", "slow_2", "ae_volatility_vel_0",
+    "fast_1", "fast_slow_ratio_vel_1", "skewness", "ae_volatility", "cr_7",
+    "slow_1", "R_2", "slow", "vol_vix_vel_1", "H_slow_vel_1"
+  )
+  remove_features <- setdiff(Xyfe$new_features, keep_features)
+  X[, (remove_features) := NULL]
+}
 
 #
 # PREPROCESSING.
 #
-q_metadata <- q[, .(symbol, date)]
-q_targets <- q[, .SD, .SDcols = fets::fwd_methods()]
-q_X <- q[, .SD, .SDcols = !c("symbol", "date", "close", fets::fwd_methods())]
+
+# X[, .(close) := NULL]
 
 # Set splits.
 train_end <- as.Date("2023-12-31")
 val_end <- as.Date("2024-10-31")
 
-train_indices <- which(q$date <= train_end)
+train_indices <- which(meta$date <= train_end)
 train_indices <- sample(train_indices, 35000) # Train limit for faster training
-val_indices <- which(q$date > train_end & q$date <= val_end)
-test_indices <- which(q$date > val_end)
+val_indices <- which(meta$date > train_end & meta$date <= val_end)
+test_indices <- which(meta$date > val_end)
 
-# Verify splits have data
-cat("\nData split verification:\n")
-cat(sprintf("Train: %d samples (up to %s)\n", length(train_indices), train_end))
-cat(sprintf("Val:   %d samples (%s to %s)\n", length(val_indices), train_end + 1, val_end))
-cat(sprintf("Test:  %d samples (after %s)\n\n", length(test_indices), val_end))
-
-if (length(test_indices) == 0) {
-  stop("ERROR: test_indices is empty! Dataset may not have data after ", val_end,
-       ". Check data availability or adjust val_end to an earlier date.")
-}
-
-train_data <- q_X[train_indices, ]
-val_data <- q_X[val_indices, ]
-test_data <- q_X[test_indices, ]
+train_data <- X[train_indices, ]
+val_data <- X[val_indices, ]
+test_data <- X[test_indices, ]
 
 #
 # Training
 #
-model_name <- "stock_crossover__entry__extreme_high_identity"
-params <- list(rounds = 200, notes = "neutral")
-ckm <- cache_key(params = params, ext = "rds", fun = model_name)
 fets::fwd_methods()
 aux_list <- list(
   # High/Low
-  y1 = q_targets$extreme_high_identity,
-  y2 = q_targets$extreme_low_identity,
-  y3 = q_targets$mass_high,
-  y4 = q_targets$mass_low,
+  y1 = ys$extreme_high_identity,
+  y2 = ys$extreme_low_identity,
+  y3 = ys$mass_high,
+  y4 = ys$mass_low,
   # Sharpe
-  ys2 = q_targets$dd_sharpe,
-  ys3 = q_targets$entropy_sharpe,
+  ys2 = ys$dd_sharpe,
+  ys3 = ys$entropy_sharpe,
   # Differentials
-  yd1 = q_targets$de,
-  yd2 = q_targets$dm,
+  yd1 = ys$de,
+  yd2 = ys$dm,
+  # Moments
+  # ym1 = ys$skewness,
   # Moving Averages
-  yma1 = q_targets$ma_short_ratio,
-  yma2 = q_targets$ma_long_ratio,
-  yma3 = q_targets$ma_macro_ratio,
+  yma1 = ys$ma_short_ratio,
+  yma2 = ys$ma_long_ratio,
+  yma3 = ys$ma_macro_ratio,
   # Close
-  yc = q_targets$close_identity
+  yc = ys$close_identity
 )
-aux <- aux_list[setdiff(names(aux_list), c(""))]
+aux <- aux_list[setdiff(names(aux_list), c())]
 model_signal <- train_stacked_model(
   train_indices = train_indices,
   val_indices = val_indices,
   test_indices = test_indices,
-  X = q_X,
-  y = q_targets$de,
-  aux = aux,
+  X = X,
+  y = ys$skewness,
+  aux = list(),
   verbose = TRUE
 )
 
@@ -114,44 +103,25 @@ feature_importance <- tibble(model_signal$importance) %>% print(n = Inf)
 # EVALUATION.
 #
 df_train <- tibble(
-  symbol = q_metadata$symbol[train_indices],
-  date = q_metadata$date[train_indices],
+  symbol = meta$symbol[train_indices],
+  date = meta$date[train_indices],
   y = model_signal$actuals$train,
   yhat = model_signal$predictions$train,
-  close = q_targets$close_log[train_indices]
+  close = ys$close_log[train_indices]
 )
 
 df_val <- tibble(
-  symbol = q_metadata$symbol[val_indices],
-  date = q_metadata$date[val_indices],
+  symbol = meta$symbol[val_indices],
+  date = meta$date[val_indices],
   y = model_signal$actuals$val,
   yhat = model_signal$predictions$val,
-  close = q_targets$close_log[val_indices]
+  close = ys$close_log[val_indices]
 )
 
 df_test <- tibble(
-  symbol = q_metadata$symbol[test_indices],
-  date = q_metadata$date[test_indices],
+  symbol = meta$symbol[test_indices],
+  date = meta$date[test_indices],
   y = model_signal$actuals$test,
   yhat = model_signal$predictions$test,
-  close = q_targets$close_log[test_indices]
+  close = ys$close_log[test_indices]
 )
-
-#
-# PLOTS.
-#
-if (FALSE) {
-  plot_metrics_comparison(model_signal)
-  plot_feature_importance(model_signal, top_n = 20)
-  plot_all_predictions(model_signal)
-  plot_predictions_vs_actuals(model_signal, "test")
-  plot_residuals(model_signal, "test")
-  plot_residual_distribution(model_signal, "test")
-  plot_predictions_vs_actuals(model_signal, "val")
-  plot_residuals(model_signal, "val")
-  plot_predictions_vs_actuals(model_signal, "train")
-  plot_residuals(model_signal, "train")
-  if (FALSE) {
-    plot_xgboost_trees(model_signal, tree_indices = c(0, 1, 2, 3, 4))
-  }
-}

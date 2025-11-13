@@ -4,7 +4,7 @@
 #' @return Data frame with columns: trade, symbol, entry, exit, R, t.
 prepare_df_dates <- function(dfsr) {
   dfsr %>%
-    dplyr::mutate(entry = date, exit = add_business_days(date, t)) %>%
+    dplyr::mutate(entry = date, exit = fets::add_business_days(date, t)) %>%
     dplyr::select(trade, symbol, entry, exit, R, t)
 }
 
