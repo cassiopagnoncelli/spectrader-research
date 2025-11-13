@@ -9,3 +9,7 @@ keep_first_true_only <- function(x) {
   xx
 }
 
+right_energy <- function(x) {
+  w <- seq_along(x) / length(x)
+  sum(w^2 * x)
+}

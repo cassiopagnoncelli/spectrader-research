@@ -130,7 +130,7 @@ exit_dqr_q <- function(t_norm, taus, method = "laplace") {
 #' @param method Decay method: "gaussian", "laplace" (default), or "half-cosine"
 #' @param ... Additional arguments (currently unused)
 #' @return Numeric decay weight between 0 and 1
-exit_dqr_dc <- function(t_norm, method = "laplace", alpha = .4) {
+exit_dqr_dc <- function(t_norm, method = "laplace", alpha = .15) {
   if (method == "identity") {
     t_norm
   } else if (method == "gaussian") {
@@ -166,28 +166,65 @@ exit_dqr_extract_quantiles <- function(dqr_fits) {
 #' @param method Decay method: "gaussian", "laplace" (default), or "half-cosine"
 #' @param ... Additional arguments passed to exit_dqr_dc
 #' @return Tibble with quantile probability columns (q92, q82, etc.) and t_norm as rownames
-exit_dqr_weighted_probs <- function(t_norm, taus, method = "laplace", ...) {
+exit_dqr_weighted_probs <- function(t_norm, vol_norm, taus, method = "laplace", ...) {
   if (!all(taus == rev(sort(taus))))
     stop("taus must be in descending order")
+  if (is.null(t_norm) && is.null(vol_norm))
+    stop("At least one of t_norm or vol_norm must be provided")
 
-  decay_curve <- exit_dqr_dc(t_norm, method = method, ...)
   sds <- rep(abs(mean(diff(c(1, taus)))), length(taus))^2
 
   # Create column names based on taus
   col_names <- paste0("q", sprintf("%.0f", taus * 100))
 
   # Calculate densities for all t_norm values
-  result_matrix <- t(sapply(decay_curve, function(t) {
-    densities <- sapply(
-      seq_along(taus),
-      \(i) dnorm(t, mean = taus[i], sd = sds[i])
-    )
-    densities <- densities / sum(densities)
-    densities
-  }))
+  if (!is.null(t_norm)) {
+    decay_curve <- exit_dqr_dc(t_norm, method = method, ...)
+    decay_matrix <- sapply(decay_curve, function(t) {
+      densities <- sapply(
+        seq_along(taus),
+        \(i) dnorm(t, mean = taus[i], sd = sds[i])
+      )
+      densities <- densities / sum(densities)
+      densities
+    })
+    if (is.null(vol_norm)) {
+      final_matrix <- decay_matrix
+    }
+  }
+
+  # Calculate all densities for vol_norm values
+  if (!is.null(vol_norm)) {
+    burst_curve <- exit_dqr_dc(vol_norm, method = "gaussian")
+    burst_matrix <- sapply(burst_curve, function(v) {
+      densities <- sapply(
+        seq_along(taus),
+        \(i) dnorm(v, mean = taus[i], sd = sds[i])
+      )
+      densities <- densities / sum(densities)
+      densities
+    })
+    if (is.null(t_norm)) {
+      final_matrix <- burst_matrix
+    }
+  }
+
+  # Combine decay and burst matrices by selecting higher right energy
+  if (!is.null(t_norm) && !is.null(vol_norm)) {
+    final_matrix <- sapply(seq_len(ncol(decay_matrix)), function(i) {
+      decay_right_energy <- right_energy(decay_matrix[, i])
+      burst_right_energy <- right_energy(burst_matrix[, i])
+      col <- if (!is.na(burst_right_energy) && burst_right_energy > decay_right_energy) {
+        burst_matrix[, i]
+      } else {
+        decay_matrix[, i]
+      }
+      col
+    })
+  }
 
   # Convert to data frame with proper column names
-  result <- as.data.frame(result_matrix)
+  result <- final_matrix %>% t() %>% as.data.frame()
   colnames(result) <- col_names
 
   # Convert to tibble (row names not needed since they won't be preserved)
@@ -235,10 +272,8 @@ exit_dqr_eval <- function(data, max_position_days, side, dqr_fits, history = FAL
   M <- as.matrix(result[qhat_cols])
 
   # w := weights from decay curve (one row per observation)
-  vix_norm <- result$vix / 100 - .19458
-  w2 <- exit_dqr_weighted_probs(vix_norm, taus, method = "identity")
-  w1 <- exit_dqr_weighted_probs(result$t_norm, taus)
-  w <- if (tail(w1, 1) > tail(w2, 1)) as.matrix(w1) else as.matrix(w2)
+  vix_norm <- result$vix / 100 - .19458 - 0.078 / 2
+  w <- exit_dqr_weighted_probs(result$t_norm, vix_norm, taus) %>% as.matrix()
 
   # qhat := row-wise weighted sum of quantile predictions
   result$qhat <- rowSums(M * w)
