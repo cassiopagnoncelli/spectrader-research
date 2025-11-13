@@ -25,27 +25,35 @@ train_stacked_model <- function(train_indices, val_indices, test_indices,
   results
 }
 
-sm_level_1_hyperparams <- function() {
-  list(
+sm_level_1 <- list(
+  hyperparams = list(
     objective = "reg:squarederror",
-    eta = 0.08,              # conservative: <.1, aggressive: >.1
-    max_depth = 5,           # default: 5
+    eta = 0.2,              # conservative: <.1, aggressive: >.1
+    max_depth = 3,           # default: 5
     min_child_weight = 3,    # default: 3
     subsample = 1,           # default: .8
     colsample_bytree = 1     # default: .8
+  ),
+  control = list(
+    nrounds = 200,
+    early_stopping_rounds = 20
   )
-}
+)
 
-sm_level_2_hyperparams <- function() {
-  list(
+sm_level_2 <- list(
+  hyperparams = list(
     objective = "reg:squarederror",
-    eta = 0.08,              # conservative: <.1, aggressive: >.1
-    max_depth = 6,           # default: 5
+    eta = 0.2,              # conservative: <.1, aggressive: >.1
+    max_depth = 3,           # default: 5
     min_child_weight = 2,    # default: 3
     subsample = 0.8,
     colsample_bytree = 0.8
+  ),
+  control = list(
+    nrounds = 250,
+    early_stopping_rounds = 20
   )
-}
+)
 
 perform_train_stacked_model <- function(
   train_indices, val_indices, test_indices, X, y, aux, verbose = TRUE
@@ -125,11 +133,11 @@ perform_train_stacked_model <- function(
 
   watchlist_final <- list(train = dtrain_final, val = dval_final)
   model_final <- xgboost::xgb.train(
-    params = sm_level_2_hyperparams(),
+    params = sm_level_2$hyperparams,
     data = dtrain_final,
-    nrounds = 250,
+    nrounds = sm_level_2$control$nrounds,
     watchlist = watchlist_final,
-    early_stopping_rounds = 20,
+    early_stopping_rounds = sm_level_2$control$early_stopping_rounds,
     verbose = ifelse(verbose, 1, 0)
   )
 
@@ -233,11 +241,11 @@ train_level1_model <- function(X_data, y_aux, train_idx, val_idx, model_name, ve
   # Train with early stopping
   watchlist <- list(train = dtrain, val = dval)
   model <- xgboost::xgb.train(
-    params = sm_level_1_hyperparams(),
+    params = sm_level_1$hyperparams,
     data = dtrain,
-    nrounds = 200,
+    nrounds = sm_level_1$control$nrounds,
     watchlist = watchlist,
-    early_stopping_rounds = 20,
+    early_stopping_rounds = sm_level_1$control$early_stopping_rounds,
     verbose = ifelse(verbose, 1, 0)
   )
 
