@@ -63,29 +63,34 @@ test_data <- q_X[test_indices, ]
 model_name <- "stock_crossover__entry__extreme_high_identity"
 params <- list(rounds = 200, notes = "neutral")
 ckm <- cache_key(params = params, ext = "rds", fun = model_name)
+fets::fwd_methods()
 aux_list <- list(
+  # High/Low
   y1 = q_targets$extreme_high_identity,
   y2 = q_targets$extreme_low_identity,
-  y3 = q_targets$mass_high_identity,
-  y4 = q_targets$mass_low_identity,
-  y5 = q_targets$sharpe_high,
-  y6 = q_targets$sharpe_low,
-  y7 = q_targets$close_log,
-  y8 = q_targets$mean_log,
-  y9 = q_targets$de_log,
-  y10 = q_targets$dm_log,
-  yt1 = q_targets$ma_short_ratio,
-  yt2 = q_targets$ma_long_ratio,
-  yt3 = q_targets$ma_macro_ratio
+  y3 = q_targets$mass_high,
+  y4 = q_targets$mass_low,
+  # Sharpe
+  ys1 = q_targets$pas,
+  ys2 = q_targets$dd_sharpe,
+  ys3 = q_targets$entropy_sharpe,
+  # Differentials
+  yd1 = q_targets$de,
+  yd1 = q_targets$dm,
+  # Moving Averages
+  yma1 = q_targets$ma_short_ratio,
+  yma2 = q_targets$ma_long_ratio,
+  yma3 = q_targets$ma_macro_ratio,
+  # Close
+  yc = q_targets$close_identity
 )
-aux <- aux_list[c("y1", "y2", "y3", "y4", "yt2", "yt3")]
-aux <- names(aux_list)
+aux <- aux_list[setdiff(names(aus_list), c("ys3"))]
 model_signal <- train_stacked_model(
   train_indices = train_indices,
   val_indices = val_indices,
   test_indices = test_indices,
   X = q_X,
-  y = q_targets$extreme_high_identity,
+  y = q_targets$ys3,
   aux = aux,
   verbose = TRUE
 )
