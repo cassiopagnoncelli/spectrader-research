@@ -25,11 +25,11 @@ q <- qfe$dt
 
 # Re-engineer features, drilling down to the most important ones
 keep_features <- c(
-  paste0("y", c('', 1:4), "_pred"),
-  paste0("ys", c('', 1:3), "_pred"),
-  paste0("yd", c('', 1:2), "_pred"),
-  paste0("yma", c('', 1:3), "_pred"),
-  paste0("yc", c('', 1:3), "_pred"),
+  paste0("y", c("", 1:4), "_pred"),
+  paste0("ys", c("", 1:3), "_pred"),
+  paste0("yd", c("", 1:2), "_pred"),
+  paste0("yma", c("", 1:3), "_pred"),
+  paste0("yc", c("", 1:3), "_pred"),
   "vix_2", "wh", "wh_2", "vix_1", "vix", "vix_vel_0", "wh_vel_1", "wh_1",
   "vix_vel_1", "H_slow", "vix_accel_0", "wh_vel_0", "vol_vix_2", "wh_accel_0",
   "signal_fast_ratio_2", "H_slow_2", "ae_recon_error_2", "macro", "vol_1",
