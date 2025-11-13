@@ -150,18 +150,18 @@ perform_train_stacked_model <- function(
 
   y_test <- y[test_indices]
 
-  # Calculate metrics
-  rmse_train <- sqrt(mean((pred_train - y_train)^2))
-  rmse_val <- sqrt(mean((pred_val - y_val)^2))
-  rmse_test <- sqrt(mean((pred_test - y_test)^2))
+  # Calculate metrics (excluding NAs)
+  rmse_train <- sqrt(mean((pred_train - y_train)^2, na.rm = TRUE))
+  rmse_val <- sqrt(mean((pred_val - y_val)^2, na.rm = TRUE))
+  rmse_test <- sqrt(mean((pred_test - y_test)^2, na.rm = TRUE))
 
-  mae_train <- mean(abs(pred_train - y_train))
-  mae_val <- mean(abs(pred_val - y_val))
-  mae_test <- mean(abs(pred_test - y_test))
+  mae_train <- mean(abs(pred_train - y_train), na.rm = TRUE)
+  mae_val <- mean(abs(pred_val - y_val), na.rm = TRUE)
+  mae_test <- mean(abs(pred_test - y_test), na.rm = TRUE)
 
-  r2_train <- 1 - sum((pred_train - y_train)^2) / sum((y_train - mean(y_train))^2)
-  r2_val <- 1 - sum((pred_val - y_val)^2) / sum((y_val - mean(y_val))^2)
-  r2_test <- 1 - sum((pred_test - y_test)^2) / sum((y_test - mean(y_test))^2)
+  r2_train <- 1 - sum((pred_train - y_train)^2, na.rm = TRUE) / sum((y_train - mean(y_train, na.rm = TRUE))^2, na.rm = TRUE)
+  r2_val <- 1 - sum((pred_val - y_val)^2, na.rm = TRUE) / sum((y_val - mean(y_val, na.rm = TRUE))^2, na.rm = TRUE)
+  r2_test <- 1 - sum((pred_test - y_test)^2, na.rm = TRUE) / sum((y_test - mean(y_test, na.rm = TRUE))^2, na.rm = TRUE)
 
   # Feature importance
   importance_matrix <- xgboost::xgb.importance(model = model_final)

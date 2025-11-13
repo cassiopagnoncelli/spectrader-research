@@ -87,7 +87,7 @@ aux_list <- list(
   # Sharpe
   # ys1 = q_targets$pas,
   ys2 = q_targets$dd_sharpe,
-  ys3 = q_targets$entropy_sharpe,
+  # ys3 = q_targets$entropy_sharpe,
   # Differentials
   yd1 = q_targets$de,
   yd2 = q_targets$dm,
@@ -104,7 +104,7 @@ model_signal <- train_stacked_model(
   val_indices = val_indices,
   test_indices = test_indices,
   X = q_X,
-  y = q_targets$mass_high,
+  y = q_targets$entropy_sharpe,
   aux = aux,
   verbose = TRUE
 )
