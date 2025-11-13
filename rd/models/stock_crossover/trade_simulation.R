@@ -6,15 +6,16 @@ source("rd/models/stock_crossover/exit.R")
 max_position_days <- 20
 
 # Generate trading signals
-signal_cutoff <- quantile(df_test$yhat, .999, na.rm = TRUE)
+signal_cutoff <- quantile(df_val$yhat, .999, na.rm = TRUE)
 signal_cutoff
 df_signals <- df_test %>%
   filter(yhat > signal_cutoff) %>%
   filter_signals(within_days = max_position_days) %>% # Discard nearby signals
   arrange(date)
+df_signals
 
 # Exits for each position
-posl_raw <- position_cohort(df_signals, 100, max_position_days, q)
+posl_raw <- position_cohort(df_signals, 5, max_position_days, q)
 posl <- lapply(seq_along(posl_raw), function(i) {
   exit_dqr(
     dqr_fits,
@@ -33,4 +34,4 @@ accuracy_captured <- accuracy %>% filter(!is.na(exit_method))
 accuracy_uncaptured <- accuracy %>% filter(is.na(exit_method))
 
 # Dashboard
-shiny::runApp("rd/models/stock_crossover/dashboard.R")
+# shiny::runApp("rd/models/stock_crossover/dashboard.R")

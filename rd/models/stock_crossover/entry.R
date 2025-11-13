@@ -16,7 +16,7 @@ q <- fets::get_quotes(fetl)
 #
 # FEATURE ENGINEERING.
 #
-fets::fwd(q, inplace = TRUE, lookahead = 20)
+fets::fwd(q, inplace = TRUE, lookahead = 15)
 
 fets::add_vix(q, vix)
 
@@ -98,13 +98,13 @@ aux_list <- list(
   # Close
   yc = q_targets$close_identity
 )
-aux <- aux_list[setdiff(names(aux_list), c("ys3"))]
+aux <- aux_list[setdiff(names(aux_list), c(""))]
 model_signal <- train_stacked_model(
   train_indices = train_indices,
   val_indices = val_indices,
   test_indices = test_indices,
   X = q_X,
-  y = q_targets$entropy_sharpe,
+  y = q_targets$mass_high,
   aux = aux,
   verbose = TRUE
 )
