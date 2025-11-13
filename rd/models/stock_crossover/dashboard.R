@@ -1270,7 +1270,7 @@ server <- function(input, output, session) {
     rv$dfsr %>%
       dplyr::mutate(
         entry = date,
-        exit = add_business_days(date, t)
+        exit = fets::add_business_days(date, t)
       ) %>%
       select(trade, symbol, entry, exit, R, t)
   })

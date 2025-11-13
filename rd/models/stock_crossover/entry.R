@@ -49,11 +49,11 @@ if (TRUE) {
 #
 
 # Set splits.
-train_end <- as.Date("2023-12-31")
-val_end <- as.Date("2024-10-31")
+train_end <- as.Date("2023-05-31")
+val_end <- as.Date("2024-05-31")
 
 train_indices <- which(meta$date <= train_end)
-train_indices <- sample(train_indices, 35000) # Train limit for faster training
+train_indices <- sample(train_indices, 45000) # Train limit for faster training
 val_indices <- which(meta$date > train_end & meta$date <= val_end)
 test_indices <- which(meta$date > val_end)
 
@@ -67,19 +67,19 @@ test_data <- X[test_indices, ]
 fets::fwd_methods()
 aux_list <- list(
   # High/Low
-  # y1 = ys$extreme_high_identity,
+  y1 = ys$extreme_high_identity,
   y2 = ys$extreme_low_identity,
   y3 = ys$mass_high,
   y4 = ys$mass_low,
   # Sharpe
-  # ys1 = ys$pas,
+  ys1 = ys$pas,
   ys2 = ys$dd_sharpe,
   ys3 = ys$entropy_sharpe,
   # Differentials
   yd1 = ys$de,
   yd2 = ys$dm,
   # Moments
-  # ym1 = ys$skewness,
+  ym1 = ys$skewness,
   # Moving Averages
   yma1 = ys$ma_short_ratio,
   yma2 = ys$ma_long_ratio,
@@ -93,8 +93,8 @@ model_signal <- train_stacked_model(
   val_indices = val_indices,
   test_indices = test_indices,
   X = X,
-  y = ys$pas,
-  aux = list(),
+  y = ys$extreme_high_identity,
+  aux = aux,
   verbose = TRUE
 )
 

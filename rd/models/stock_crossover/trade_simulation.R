@@ -6,12 +6,15 @@ source("rd/models/stock_crossover/exit.R")
 max_position_days <- 20
 
 # Generate trading signals
-signal_cutoff <- quantile(df_val$yhat, .995, na.rm = TRUE)
+signal_cutoff <- quantile(df_val$yhat, .999, na.rm = TRUE)
 signal_cutoff
 df_signals <- df_test %>%
   filter(yhat > signal_cutoff) %>%
   filter_signals(within_days = max_position_days) %>% # Discard nearby signals
   arrange(date)
+
+df_signals <- df_signals %>% filter(date < "2025-04-01")
+df_signals <- df_signals %>% filter(date > "2024-08-01", date < "2024-08-30")
 df_signals
 
 # Exits for each position
@@ -34,4 +37,4 @@ accuracy_captured <- accuracy %>% filter(!is.na(exit_method))
 accuracy_uncaptured <- accuracy %>% filter(is.na(exit_method))
 
 # Dashboard
-# shiny::runApp("rd/models/stock_crossover/dashboard.R")
+shiny::runApp("rd/models/stock_crossover/dashboard.R")
