@@ -13,8 +13,8 @@ df_signals <- df_test %>%
   filter_signals(within_days = max_position_days) %>% # Discard nearby signals
   arrange(date)
 
-df_signals <- df_signals %>% filter(date < "2025-04-01")
-df_signals <- df_signals %>% filter(date > "2024-08-01", date < "2024-08-30")
+# df_signals <- df_signals %>% filter(date < "2025-04-01")
+# df_signals <- df_signals %>% filter(date > "2024-08-01", date < "2024-08-30")
 df_signals
 
 # Exits for each position

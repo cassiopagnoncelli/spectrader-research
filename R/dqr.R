@@ -131,12 +131,16 @@ exit_dqr_q <- function(t_norm, taus, method = "laplace") {
 #' @param ... Additional arguments (currently unused)
 #' @return Numeric decay weight between 0 and 1
 exit_dqr_dc <- function(t_norm, method = "laplace", alpha = .4) {
-  if (method == "gaussian") {
+  if (method == "identity") {
+    t_norm
+  } else if (method == "gaussian") {
     exp(-t_norm^2 / 2)
   } else if (method == "laplace") { # Double-exponential
     exp(-sqrt(alpha * t_norm))
   } else if (method == "half-cosine") {
     0.5 * (1 + cos(pi * t_norm / 2))
+  } else {
+    stop("Unknown method: ", method)
   }
 }
 
@@ -193,6 +197,9 @@ exit_dqr_weighted_probs <- function(t_norm, taus, method = "laplace", ...) {
 
 
 #' Evaluate DQR models and generate exit signals
+#' 
+#' Decaying curve is leveled at extreme quantiles progressively lowering the quantiles
+#' as time goes by with occasional bursts when vix levels are high.
 #'
 #' @param data Position cohort data frame with columns S, t, and model features
 #' @param max_position_days Maximum days after position entry for normalization
@@ -216,7 +223,7 @@ exit_dqr_eval <- function(data, max_position_days, side, dqr_fits, history = FAL
     # t_norm is used for decay weighting in such a way the bound will lower with
     # higher vix levels and longer position durations.
     dplyr::mutate(
-      t_norm = pmax(vix / 100, t / max_position_days)
+      t_norm = t / max_position_days
     )
 
   # Generate predictions for all quantile fits
@@ -229,8 +236,9 @@ exit_dqr_eval <- function(data, max_position_days, side, dqr_fits, history = FAL
   M <- as.matrix(result[qhat_cols])
 
   # w := weights from decay curve (one row per observation)
-  weights_df <- exit_dqr_weighted_probs(result$t_norm, taus)
-  w <- as.matrix(weights_df)
+  w1 <- exit_dqr_weighted_probs(result$t_norm, taus) %>% as.matrix()
+  w2 <- exit_dqr_weighted_probs(result$vix / 100, taus, method = "identity")
+  w <- if (tail(w1, 1) > tail(w2, 1)) w1 else w2
 
   # qhat := row-wise weighted sum of quantile predictions
   result$qhat <- rowSums(M * w)
