@@ -55,5 +55,6 @@ Suggests:
     MASS,
     knitr,
     qs,
-    shiny
+    shiny,
+    skimr
 Config/testthat/edition: 3

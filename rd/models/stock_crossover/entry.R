@@ -20,7 +20,7 @@ fets::fwd(q, inplace = TRUE, lookahead = 20)
 
 fets::add_vix(q, vix)
 
-qfe <- fets::fe(q, inplace = FALSE) %>% na.omit
+qfe <- fets::fe(q, inplace = FALSE)
 q <- qfe$dt
 
 # Re-engineer features, drilling down to the most important ones
@@ -71,7 +71,7 @@ aux_list <- list(
   y3 = q_targets$mass_high,
   y4 = q_targets$mass_low,
   # Sharpe
-  ys1 = q_targets$pas,
+  # ys1 = q_targets$pas,
   ys2 = q_targets$dd_sharpe,
   ys3 = q_targets$entropy_sharpe,
   # Differentials
@@ -84,7 +84,7 @@ aux_list <- list(
   # Close
   yc = q_targets$close_identity
 )
-aux <- aux_list[setdiff(names(aus_list), c("ys3"))]
+aux <- aux_list[setdiff(names(aux_list), c("ys3"))]
 model_signal <- train_stacked_model(
   train_indices = train_indices,
   val_indices = val_indices,
