@@ -32,7 +32,7 @@ NULL
 train_dqr <- function(signals, quotes, taus, formulas, max_position_days = 60) {
   if (length(taus) != length(formulas))
     stop("taus and formulas must have the same length")
-  
+
   # Positions cohorts enriched for decaying quantile regression features
   posl <- position_cohort(
     signals,
@@ -49,7 +49,7 @@ train_dqr <- function(signals, quotes, taus, formulas, max_position_days = 60) {
       dplyr::select(-c(symbol, date, close, fets::fwd_methods())) %>%
       na.omit()
   })
-  
+
   models <- purrr::map2(
     formulas, taus,
     \(formula, tau) quantreg::rq(formula, tau = tau, data = data)
@@ -168,10 +168,10 @@ exit_dqr_weighted_probs <- function(t_norm, taus, method = "laplace", ...) {
 
   decay_curve <- exit_dqr_dc(t_norm, method = method, ...)
   sds <- rep(abs(mean(diff(c(1, taus)))), length(taus))^2
-  
+
   # Create column names based on taus
   col_names <- paste0("q", sprintf("%.0f", taus * 100))
-  
+
   # Calculate densities for all t_norm values
   result_matrix <- t(sapply(decay_curve, function(t) {
     densities <- sapply(
@@ -181,16 +181,29 @@ exit_dqr_weighted_probs <- function(t_norm, taus, method = "laplace", ...) {
     densities <- densities / sum(densities)
     densities
   }))
-  
+
   # Convert to data frame with proper column names and rownames
   result <- as.data.frame(result_matrix)
   colnames(result) <- col_names
   rownames(result) <- as.character(t_norm)
-  
+
   # Convert to tibble while preserving rownames
   tibble::as_tibble(result, rownames = NA)
 }
 
+
+#' Evaluate DQR models and generate exit signals
+#'
+#' @param data Position cohort data frame with columns S, t, and model features
+#' @param max_position_days Maximum days after position entry for normalization
+#' @param side Position side: "long" or "short"
+#' @param dqr_fits Named list of fitted quantile regression models from train_dqr()
+#' @param history Include pre-entry historical data (t < 0) in output (default: FALSE)
+#' @return Data frame with quantile predictions (qhat_*), weighted prediction (qhat), and exit signals
+#' @examples
+#' \dontrun{
+#' exit_dqr_eval(position_data, 60, "long", my_dqr_fits)
+#' }
 exit_dqr_eval <- function(data, max_position_days, side, dqr_fits, history = FALSE) {
   qnames <- rev(sort(names(dqr_fits)))
   qhat_cols <- paste0("qhat_", qnames)
@@ -200,7 +213,11 @@ exit_dqr_eval <- function(data, max_position_days, side, dqr_fits, history = FAL
   # Feature engineering
   result <- data %>%
     dplyr::filter(t >= ifelse(history, -Inf, 0)) %>%
-    dplyr::mutate(t_norm = t / max_position_days)
+    # t_norm is used for decay weighting in such a way the bound will lower with
+    # higher vix levels and longer position durations.
+    dplyr::mutate(
+      t_norm = pmax(vix / 100, t / max_position_days)
+    )
 
   # Generate predictions for all quantile fits
   for (i in seq_along(qnames)) {
@@ -210,11 +227,11 @@ exit_dqr_eval <- function(data, max_position_days, side, dqr_fits, history = FAL
   # Compute weighted combination of quantile predictions
   # M := matrix of all qhat predictions
   M <- as.matrix(result[qhat_cols])
-  
+
   # w := weights from decay curve (one row per observation)
   weights_df <- exit_dqr_weighted_probs(result$t_norm, taus)
   w <- as.matrix(weights_df)
-  
+
   # qhat := row-wise weighted sum of quantile predictions
   result$qhat <- rowSums(M * w)
 

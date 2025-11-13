@@ -10,7 +10,7 @@ df_train_dqr <- df_train %>%
 dqr_fits <- train_dqr(
   df_train_dqr,
   quotes = Xy,
-  taus = c(.96, .92, .88, .32),
+  taus = c(.99, .93, .87, .32),
   formulas = list(
     qdr_formula,
     qdr_formula,

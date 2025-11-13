@@ -67,7 +67,7 @@ test_data <- X[test_indices, ]
 fets::fwd_methods()
 aux_list <- list(
   # High/Low
-  y1 = ys$extreme_high_identity,
+  # y1 = ys$extreme_high_identity,
   y2 = ys$extreme_low_identity,
   y3 = ys$mass_high,
   y4 = ys$mass_low,
@@ -76,16 +76,16 @@ aux_list <- list(
   ys2 = ys$dd_sharpe,
   ys3 = ys$entropy_sharpe,
   # Differentials
-  yd1 = ys$de,
-  yd2 = ys$dm,
+  # yd1 = ys$de,
+  # yd2 = ys$dm,
   # Moments
   ym1 = ys$skewness,
   # Moving Averages
   yma1 = ys$ma_short_ratio,
   yma2 = ys$ma_long_ratio,
-  yma3 = ys$ma_macro_ratio,
+  yma3 = ys$ma_macro_ratio
   # Close
-  yc = ys$close_identity
+  # yc = ys$close_identity
 )
 aux <- aux_list[setdiff(names(aux_list), c())]
 model_signal <- train_stacked_model(
