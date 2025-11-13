@@ -190,3 +190,52 @@ exit_dqr_weighted_probs <- function(t_norm, taus, method = "laplace", ...) {
   # Convert to tibble while preserving rownames
   tibble::as_tibble(result, rownames = NA)
 }
+
+exit_dqr_eval <- function(data, max_position_days, side, dqr_fits, history = FALSE) {
+  qnames <- rev(sort(names(dqr_fits)))
+  qhat_cols <- paste0("qhat_", qnames)
+  exit_cols <- paste0("exit_", qnames)
+  taus <- exit_dqr_extract_quantiles(dqr_fits)
+
+  # Feature engineering
+  result <- data %>%
+    dplyr::filter(t >= ifelse(history, -Inf, 0)) %>%
+    dplyr::mutate(t_norm = t / max_position_days)
+
+  # Generate predictions for all quantile fits
+  for (i in seq_along(qnames)) {
+    result[[qhat_cols[i]]] <- predict(dqr_fits[[qnames[i]]], result)
+  }
+
+  # Compute weighted combination of quantile predictions
+  # M := matrix of all qhat predictions
+  M <- as.matrix(result[qhat_cols])
+  
+  # w := weights from decay curve (one row per observation)
+  weights_df <- exit_dqr_weighted_probs(result$t_norm, taus)
+  w <- as.matrix(weights_df)
+  
+  # qhat := row-wise weighted sum of quantile predictions
+  result$qhat <- rowSums(M * w)
+
+  # Create exit signals for each quantile
+  for (i in seq_along(qnames)) {
+    if (side == "long")
+      result[[exit_cols[i]]] <- result$S >= result[[qhat_cols[i]]]
+    else if (side == "short")
+      result[[exit_cols[i]]] <- result$S <= result[[qhat_cols[i]]]
+  }
+
+  # Combine all exit signals with OR logic
+  if (side == "long") {
+    result$exit <- result %>%
+      dplyr::mutate(exit = keep_first_true_only(S > qhat & S > 1 & t >= 3)) %>%
+      dplyr::pull(exit)
+  } else if (side == "short") {
+    result$exit <- result %>%
+      dplyr::mutate(exit = keep_first_true_only(S < qhat & S < 1 & t >= 3)) %>%
+      dplyr::pull(exit)
+  }
+
+  result
+}

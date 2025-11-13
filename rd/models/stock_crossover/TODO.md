@@ -8,13 +8,10 @@
 
 - Download volatility (IV) data
 
-## Functions
-
-- Consolidate features into fe
-
 ## Exit model
 
 Goals: shortfall expectation maximisation or long/short capture
 
 - Use y_k_hat (k = 1..7) for input in exit model
 - Modify xgboost model for quantile regression
+- Replace t_norm with vol in dqr

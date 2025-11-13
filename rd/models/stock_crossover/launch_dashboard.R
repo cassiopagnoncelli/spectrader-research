@@ -27,8 +27,7 @@ library(shiny)
 check_data <- function() {
   has_dfsr <- exists("dfsr", envir = .GlobalEnv)
   has_posl <- exists("posl", envir = .GlobalEnv)
-  has_f_star <- exists("f_star", envir = .GlobalEnv)
-  
+
   if (has_dfsr && has_posl && has_f_star) {
     cat("✓ All required data objects found in global environment.\n")
     TRUE
@@ -36,7 +35,6 @@ check_data <- function() {
     cat("⚠ Warning: Some required data objects are missing:\n")
     if (!has_dfsr) cat("  - dfsr not found\n")
     if (!has_posl) cat("  - posl not found\n")
-    if (!has_f_star) cat("  - f_star not found\n")
     cat("\nPlease run trade_simulation.R first to generate the required data.\n")
     cat("You can do this by running: source('rd/models/stock_crossover/trade_simulation.R')\n\n")
     FALSE
@@ -50,12 +48,12 @@ launch_dashboard <- function(load_data = FALSE) {
     source("rd/models/stock_crossover/trade_simulation.R")
     cat("Data loaded successfully.\n\n")
   }
-  
+
   if (check_data()) {
     cat("\nLaunching Trading Strategy Dashboard...\n")
     cat("The dashboard will open in your default web browser.\n")
     cat("Press Ctrl+C (or Cmd+C on Mac) in the console to stop the dashboard.\n\n")
-    
+
     # Run the dashboard
     shiny::runApp("rd/models/stock_crossover/dashboard.R", launch.browser = TRUE)
   } else {
