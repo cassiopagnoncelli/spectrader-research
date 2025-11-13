@@ -17,7 +17,7 @@ fets::add_vix(quotes, vix)
 #
 # FEATURE ENGINEERING.
 #
-fets::fwd(quotes, lookahead = 15, inplace = TRUE)
+fets::fwd(quotes, lookahead = 20, inplace = TRUE)
 Xyfe <- fets::fe(quotes, inplace = TRUE)
 Xy <- Xyfe$X
 
@@ -25,7 +25,9 @@ Xym <- fets::decomposeXy(Xy, na.rm = TRUE)
 X <- Xym$X
 ys <- Xym$y
 meta <- Xym$meta
+
 metaX <- cbind(meta, X)
+X[, close := NULL]
 
 # Re-engineer features, drilling down to the most important ones
 if (TRUE) {
@@ -46,8 +48,6 @@ if (TRUE) {
 # PREPROCESSING.
 #
 
-# X[, .(close) := NULL]
-
 # Set splits.
 train_end <- as.Date("2023-12-31")
 val_end <- as.Date("2024-10-31")
@@ -67,11 +67,12 @@ test_data <- X[test_indices, ]
 fets::fwd_methods()
 aux_list <- list(
   # High/Low
-  y1 = ys$extreme_high_identity,
+  # y1 = ys$extreme_high_identity,
   y2 = ys$extreme_low_identity,
   y3 = ys$mass_high,
   y4 = ys$mass_low,
   # Sharpe
+  # ys1 = ys$pas,
   ys2 = ys$dd_sharpe,
   ys3 = ys$entropy_sharpe,
   # Differentials
@@ -92,7 +93,7 @@ model_signal <- train_stacked_model(
   val_indices = val_indices,
   test_indices = test_indices,
   X = X,
-  y = ys$skewness,
+  y = ys$pas,
   aux = list(),
   verbose = TRUE
 )
