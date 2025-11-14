@@ -13,5 +13,6 @@
     "*.Rmd": "rmd",
     ".Rprofile": "r",
     ".lintr": "r"
-  }
+  },
+  "chatgpt.openOnStartup": true
 }
