@@ -18,110 +18,57 @@ fets::add_vix(quotes, vix)
 # FEATURE ENGINEERING.
 #
 fets::fwd(quotes, lookahead = 20, inplace = TRUE)
-Xyfe <- fets::fe(quotes, inplace = TRUE)
-Xy <- Xyfe$X
-
-Xym <- fets::decomposeXy(Xy, na.rm = TRUE)
-X <- Xym$X
-ys <- Xym$y
-meta <- Xym$meta
-
-metaX <- cbind(meta, X)
-X[, close := NULL]
-
-# Re-engineer features, drilling down to the most important ones
-if (TRUE) {
-  keep_features <- c(
-    names(X)[grepl("^y", names(X))],
-    "skewness", "kurtosis",
-    "vix_2", "wh", "wh_2", "vix_1", "vix", "vix_vel_0", "wh_vel_1", "wh_1",
-    "vix_vel_1", "H_slow", "vix_accel_0", "wh_vel_0", "vol_vix_2", "wh_accel_0",
-    "signal_fast_ratio_2", "H_slow_2", "ae_recon_error_2", "macro", "vol_1",
-    "vol_vix_vel_0", "ae_recon_error_1", "vol_vix", "slow_2", "ae_volatility_vel_0",
-    "fast_1", "fast_slow_ratio_vel_1", "ae_volatility", "cr_7",
-    "slow_1", "R_2", "slow", "vol_vix_vel_1", "H_slow_vel_1"
-  )
-  remove_features <- setdiff(Xyfe$new_features, keep_features)
-  X[, (remove_features) := NULL]
-}
+quotes_fwd_fe <- fets::fe(quotes, inplace = TRUE)
 
 #
 # PREPROCESSING.
 #
+mXY <- quotes_fwd_fe$X %>% na.omit() %>% tibble::tibble()
+XY <- mXY[, ] %>% select(-symbol, -date)
+
+decomposed <- fets::decomposeXY(mXY, na.rm = TRUE)
+meta <- tibble::tible(decomposed$meta)
+X <- tibble::tible(decomposed$X) %>% select(-close)
+Y <- tibble::tible(decomposed$Y)
+
+mX <- cbind(meta, X)
 
 # Set splits.
 train_end <- as.Date("2023-05-31")
 val_end <- as.Date("2024-05-31")
 
-train_indices <- which(meta$date <= train_end)
-train_indices <- sample(train_indices, 45000) # Train limit for faster training
-val_indices <- which(meta$date > train_end & meta$date <= val_end)
-test_indices <- which(meta$date > val_end)
-
-train_data <- X[train_indices, ]
-val_data <- X[val_indices, ]
-test_data <- X[test_indices, ]
+train_idx <- which(meta$date <= train_end) %>% sample(45000)
+val_idx <- which(meta$date > train_end & meta$date <= val_end)
+test_idx <- which(meta$date > val_end)
 
 #
 # Training
 #
 fets::fwd_methods()
-aux_list <- list(
-  # High/Low
-  # y1 = ys$extreme_high_identity,
-  y2 = ys$extreme_low_identity,
-  y3 = ys$mass_high,
-  y4 = ys$mass_low,
-  # Sharpe
-  ys1 = ys$pas,
-  ys2 = ys$dd_sharpe,
-  ys3 = ys$entropy_sharpe,
-  # Differentials
-  # yd1 = ys$de,
-  # yd2 = ys$dm,
-  # Moments
-  # ym1 = ys$skewness,
-  # ym2 = ys$kurtosis,
-  # Moving Averages
-  yma1 = ys$ma_short_ratio,
-  yma2 = ys$ma_long_ratio,
-  yma3 = ys$ma_macro_ratio
-  # Close
-  # yc = ys$close_identity
+
+fit_lasso <- rqPen::rq.pen(
+  x = XY[train_idx, -c("smoothed_close")],
+  y = Y[train_idx, "extreme_high_identity"],
+  tau = .99,
+  penalty = "LASSO",
+  lambda = NULL  # triggers cross-validation path
 )
 
-aux <- aux_list[setdiff(names(aux_list), c())]
-model_signal <- train_stacked_model(
-  train_indices = train_indices,
-  val_indices = val_indices,
-  test_indices = test_indices,
-  X = X,
-  y = ys$extreme_high_identity,
-  aux = list(),
-  verbose = TRUE
-)
+best_lambda <- fit_lasso$lambda
+selected_vars <- which(fit_lasso$coef != 0) - 1   # drop intercept index
+colnames(X_train)[selected_vars]
 
-model_signal_skewness <- train_stacked_model(
-  train_indices = train_indices,
-  val_indices = val_indices,
-  test_indices = test_indices,
-  X = X,
-  y = ys$skewness,
-  aux = list(),
-  verbose = TRUE
-)
+# Predictions
+P <- data.table::rbindlist(list(
+  y = model_signal$predictions
+), idcol = "model")
 
-model_signal_kurtosis <- train_stacked_model(
-  train_indices = train_indices,
-  val_indices = val_indices,
-  test_indices = test_indices,
-  X = X,
-  y = ys$kurtosis,
-  aux = list(),
-  verbose = TRUE
+mXYP <- tibble::tibble(
+  meta,
+  X,
+  Y,
+  P
 )
-
-feature_importance <- tibble(model_signal$importance) %>% print(n = Inf)
 
 #
 # EVALUATION.
