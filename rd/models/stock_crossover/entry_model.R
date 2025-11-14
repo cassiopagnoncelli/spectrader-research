@@ -260,3 +260,23 @@ train_level1_model <- function(X_data, y_aux, train_idx, val_idx, model_name, ve
 
   model
 }
+
+build_df_stages <- function(model, stage) {
+  stage_indices <- if (stage == "train") {
+    train_indices
+  } else if (stage == "val") {
+    val_indices
+  } else if (stage == "test") {
+    test_indices
+  } else {
+    stop("Invalid stage")
+  }
+
+  tibble(
+    symbol = meta$symbol[stage_indices],
+    date = meta$date[stage_indices],
+    y = model$actuals[[stage]],
+    yhat = model$predictions[[stage]],
+    close = ys$close_identity[stage_indices]
+  )
+}

@@ -7,12 +7,22 @@ max_position_days <- 20
 
 # Signal filters
 signal_cutoff_skewness <- quantile(df_val_skewness$yhat, .08, na.rm = TRUE)
+signal_cutoff_kurtosis <- quantile(df_val_kurtosis$yhat, .08, na.rm = TRUE)
 signal_cutoff <- quantile(df_val$yhat, .993, na.rm = TRUE)
-cat(sprintf("Signal: %.4f\nSkewness: %.4f\n", signal_cutoff, signal_cutoff_skewness))
+cat(sprintf(
+  "Signal:    %.4f\nSkewness:  %.4f\nKurtosis:  %.4f\n",
+  signal_cutoff,
+  signal_cutoff_skewness,
+  signal_cutoff_kurtosis
+))
 
 # Generate trading signals
 df_signals <- df_test_yhats %>%
-  filter(yhat > signal_cutoff, yhat_skewness < signal_cutoff_skewness) %>%
+  filter(
+    yhat > signal_cutoff,
+    yhat_skewness < signal_cutoff_skewness,
+    yhat_kurtosis < signal_cutoff_kurtosis
+  ) %>%
   filter_signals(within_days = max_position_days) %>% # Discard nearby signals
   arrange(date)
 df_signals

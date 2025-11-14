@@ -80,6 +80,7 @@ aux_list <- list(
   # yd2 = ys$dm,
   # Moments
   # ym1 = ys$skewness,
+  # ym2 = ys$kurtosis,
   # Moving Averages
   yma1 = ys$ma_short_ratio,
   yma2 = ys$ma_long_ratio,
@@ -109,41 +110,39 @@ model_signal_skewness <- train_stacked_model(
   verbose = TRUE
 )
 
+model_signal_kurtosis <- train_stacked_model(
+  train_indices = train_indices,
+  val_indices = val_indices,
+  test_indices = test_indices,
+  X = X,
+  y = ys$kurtosis,
+  aux = list(),
+  verbose = TRUE
+)
+
 feature_importance <- tibble(model_signal$importance) %>% print(n = Inf)
 
 #
 # EVALUATION.
 #
-build_df <- function(model, stage) {
-  stage_indices <- if (stage == "train") {
-    train_indices
-  } else if (stage == "val") {
-    val_indices
-  } else if (stage == "test") {
-    test_indices
-  } else {
-    stop("Invalid stage")
-  }
+df_train <- build_df_stages(model_signal, "train")
+df_val <- build_df_stages(model_signal, "val")
+df_test <- build_df_stages(model_signal, "test")
 
-  tibble(
-    symbol = meta$symbol[stage_indices],
-    date = meta$date[stage_indices],
-    y = model$actuals[[stage]],
-    yhat = model$predictions[[stage]],
-    close = ys$close_identity[stage_indices]
-  )
-}
+df_train_skewness <- build_df_stages(model_signal_skewness, "train")
+df_val_skewness <- build_df_stages(model_signal_skewness, "val")
+df_test_skewness <- build_df_stages(model_signal_skewness, "test")
 
-df_train <- build_df(model_signal, "train")
-df_val <- build_df(model_signal, "val")
-df_test <- build_df(model_signal, "test")
-
-df_train_skewness <- build_df(model_signal_skewness, "train")
-df_val_skewness <- build_df(model_signal_skewness, "val")
-df_test_skewness <- build_df(model_signal_skewness, "test")
+df_train_kurtosis <- build_df_stages(model_signal_kurtosis, "train")
+df_val_kurtosis <- build_df_stages(model_signal_kurtosis, "val")
+df_test_kurtosis <- build_df_stages(model_signal_kurtosis, "test")
 
 df_test_yhats <- tibble::tibble(
   df_test,
+  # Skewness
   y_skewness = df_test_skewness$y,
-  yhat_skewness = df_test_skewness$yhat
+  yhat_skewness = df_test_skewness$yhat,
+  # Kurtosis
+  y_skewness = df_test_kurtosis$y,
+  yhat_skewness = df_test_kurtosis$yhat
 )
