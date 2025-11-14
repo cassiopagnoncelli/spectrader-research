@@ -144,6 +144,6 @@ df_test_yhats <- tibble::tibble(
   y_skewness = df_test_skewness$y,
   yhat_skewness = df_test_skewness$yhat,
   # Kurtosis
-  y_skewness = df_test_kurtosis$y,
-  yhat_skewness = df_test_kurtosis$yhat
+  y_kurtosis = df_test_kurtosis$y,
+  yhat_kurtosis = df_test_kurtosis$yhat
 )
