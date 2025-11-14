@@ -1,5 +1,5 @@
 # Decaying Quantile Regression Exit - Decay Curve
-exit_dqr <- function(dqr_fits, max_position_days, side) {
+exit_dqr <- function(dqr_fits, max_position_days, side, enable_vol_bursts = TRUE, enable_time_decay = TRUE, ...) {
   if (!is.list(dqr_fits) || length(dqr_fits) == 0)
     stop("dqr_fits must be a list of fitted quantile regression models.")
   
@@ -12,7 +12,10 @@ exit_dqr <- function(dqr_fits, max_position_days, side) {
       max_position_days = max_position_days,
       side = side,
       dqr_fits = dqr_fits,
-      history = history
+      enable_vol_bursts = enable_vol_bursts,
+      enable_time_decay = enable_time_decay,
+      history = history,
+      ...
     )
   }
 }

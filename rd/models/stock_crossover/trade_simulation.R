@@ -5,16 +5,16 @@ source("rd/models/stock_crossover/exit.R")
 
 max_position_days <- 20
 
+# Signal filters
+signal_cutoff_skewness <- quantile(df_val_skewness$yhat, .08, na.rm = TRUE)
+signal_cutoff <- quantile(df_val$yhat, .993, na.rm = TRUE)
+cat(sprintf("Signal: %.4f\nSkewness: %.4f\n", signal_cutoff, signal_cutoff_skewness))
+
 # Generate trading signals
-signal_cutoff <- quantile(df_val$yhat, .999, na.rm = TRUE)
-signal_cutoff
-df_signals <- df_test %>%
-  filter(yhat > signal_cutoff) %>%
+df_signals <- df_test_yhats %>%
+  filter(yhat > signal_cutoff, yhat_skewness < signal_cutoff_skewness) %>%
   filter_signals(within_days = max_position_days) %>% # Discard nearby signals
   arrange(date)
-
-# df_signals <- df_signals %>% filter(date < "2025-04-01")
-# df_signals <- df_signals %>% filter(date > "2024-08-01", date < "2024-08-30")
 df_signals
 
 # Exits for each position
@@ -23,7 +23,9 @@ posl <- lapply(seq_along(posl_raw), function(i) {
   exit_dqr(
     dqr_fits,
     max_position_days = max_position_days,
-    side = "long"
+    side = "long",
+    enable_time_decay = TRUE,
+    enable_vol_bursts = TRUE
   )(posl_raw[[i]])
 })
 

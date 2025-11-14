@@ -231,7 +231,6 @@ exit_dqr_weighted_probs <- function(t_norm, vol_norm, taus, method = "laplace", 
   tibble::as_tibble(result)
 }
 
-
 #' Evaluate DQR models and generate exit signals
 #'
 #' Decaying curve is leveled at extreme quantiles progressively lowering the quantiles
@@ -247,7 +246,16 @@ exit_dqr_weighted_probs <- function(t_norm, vol_norm, taus, method = "laplace", 
 #' \dontrun{
 #' exit_dqr_eval(position_data, 60, "long", my_dqr_fits)
 #' }
-exit_dqr_eval <- function(data, max_position_days, side, dqr_fits, history = FALSE) {
+exit_dqr_eval <- function(
+  data,
+  max_position_days,
+  side,
+  dqr_fits,
+  enable_vol_bursts = TRUE,
+  enable_time_decay = TRUE,
+  history = FALSE,
+  ...
+) {
   qnames <- rev(sort(names(dqr_fits)))
   qhat_cols <- paste0("qhat_", qnames)
   exit_cols <- paste0("exit_", qnames)
@@ -259,7 +267,8 @@ exit_dqr_eval <- function(data, max_position_days, side, dqr_fits, history = FAL
     # t_norm is used for decay weighting in such a way the bound will lower with
     # higher vix levels and longer position durations.
     dplyr::mutate(
-      t_norm = t / max_position_days
+      t_norm = t / max_position_days,
+      vix_norm = vix / 100 - .19458 - 0.078 / 2
     )
 
   # Generate predictions for all quantile fits
@@ -271,9 +280,13 @@ exit_dqr_eval <- function(data, max_position_days, side, dqr_fits, history = FAL
   # M := matrix of all qhat predictions
   M <- as.matrix(result[qhat_cols])
 
-  # w := weights from decay curve (one row per observation)
-  vix_norm <- result$vix / 100 - .19458 - 0.078 / 2
-  w <- exit_dqr_weighted_probs(result$t_norm, vix_norm, taus) %>% as.matrix()
+  # w := weights from decay curve + vol bursts (one row per observation)
+  w <- as.matrix(exit_dqr_weighted_probs(
+    if (enable_time_decay) result$t_norm else NULL,
+    if (enable_vol_bursts) result$vix_norm else NULL,
+    taus,
+    ...
+  ))
 
   # qhat := row-wise weighted sum of quantile predictions
   result$qhat <- rowSums(M * w)

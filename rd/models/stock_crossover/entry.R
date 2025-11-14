@@ -79,7 +79,7 @@ aux_list <- list(
   # yd1 = ys$de,
   # yd2 = ys$dm,
   # Moments
-  ym1 = ys$skewness,
+  # ym1 = ys$skewness,
   # Moving Averages
   yma1 = ys$ma_short_ratio,
   yma2 = ys$ma_long_ratio,
@@ -87,6 +87,7 @@ aux_list <- list(
   # Close
   # yc = ys$close_identity
 )
+
 aux <- aux_list[setdiff(names(aux_list), c())]
 model_signal <- train_stacked_model(
   train_indices = train_indices,
@@ -98,31 +99,51 @@ model_signal <- train_stacked_model(
   verbose = TRUE
 )
 
+model_signal_skewness <- train_stacked_model(
+  train_indices = train_indices,
+  val_indices = val_indices,
+  test_indices = test_indices,
+  X = X,
+  y = ys$skewness,
+  aux = list(),
+  verbose = TRUE
+)
+
 feature_importance <- tibble(model_signal$importance) %>% print(n = Inf)
 
 #
 # EVALUATION.
 #
-df_train <- tibble(
-  symbol = meta$symbol[train_indices],
-  date = meta$date[train_indices],
-  y = model_signal$actuals$train,
-  yhat = model_signal$predictions$train,
-  close = ys$close_log[train_indices]
-)
+build_df <- function(model, stage) {
+  stage_indices <- if (stage == "train") {
+    train_indices
+  } else if (stage == "val") {
+    val_indices
+  } else if (stage == "test") {
+    test_indices
+  } else {
+    stop("Invalid stage")
+  }
 
-df_val <- tibble(
-  symbol = meta$symbol[val_indices],
-  date = meta$date[val_indices],
-  y = model_signal$actuals$val,
-  yhat = model_signal$predictions$val,
-  close = ys$close_log[val_indices]
-)
+  tibble(
+    symbol = meta$symbol[stage_indices],
+    date = meta$date[stage_indices],
+    y = model$actuals[[stage]],
+    yhat = model$predictions[[stage]],
+    close = ys$close_identity[stage_indices]
+  )
+}
 
-df_test <- tibble(
-  symbol = meta$symbol[test_indices],
-  date = meta$date[test_indices],
-  y = model_signal$actuals$test,
-  yhat = model_signal$predictions$test,
-  close = ys$close_log[test_indices]
+df_train <- build_df(model_signal, "train")
+df_val <- build_df(model_signal, "val")
+df_test <- build_df(model_signal, "test")
+
+df_train_skewness <- build_df(model_signal_skewness, "train")
+df_val_skewness <- build_df(model_signal_skewness, "val")
+df_test_skewness <- build_df(model_signal_skewness, "test")
+
+df_test_yhats <- tibble::tibble(
+  df_test,
+  y_skewness = df_test_skewness$y,
+  yhat_skewness = df_test_skewness$yhat
 )
