@@ -33,11 +33,12 @@ X[, close := NULL]
 if (TRUE) {
   keep_features <- c(
     names(X)[grepl("^y", names(X))],
+    "skewness", "kurtosis",
     "vix_2", "wh", "wh_2", "vix_1", "vix", "vix_vel_0", "wh_vel_1", "wh_1",
     "vix_vel_1", "H_slow", "vix_accel_0", "wh_vel_0", "vol_vix_2", "wh_accel_0",
     "signal_fast_ratio_2", "H_slow_2", "ae_recon_error_2", "macro", "vol_1",
     "vol_vix_vel_0", "ae_recon_error_1", "vol_vix", "slow_2", "ae_volatility_vel_0",
-    "fast_1", "fast_slow_ratio_vel_1", "skewness", "ae_volatility", "cr_7",
+    "fast_1", "fast_slow_ratio_vel_1", "ae_volatility", "cr_7",
     "slow_1", "R_2", "slow", "vol_vix_vel_1", "H_slow_vel_1"
   )
   remove_features <- setdiff(Xyfe$new_features, keep_features)
