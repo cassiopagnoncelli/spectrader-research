@@ -71,7 +71,7 @@ position_cohort <- function(symbol_dates,
   })
 }
 
-position_cohort_metrics <- function(pos_data, trade, y_name) {
+position_cohort_metrics <- function(pos_data, trade, y_name = "y") {
   if (!tibble::is_tibble(pos_data) && !is.data.frame(pos_data))
     stop("Input must be a tibble or data frame.")
 
@@ -79,7 +79,7 @@ position_cohort_metrics <- function(pos_data, trade, y_name) {
   if (is.na(idx)) {
     stop("No valid exit found in position data.")
   }
-  y <- pmax(na.omit(pos_data[[y_name]][1:idx]))
+  y <- max(na.omit(pos_data[[y_name]][1:idx]))
   if (is.na(pos_data$S[idx])) {
     R <- tail(na.omit(pos_data$S), 1) - 1
     r <- log(1 + R)
@@ -91,7 +91,7 @@ position_cohort_metrics <- function(pos_data, trade, y_name) {
   tibble::tibble(trade, t = idx - 1, exit_method, R, r, y)
 }
 
-position_cohort_returns <- function(posl, signals, y_name) {
+position_cohort_returns <- function(posl, signals, y_name = "y") {
   if (!is.list(posl)) {
     stop("Input must be a list of tibbles/data frames.")
   }
