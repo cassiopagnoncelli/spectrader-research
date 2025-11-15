@@ -73,15 +73,42 @@ ui <- dashboardPage(
             title = "Captures Inspect",
             status = "primary",
             solidHeader = TRUE,
-            selectInput(
-              "position_filter",
-              "Position Filter:",
-              choices = c("All Positions" = "all", 
-                          "Captured" = "captured", 
-                          "Uncaptured" = "uncaptured"),
-              selected = "all"
-            ),
-            actionButton("refresh_samples", "Refresh Samples", icon = icon("refresh"))
+            fluidRow(
+              column(
+                width = 4,
+                selectInput(
+                  "position_filter",
+                  "Position Filter:",
+                  choices = c("All Positions" = "all", 
+                              "Captured" = "captured", 
+                              "Uncaptured" = "uncaptured"),
+                  selected = "all"
+                )
+              ),
+              column(
+                width = 3,
+                numericInput(
+                  "ylim_min",
+                  "Y-axis Min:",
+                  value = 0.7,
+                  step = 0.1
+                )
+              ),
+              column(
+                width = 3,
+                numericInput(
+                  "ylim_max",
+                  "Y-axis Max:",
+                  value = 1.7,
+                  step = 0.1
+                )
+              ),
+              column(
+                width = 2,
+                br(),
+                actionButton("refresh_samples", "Refresh", icon = icon("refresh"))
+              )
+            )
           )
         ),
         fluidRow(
@@ -725,8 +752,12 @@ server <- function(input, output, session) {
     current_idx <- rv$current_chart_index
     trade_id <- rv$sample_trades[current_idx]
     
-    # Use unified plot function
-    plot_position_cohort_exit(rv$posl[[trade_id]], ylim = c(.7, 1.7))
+    # Build ylim parameter conditionally
+    if (!is.na(input$ylim_min) && !is.na(input$ylim_max)) {
+      plot_position_cohort_exit(rv$posl[[trade_id]], ylim = c(input$ylim_min, input$ylim_max))
+    } else {
+      plot_position_cohort_exit(rv$posl[[trade_id]])
+    }
   })
   
   # Overview Metrics
