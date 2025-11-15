@@ -6,7 +6,7 @@ source("rd/models/stock_crossover/exit.R")
 max_position_days <- 20
 
 # Signal filters
-yhat_high_cutoff <- quantile(mnXYP[val_idx, ]$y_high_hat, .997, na.rm = TRUE)
+yhat_high_cutoff <- quantile(mnXYP[val_idx, ]$y_high_hat, .998, na.rm = TRUE)
 yhat_low_cutoff <- quantile(mnXYP[val_idx, ]$y_low_hat, .0015, na.rm = TRUE)
 cat(sprintf(
   "Cutoffs:\n  High_q:  %.4f\n   Low_q:  %.4f\n",
