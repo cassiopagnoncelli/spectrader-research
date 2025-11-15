@@ -16,12 +16,13 @@ ui <- dashboardPage(
       menuItem("Position Cohort", tabName = "position_cohort", icon = icon("chart-area")),
       menuItem("Kelly Criterion", tabName = "kelly", icon = icon("balance-scale")),
       menuItem("Returns Analysis", tabName = "returns", icon = icon("chart-area")),
+      menuItem("Concurrency", tabName = "concurrency", icon = icon("layer-group")),
+      menuItem("Signals & Returns", tabName = "signals_returns", icon = icon("table")),
+      hr(),
       menuItem("Captures", tabName = "accuracy", icon = icon("bullseye")),
       menuItem("Captures Inspect", tabName = "exits", icon = icon("chart-line")),
       menuItem("Captures Breakdown", tabName = "captures_breakdown", icon = icon("chart-pie")),
       menuItem("Capture Methods", tabName = "capture_methods", icon = icon("table")),
-      menuItem("Concurrency", tabName = "concurrency", icon = icon("layer-group")),
-      menuItem("Signals & Returns", tabName = "signals_returns", icon = icon("table")),
       hr(),
       menuItem("Options Kelly", tabName = "options_kelly", icon = icon("calculator")),
       menuItem("Options Surface", tabName = "options_surface", icon = icon("cube")),
@@ -868,7 +869,7 @@ server <- function(input, output, session) {
       plotname <- paste0("exit_plot_", i)
       
       output[[plotname]] <- renderPlot({
-        plot_position_cohort_exit_trifecta(rv$posl[[trade_id]], ylim = c(.7, 1.7))
+        plot_position_cohort_exit(rv$posl[[trade_id]], ylim = c(.7, 1.7))
       })
     })
   })

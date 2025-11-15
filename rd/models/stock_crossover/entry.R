@@ -56,7 +56,7 @@ fets::fwd_methods()
 fit_lasso_high <- rqPen::rq.pen(
   x = nX[train_idx, ],
   y = Y[train_idx, ]$extreme_high_identity,
-  tau = .995,
+  tau = .99,
   penalty = "LASSO",
   lambda = NULL  # triggers cross-validation path
 )

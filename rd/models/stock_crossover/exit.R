@@ -10,7 +10,7 @@ dqr_signals_train <- mnXYP[train_idx, ] %>%
 dqr_fits <- train_dqr(
   dqr_signals_train,
   quotes = mcnXY[train_idx, ],
-  taus = c(.99, .93, .87, .32),
+  taus = c(.92, .86, .82, .32),
   formulas = list(
     dqr_general_formula,
     dqr_general_formula,

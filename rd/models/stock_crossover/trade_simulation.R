@@ -6,8 +6,8 @@ source("rd/models/stock_crossover/exit.R")
 max_position_days <- 20
 
 # Signal filters
-yhat_high_cutoff <- quantile(mnXYP[val_idx, ]$y_high_hat, .993, na.rm = TRUE)
-yhat_low_cutoff <- quantile(mnXYP[val_idx, ]$y_low_hat, .00003, na.rm = TRUE)
+yhat_high_cutoff <- quantile(mnXYP[val_idx, ]$y_high_hat, .997, na.rm = TRUE)
+yhat_low_cutoff <- quantile(mnXYP[val_idx, ]$y_low_hat, .0015, na.rm = TRUE)
 cat(sprintf(
   "Cutoffs:\n  High_q:  %.4f\n   Low_q:  %.4f\n",
   yhat_high_cutoff,
@@ -17,13 +17,17 @@ cat(sprintf(
 # Generate trading signals
 signals <- mnXYP[val_idx, ] %>%
   filter(
-    y_high_hat > yhat_high_cutoff,
-    y_low_hat > yhat_low_cutoff
+    y_high_hat > yhat_high_cutoff
+    # , y_low_hat > yhat_low_cutoff
   ) %>%
   filter_signals(within_days = max_position_days) %>% # Discard nearby signals
   arrange(date) %>%
   select(symbol, date)
 signals
+
+if (nrow(signals) == 0) {
+  stop("No signals generated. Adjust cutoffs or check data.")
+}
 
 # Exits for each position
 posl_raw <- position_cohort(signals, 5, max_position_days, mcnXY)
@@ -42,9 +46,14 @@ posl <- lapply(seq_along(posl_raw), function(i) {
 dfsr <- position_cohort_returns(posl, signals, y_name = "extreme_high_identity")
 
 # Filter out extreme returns
-drop_trades <- dfsr %>% filter(R > 2) %>% pull(trade)
-dfsr <- dfsr %>% filter(!(trade %in% drop_trades))
-posl <- posl[-drop_trades]
+drop_trades <- dfsr %>%
+  filter(R > 2) %>%
+  pull(trade)
+
+if (length(drop_trades) > 0) {
+  dfsr <- dfsr %>% filter(!(trade %in% drop_trades))
+  posl <- posl[-drop_trades]
+}
 
 # Signal accuracy analysis
 accuracy <- exit_accuracy(dfsr, side = "long")
