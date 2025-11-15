@@ -126,16 +126,14 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
   }
 
   captures <- position_cohort_captures(posl)
-
-  p <- ggplot2::ggplot(na.omit(position), ggplot2::aes(x = t)) +
-    ggplot2::geom_line(
-      ggplot2::aes(y = C),
-      color = "blue",
-      linewidth = 0.8
-    ) +
+  captured <- captures %>% dplyr::filter(status)
+  uncaptured <- captures %>% dplyr::filter(!status)
+  
+  # Create base plot
+  p <- ggplot2::ggplot() +
     ggplot2::coord_cartesian(ylim = if (is.null(ylim)) NULL else ylim) +
     ggplot2::geom_hline(
-      yintercept = 0,
+      yintercept = 1,
       color = "gray",
       linetype = "dashed",
       linewidth = 0.5
@@ -143,12 +141,35 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
     ggplot2::theme_minimal() +
     ggplot2::labs(
       x = "t",
-      y = "Captures"
+      y = "Value"
     )
+  
+  # Add red circles for FALSE status
+  if (nrow(uncaptured) > 0) {
+    p <- p + ggplot2::geom_point(
+      data = uncaptured,
+      ggplot2::aes(x = t, y = S),
+      color = "#d90a0a",
+      shape = 5,
+      size = 1,
+      stroke = 1.1
+    )
+  }
+  
+  # Add green X marks for TRUE status
+  if (nrow(captured) > 0) {
+    p <- p + ggplot2::geom_point(
+      data = captured,
+      ggplot2::aes(x = t, y = S),
+      color = "#19b119",
+      shape = 4,
+      size = 3,
+      stroke = 1.5
+    )
+  }
 
   if (plot) {
     print(p)
   }
   p
-
 }

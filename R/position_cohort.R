@@ -143,20 +143,33 @@ position_cohort_returns <- function(posl, signals, y_name = "y") {
 #' @param posl List of tibbles/data frames, each containing position data with 'exit' and 'S' columns
 #' @return Matrix with columns: exit_status, exit_idx, exit_price
 position_cohort_captures <- function(posl) {
-  tbl <- t(sapply(seq_along(posl), function(i) {
-    posl[[i]] %>%
-      summarise(
-        exit_status = any(exit),
-        exit_idx = ifelse(any(exit), which(exit)[1], tail(which(!is.na(S)), 1)),
-        exit_price = S[exit_idx]
-      )
-  }))
-  if (nrow(tbl) == 0) {
+  if (length(posl) == 0) {
     return(tibble::tibble(
-      exit_status = logical(0),
-      exit_idx = integer(0),
-      exit_price = numeric(0)
+      status = logical(0),
+      t = integer(0),
+      S = numeric(0)
     ))
   }
-  tbl
+  transform(
+    tibble::tibble(
+      status = vapply(posl, \(d) any(d$exit), logical(1)),
+      t = vapply(
+        posl,
+        function(d) {
+          # first exit index (NA if none)
+          exit_idx <- match(TRUE, d$exit)
+
+          if (!is.na(exit_idx)) {
+            exit_idx
+          } else {
+            # fallback: last non-NA S
+            last_non_na <- max(which(!is.na(d$S)))
+            last_non_na
+          }
+        },
+        integer(1)
+      )
+    ),
+    S = mapply(\(d, t) d$S[t], posl, t)
+  )
 }
