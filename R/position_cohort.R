@@ -1,10 +1,10 @@
 # Build a table of positions for event profiler.
 # Add fill policy: na.locf, na.rm
-position_cohort <- function(symbol_dates,
-                            before_days,
-                            after_days,
-                            quotes,
-                            fun = identity) {
+position_cohorts <- function(symbol_dates,
+                             before_days,
+                             after_days,
+                             quotes,
+                             fun = identity) {
   lapply(seq_len(nrow(symbol_dates)), function(i) {
     # Extract.
     sym <- symbol_dates$symbol[i]
@@ -87,7 +87,7 @@ position_cohort_metrics <- function(pos_data, trade, y_name = "y") {
     R <- pos_data$S[idx] - 1
     r <- log(pos_data$S[idx])
   }
-  exit_method <- ifelse(any(pos_data$exit), "dqr", NA_character_)
+  exit_method <- ifelse(any(pos_data$exit, na.rm = TRUE), "dqr", NA_character_)
   tibble::tibble(trade, t = idx - 1, exit_method, R, r, y)
 }
 

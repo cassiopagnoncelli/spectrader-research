@@ -14,7 +14,7 @@ ui <- dashboardPage(
     sidebarMenu(
       menuItem("Overview", tabName = "overview", icon = icon("dashboard")),
       menuItem("Trades", tabName = "signals_returns", icon = icon("table")),
-      menuItem("Position Cohort", tabName = "position_cohort", icon = icon("chart-area")),
+      menuItem("Position Cohort", tabName = "position_cohorts", icon = icon("chart-area")),
       menuItem("Kelly Criterion", tabName = "kelly", icon = icon("balance-scale")),
       menuItem("Returns Analysis", tabName = "returns", icon = icon("chart-area")),
       menuItem("Concurrency", tabName = "concurrency", icon = icon("layer-group")),
@@ -77,8 +77,8 @@ ui <- dashboardPage(
               "position_filter",
               "Position Filter:",
               choices = c("All Positions" = "all", 
-                         "Captured" = "captured", 
-                         "Uncaptured" = "uncaptured"),
+                          "Captured" = "captured", 
+                          "Uncaptured" = "uncaptured"),
               selected = "all"
             ),
             actionButton("refresh_samples", "Refresh Samples", icon = icon("refresh"))
@@ -340,7 +340,7 @@ ui <- dashboardPage(
       
       # Position Cohort Tab
       tabItem(
-        tabName = "position_cohort",
+        tabName = "position_cohorts",
         fluidRow(
           box(
             width = 12,

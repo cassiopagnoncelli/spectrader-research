@@ -30,7 +30,7 @@ if (nrow(signals) == 0) {
 }
 
 # Exits for each position
-posl_raw <- position_cohort(signals, 5, max_position_days, mcnXY)
+posl_raw <- position_cohorts(signals, 5, max_position_days, mcnXY)
 posl <- lapply(seq_along(posl_raw), function(i) {
   exit_dqr(
     dqr_fits,
@@ -44,16 +44,6 @@ posl <- lapply(seq_along(posl_raw), function(i) {
 
 # Signals & Returns
 dfsr <- position_cohort_returns(posl, signals, y_name = "extreme_high_identity")
-
-# Filter out extreme returns
-drop_trades <- dfsr %>%
-  filter(R > 2) %>%
-  pull(trade)
-
-if (length(drop_trades) > 0) {
-  dfsr <- dfsr %>% filter(!(trade %in% drop_trades))
-  posl <- posl[-drop_trades]
-}
 
 # Signal accuracy analysis
 accuracy <- exit_accuracy(dfsr, side = "long")

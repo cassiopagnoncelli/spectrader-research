@@ -14,7 +14,7 @@ df_signals <- filter_signals(df_signals_raw, within_days = 30) %>% arrange(date)
 df_signals
 
 # Build list of positions from signals, each position is a tibble
-posl <- position_cohort(
+posl <- position_cohorts(
   df_signals,
   before_days = 30,
   after_days = 60,

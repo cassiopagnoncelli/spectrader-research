@@ -34,7 +34,7 @@ train_dqr <- function(signals, quotes, taus, formulas, max_position_days = 60) {
     stop("taus and formulas must have the same length")
 
   # Positions cohorts enriched for decaying quantile regression features
-  posl <- position_cohort(
+  posl <- position_cohorts(
     signals,
     before_days = 30,
     after_days = max_position_days,
