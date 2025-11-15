@@ -71,29 +71,7 @@ position_cohort <- function(symbol_dates,
   })
 }
 
-position_cohort_exit_method <- function(pos_data) {
-  if (!tibble::is_tibble(pos_data) && !is.data.frame(pos_data))
-    stop("Input must be a tibble or data frame.")
-
-  if (!any(pos_data$exit, na.rm = TRUE))
-    return(NA_character_)
-
-  exit_cols <- grep("^exit_", names(pos_data), value = TRUE)
-  if (length(exit_cols) == 0)
-    return(NA_character_)
-
-  min_indices <- sapply(exit_cols, function(col) {
-    idx <- which(pos_data[[col]] == TRUE)
-    ifelse(length(idx) == 0, NA_integer_, min(idx))
-  })
-
-  if (all(is.na(min_indices)))
-    return("heuristic")
-
-  sub("^exit_", "", names(which.min(min_indices)))
-}
-
-position_cohort_metrics <- function(pos_data, trade) {
+position_cohort_metrics <- function(pos_data, trade, y_name) {
   if (!tibble::is_tibble(pos_data) && !is.data.frame(pos_data))
     stop("Input must be a tibble or data frame.")
 
@@ -101,19 +79,19 @@ position_cohort_metrics <- function(pos_data, trade) {
   if (is.na(idx)) {
     stop("No valid exit found in position data.")
   }
+  y <- pmax(na.omit(pos_data[[y_name]][1:idx]))
   if (is.na(pos_data$S[idx])) {
     R <- tail(na.omit(pos_data$S), 1) - 1
     r <- log(1 + R)
-    exit_method <- NA_character_
   } else {
     R <- pos_data$S[idx] - 1
     r <- log(pos_data$S[idx])
-    exit_method <- position_cohort_exit_method(pos_data)
   }
-  tibble::tibble(trade, t = idx - 1, exit_method, R, r)
+  exit_method <- ifelse(any(pos_data$exit), "dqr", NA_character_)
+  tibble::tibble(trade, t = idx - 1, exit_method, R, r, y)
 }
 
-position_cohort_return <- function(posl, df_signals) {
+position_cohort_returns <- function(posl, signals, y_name) {
   if (!is.list(posl)) {
     stop("Input must be a list of tibbles/data frames.")
   }
@@ -122,12 +100,12 @@ position_cohort_return <- function(posl, df_signals) {
   }
   position_cohort_metrics_list <- lapply(
     seq_along(posl),
-    function(i) position_cohort_metrics(posl[[i]], i)
+    function(i) position_cohort_metrics(posl[[i]], i, y_name)
   )
   df_returns <- dplyr::bind_rows(position_cohort_metrics_list)
   # Combine with signals data frame.
-  if (nrow(df_signals) != nrow(df_returns)) {
+  if (nrow(signals) != nrow(df_returns)) {
     stop("signals and returns data frames must have the same number of rows")
   }
-  tibble::tibble(df_signals, df_returns)
+  tibble::tibble(signals, df_returns)
 }

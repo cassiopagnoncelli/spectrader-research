@@ -1,9 +1,4 @@
-devtools::load_all()
-
-options(scipen = 999)
-
-source("rd/models/stock_crossover/entry_model.R")
-source("rd/models/stock_crossover/entry_plots.R")
+load_all()
 
 #
 # ETL.
@@ -17,21 +12,19 @@ fets::add_vix(quotes, vix)
 #
 # FEATURE ENGINEERING.
 #
-fets::fwd(quotes, lookahead = 20, inplace = TRUE)
+invisible(fets::fwd(quotes, lookahead = 20, inplace = TRUE))
 quotes_fwd_fe <- fets::fe(quotes, inplace = TRUE)
 
 #
 # PREPROCESSING.
 #
 mXY <- quotes_fwd_fe$X %>% na.omit() %>% tibble::tibble()
-XY <- mXY[, ] %>% select(-symbol, -date)
 
-decomposed <- fets::decomposeXY(mXY, na.rm = TRUE)
-meta <- tibble::tible(decomposed$meta)
-X <- tibble::tible(decomposed$X) %>% select(-close)
-Y <- tibble::tible(decomposed$Y)
-
-mX <- cbind(meta, X)
+decomposed <- fets::decomposeXY(mXY, na.rm.X = TRUE, na.rm.Y = TRUE)
+meta <- decomposed$meta
+close <- decomposed$X$close
+X <- decomposed$X %>% select(-close, -matches("^(smoothed_close)"))
+Y <- decomposed$Y
 
 # Set splits.
 train_end <- as.Date("2023-05-31")
@@ -41,56 +34,54 @@ train_idx <- which(meta$date <= train_end) %>% sample(45000)
 val_idx <- which(meta$date > train_end & meta$date <= val_end)
 test_idx <- which(meta$date > val_end)
 
+# Build tables
+nX <- scale(X[train_idx, ])
+nX_centers <- attr(nX, "scaled:center")
+nX_scales <- attr(nX, "scaled:scale")
+nX <- tibble::as_tibble(scale_new_data(X, center = nX_centers, scale = nX_scales))
+
+mnX <- tibble::tibble(meta, nX)
+mcnXY <- tibble::tibble(meta, close, nX, Y)
+nXY <- tibble::tibble(nX, Y)
+
+rm(vix, quotes, quotes_fwd_fe, decomposed, close)
+gc()
+
 #
 # Training
 #
 fets::fwd_methods()
 
-fit_lasso <- rqPen::rq.pen(
-  x = XY[train_idx, -c("smoothed_close")],
-  y = Y[train_idx, "extreme_high_identity"],
-  tau = .99,
+# Model for extreme value of extreme high identity
+fit_lasso_high <- rqPen::rq.pen(
+  x = nX[train_idx, ],
+  y = Y[train_idx, ]$extreme_high_identity,
+  tau = .995,
   penalty = "LASSO",
   lambda = NULL  # triggers cross-validation path
 )
 
-best_lambda <- fit_lasso$lambda
-selected_vars <- which(fit_lasso$coef != 0) - 1   # drop intercept index
-colnames(X_train)[selected_vars]
-
-# Predictions
-P <- data.table::rbindlist(list(
-  y = model_signal$predictions
-), idcol = "model")
-
-mXYP <- tibble::tibble(
-  meta,
-  X,
-  Y,
-  P
+# Model filter for extreme low identity
+eli <- Y$extreme_low_identity
+eli_q <- mean(eli <= 0.9)
+eli_q
+fit_lasso_low <- rqPen::rq.pen(
+  x = nX[train_idx, ],
+  y = Y[train_idx, ]$extreme_low_identity,
+  tau = eli_q,
+  penalty = "LASSO",
+  lambda = NULL  # triggers cross-validation path
 )
 
-#
-# EVALUATION.
-#
-df_train <- build_df_stages(model_signal, "train")
-df_val <- build_df_stages(model_signal, "val")
-df_test <- build_df_stages(model_signal, "test")
+# Predictions
+P <- tibble::tibble(
+  y_high_hat = predict(fit_lasso_high, newx = as.matrix(nX[, ]))[, 8],
+  y_low_hat = predict(fit_lasso_low, newx = as.matrix(nX[, ]))[, 8]
+)
 
-df_train_skewness <- build_df_stages(model_signal_skewness, "train")
-df_val_skewness <- build_df_stages(model_signal_skewness, "val")
-df_test_skewness <- build_df_stages(model_signal_skewness, "test")
-
-df_train_kurtosis <- build_df_stages(model_signal_kurtosis, "train")
-df_val_kurtosis <- build_df_stages(model_signal_kurtosis, "val")
-df_test_kurtosis <- build_df_stages(model_signal_kurtosis, "test")
-
-df_test_yhats <- tibble::tibble(
-  df_test,
-  # Skewness
-  y_skewness = df_test_skewness$y,
-  yhat_skewness = df_test_skewness$yhat,
-  # Kurtosis
-  y_kurtosis = df_test_kurtosis$y,
-  yhat_kurtosis = df_test_kurtosis$yhat
+mnXYP <- tibble::tibble(
+  meta,
+  Y[, c("extreme_high_identity", "extreme_low_identity")],
+  P,
+  nX
 )

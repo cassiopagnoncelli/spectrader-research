@@ -1,5 +1,5 @@
 linters:
-  linters_with_defaults(
+  lintr::linters_with_defaults(
     line_length_linter(120),
     object_name_linter = NULL,
     cyclocomp_linter(25),
@@ -7,15 +7,8 @@ linters:
     trailing_whitespace_linter = NULL,
     commented_code_linter = NULL,
     T_and_F_symbol_linter = NULL,
-    object_usage_linter = object_usage_linter(skip_with = c(
-      "%>%",
-      "group_by", "ungroup", "mutate", "select", "filter", "arrange",
-      "summarise", "summarize", "left_join", "right_join", "inner_join", "full_join",
-      "slice", "row_number", "lag", "lead", "pull", "rename", "distinct",
-      "bind_rows", "bind_cols", "case_when", "if_else", "n", "across",
-      "everything", "starts_with", "ends_with", "contains", "matches",
-      "tibble", "as_tibble", "tribble", "na.omit"
-    ))
+    object_usage_linter = NULL,
+    extraction_operator_linter = NULL
   )
 exclusions: list("renv/", "renv.lock", ".Rproj.user/", "man/", "tmp/")
 encoding: "UTF-8"
