@@ -116,3 +116,39 @@ plot_position_cohort_exit <- function(position, plot = TRUE, ylim = NULL) {
   }
   p
 }
+
+plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
+  if (is.null(posl)) {
+    stop("Input 'posl' cannot be NULL.")
+  }
+  if (!is.list(posl)) {
+    stop("Input must be a tibble or data frame.")
+  }
+
+  captures <- position_cohort_captures(posl)
+
+  p <- ggplot2::ggplot(na.omit(position), ggplot2::aes(x = t)) +
+    ggplot2::geom_line(
+      ggplot2::aes(y = C),
+      color = "blue",
+      linewidth = 0.8
+    ) +
+    ggplot2::coord_cartesian(ylim = if (is.null(ylim)) NULL else ylim) +
+    ggplot2::geom_hline(
+      yintercept = 0,
+      color = "gray",
+      linetype = "dashed",
+      linewidth = 0.5
+    ) +
+    ggplot2::theme_minimal() +
+    ggplot2::labs(
+      x = "t",
+      y = "Captures"
+    )
+
+  if (plot) {
+    print(p)
+  }
+  p
+
+}

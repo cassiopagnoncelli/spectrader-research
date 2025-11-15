@@ -1,5 +1,14 @@
-# Build a table of positions for event profiler.
-# Add fill policy: na.locf, na.rm
+#' Build position cohorts for event profiler analysis
+#'
+#' Creates a list of tibbles containing position data for each event in symbol_dates,
+#' with normalized price series and technical indicators computed over a specified window.
+#'
+#' @param symbol_dates Data frame with 'symbol' and 'date' columns specifying events
+#' @param before_days Integer number of days before the event date
+#' @param after_days Integer number of days after the event date
+#' @param quotes Data frame with price data containing 'symbol', 'date', and 'close' columns
+#' @param fun Function to apply to each cohort tibble (default: identity)
+#' @return List of tibbles, one per event, with price series and computed indicators
 position_cohorts <- function(symbol_dates,
                              before_days,
                              after_days,
@@ -71,6 +80,15 @@ position_cohorts <- function(symbol_dates,
   })
 }
 
+#' Compute metrics from a single position cohort
+#'
+#' Calculates exit metrics including return, log-return, and maximum y-value
+#' for a single position data tibble.
+#'
+#' @param pos_data Tibble or data frame with position data
+#' @param trade Trade identifier
+#' @param y_name Character name of the y column to extract maximum from (default: "y")
+#' @return Tibble with columns: trade, t, exit_method, R, r, y
 position_cohort_metrics <- function(pos_data, trade, y_name = "y") {
   if (!tibble::is_tibble(pos_data) && !is.data.frame(pos_data))
     stop("Input must be a tibble or data frame.")
@@ -91,6 +109,14 @@ position_cohort_metrics <- function(pos_data, trade, y_name = "y") {
   tibble::tibble(trade, t = idx - 1, exit_method, R, r, y)
 }
 
+#' Compute returns from multiple position cohorts
+#'
+#' Aggregates metrics from a list of position cohorts and combines with signals data.
+#'
+#' @param posl List of tibbles/data frames, each containing position data
+#' @param signals Data frame with signal information (must have same rows as posl length)
+#' @param y_name Character name of the y column to extract maximum from (default: "y")
+#' @return Tibble combining signals and computed return metrics
 position_cohort_returns <- function(posl, signals, y_name = "y") {
   if (!is.list(posl)) {
     stop("Input must be a list of tibbles/data frames.")
@@ -108,4 +134,29 @@ position_cohort_returns <- function(posl, signals, y_name = "y") {
     stop("signals and returns data frames must have the same number of rows")
   }
   tibble::tibble(signals, df_returns)
+}
+
+#' Extract exit capture information from position cohorts
+#'
+#' Summarizes exit status, exit index, and exit price for each position in the list.
+#'
+#' @param posl List of tibbles/data frames, each containing position data with 'exit' and 'S' columns
+#' @return Matrix with columns: exit_status, exit_idx, exit_price
+position_cohort_captures <- function(posl) {
+  tbl <- t(sapply(seq_along(posl), function(i) {
+    posl[[i]] %>%
+      summarise(
+        exit_status = any(exit),
+        exit_idx = ifelse(any(exit), which(exit)[1], tail(which(!is.na(S)), 1)),
+        exit_price = S[exit_idx]
+      )
+  }))
+  if (nrow(tbl) == 0) {
+    return(tibble::tibble(
+      exit_status = logical(0),
+      exit_idx = integer(0),
+      exit_price = numeric(0)
+    ))
+  }
+  tbl
 }
