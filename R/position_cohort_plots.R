@@ -133,7 +133,7 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
   t_range <- range(captures$t, na.rm = TRUE)
   t_max <- t_range[2]
   density_offset <- t_max  # Start densities at max t value
-  density_width <- 2.5  # Fixed width for density plots
+  density_width <- 0.8  # Fixed width for density plots (small and discrete)
   
   # Calculate density estimates and create data frames
   density_data_list <- list()
@@ -166,9 +166,18 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
   
   # Create base plot
   p <- ggplot2::ggplot() +
-    ggplot2::coord_cartesian(ylim = if (is.null(ylim)) NULL else ylim) +
+    ggplot2::coord_cartesian(
+      xlim = c(-1, NA),
+      ylim = if (is.null(ylim)) NULL else ylim
+    ) +
     ggplot2::geom_hline(
       yintercept = 1,
+      color = "gray",
+      linetype = "dashed",
+      linewidth = 0.5
+    ) +
+    ggplot2::geom_vline(
+      xintercept = 0,
       color = "gray",
       linetype = "dashed",
       linewidth = 0.5
@@ -178,6 +187,48 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
       x = "t",
       y = "Value"
     )
+  
+  # Add horizontal line at mean of uncaptured S values
+  if (nrow(uncaptured) > 0) {
+    mean_uncaptured <- mean(uncaptured$S, na.rm = TRUE)
+    sd_uncaptured <- sd(uncaptured$S, na.rm = TRUE)
+    p <- p + ggplot2::geom_hline(
+      yintercept = mean_uncaptured,
+      color = "#985656",
+      linetype = "dotted",
+      linewidth = 0.5
+    ) +
+    ggplot2::annotate(
+      "text",
+      x = 1.2,
+      y = mean_uncaptured,
+      label = sprintf("%.3f, σ=%.3f", mean_uncaptured, sd_uncaptured),
+      color = "#de8383",
+      size = 3,
+      vjust = -0.5
+    )
+  }
+  
+  # Add horizontal line at mean of captured S values
+  if (nrow(captured) > 0) {
+    mean_captured <- mean(captured$S, na.rm = TRUE)
+    sd_captured <- sd(captured$S, na.rm = TRUE)
+    p <- p + ggplot2::geom_hline(
+      yintercept = mean_captured,
+      color = "#61a861",
+      linetype = "dotted",
+      linewidth = 0.5
+    ) +
+    ggplot2::annotate(
+      "text",
+      x = 1.2,
+      y = mean_captured,
+      label = sprintf("%.3f, σ=%.3f", mean_captured, sd_captured),
+      color = "#508e50",
+      size = 3,
+      vjust = -0.5
+    )
+  }
   
   # Add red diamonds for FALSE status
   if (nrow(uncaptured) > 0) {
