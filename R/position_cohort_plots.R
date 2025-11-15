@@ -254,22 +254,26 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
     )
   }
   
-  # Add density curves (thin lines, no fill)
+  # Add density curves with light fill
   if (!is.null(density_data_list$uncaptured)) {
-    p <- p + ggplot2::geom_path(
+    p <- p + ggplot2::geom_polygon(
       data = density_data_list$uncaptured,
       ggplot2::aes(x = x, y = y),
+      fill = "#d90a0a",
+      alpha = 0.1,
       color = "#d90a0a",
-      linewidth = 0.4
+      linewidth = 0.2
     )
   }
   
   if (!is.null(density_data_list$captured)) {
-    p <- p + ggplot2::geom_path(
+    p <- p + ggplot2::geom_polygon(
       data = density_data_list$captured,
       ggplot2::aes(x = x, y = y),
+      fill = "#19b119",
+      alpha = 0.1,
       color = "#19b119",
-      linewidth = 0.4
+      linewidth = 0.2
     )
   }
 
