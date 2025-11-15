@@ -228,6 +228,26 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
       size = 3,
       vjust = -0.5
     )
+    
+    # Add vertical line at mean of captured t values
+    mean_t_captured <- mean(captured$t, na.rm = TRUE)
+    sd_t_captured <- sd(captured$t, na.rm = TRUE)
+    p <- p + ggplot2::geom_vline(
+      xintercept = mean_t_captured,
+      color = "black",
+      linetype = "dotted",
+      linewidth = 0.3
+    ) +
+    ggplot2::annotate(
+      "text",
+      x = mean_t_captured,
+      y = mean_captured,
+      label = sprintf("%.2f, σ=%.2f", mean_t_captured, sd_t_captured),
+      color = "black",
+      size = 3,
+      hjust = -0.1,
+      vjust = -0.5
+    )
   }
   
   # Add red diamonds for FALSE status
