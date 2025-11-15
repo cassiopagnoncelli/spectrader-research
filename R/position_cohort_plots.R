@@ -129,38 +129,63 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
   captured <- captures %>% dplyr::filter(status)
   uncaptured <- captures %>% dplyr::filter(!status)
   
-  # Get x-axis range for positioning densities
+  # Get x-axis and y-axis ranges for positioning densities
   t_range <- range(captures$t, na.rm = TRUE)
   t_max <- t_range[2]
+  S_range <- range(captures$S, na.rm = TRUE)
+  
+  # Determine y limits
+  if (is.null(ylim)) {
+    y_min <- S_range[1]
+    y_max <- S_range[2]
+  } else {
+    y_min <- ylim[1]
+    y_max <- ylim[2]
+  }
+  
   density_offset <- t_max  # Start densities at max t value
   density_width <- 0.8  # Fixed width for density plots (small and discrete)
+  density_height <- (y_max - y_min) * 0.08  # Height for bottom density (8% of y range)
   
   # Calculate density estimates and create data frames
   density_data_list <- list()
   
+  # Marginal density for S values (right side)
   if (nrow(captured) > 0 && length(unique(captured$S)) > 1) {
-    dens_captured <- density(captured$S, n = 512)
+    dens_captured_S <- density(captured$S, n = 512)
     # Scale density to fixed width, pointing inwards (left)
-    density_scale <- density_width / max(dens_captured$y)
-    density_data_list$captured <- data.frame(
-      x = density_offset - dens_captured$y * density_scale,
-      y = dens_captured$x,
-      group = "captured"
+    density_scale <- density_width / max(dens_captured_S$y)
+    density_data_list$captured_S <- data.frame(
+      x = density_offset - dens_captured_S$y * density_scale,
+      y = dens_captured_S$x,
+      group = "captured_S"
     )
   }
   
   if (nrow(uncaptured) > 0 && length(unique(uncaptured$S)) > 1) {
-    dens_uncaptured <- density(uncaptured$S, n = 512)
+    dens_uncaptured_S <- density(uncaptured$S, n = 512)
     # Use same scale for fair comparison
     if (exists("density_scale")) {
       scale <- density_scale
     } else {
-      scale <- density_width / max(dens_uncaptured$y)
+      scale <- density_width / max(dens_uncaptured_S$y)
     }
-    density_data_list$uncaptured <- data.frame(
-      x = density_offset - dens_uncaptured$y * scale,
-      y = dens_uncaptured$x,
-      group = "uncaptured"
+    density_data_list$uncaptured_S <- data.frame(
+      x = density_offset - dens_uncaptured_S$y * scale,
+      y = dens_uncaptured_S$x,
+      group = "uncaptured_S"
+    )
+  }
+  
+  # Marginal density for t values (bottom)
+  if (nrow(captured) > 0 && length(unique(captured$t)) > 1) {
+    dens_captured_t <- density(captured$t, n = 512)
+    # Scale density to fixed height, pointing upwards
+    density_scale_t <- density_height / max(dens_captured_t$y)
+    density_data_list$captured_t <- data.frame(
+      x = dens_captured_t$x,
+      y = y_min + dens_captured_t$y * density_scale_t,
+      group = "captured_t"
     )
   }
   
@@ -274,10 +299,10 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
     )
   }
   
-  # Add density curves with light fill
-  if (!is.null(density_data_list$uncaptured)) {
+  # Add S density curves (right side) with light fill
+  if (!is.null(density_data_list$uncaptured_S)) {
     p <- p + ggplot2::geom_polygon(
-      data = density_data_list$uncaptured,
+      data = density_data_list$uncaptured_S,
       ggplot2::aes(x = x, y = y),
       fill = "#d90a0a",
       alpha = 0.1,
@@ -286,13 +311,50 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
     )
   }
   
-  if (!is.null(density_data_list$captured)) {
+  if (!is.null(density_data_list$captured_S)) {
     p <- p + ggplot2::geom_polygon(
-      data = density_data_list$captured,
+      data = density_data_list$captured_S,
       ggplot2::aes(x = x, y = y),
       fill = "#19b119",
       alpha = 0.1,
       color = "#19b119",
+      linewidth = 0.2
+    )
+  }
+  
+  # Add t histogram (bottom) - scaled to match density
+  if (nrow(captured) > 0 && length(unique(captured$t)) > 1) {
+    # Calculate histogram
+    hist_data <- hist(captured$t, breaks = 15, plot = FALSE)
+    # Scale histogram to same height as density
+    hist_scale <- density_height / max(hist_data$counts)
+    
+    # Create data frame for histogram bars
+    hist_df <- data.frame(
+      xmin = hist_data$breaks[-length(hist_data$breaks)],
+      xmax = hist_data$breaks[-1],
+      ymin = y_min,
+      ymax = y_min + hist_data$counts * hist_scale
+    )
+    
+    p <- p + ggplot2::geom_rect(
+      data = hist_df,
+      ggplot2::aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+      fill = "#d0d0d0",
+      alpha = 0.5,
+      color = "#a0a0a0",
+      linewidth = 0.1
+    )
+  }
+  
+  # Add t density curve (bottom) with light fill on top of histogram
+  if (!is.null(density_data_list$captured_t)) {
+    p <- p + ggplot2::geom_polygon(
+      data = density_data_list$captured_t,
+      ggplot2::aes(x = x, y = y),
+      fill = "#b0b0b0",
+      alpha = 0.3,
+      color = "#b0b0b0",
       linewidth = 0.2
     )
   }
