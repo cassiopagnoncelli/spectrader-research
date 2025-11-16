@@ -171,7 +171,6 @@ position_cohort_returns <- function(posl, signals, y_name = "y") {
 position_cohort_captures <- function(posl) {
   if (length(posl) == 0) {
     return(tibble::tibble(
-      status = logical(0),
       t = integer(0),
       S = numeric(0),
       exit_method = character(0)
@@ -179,7 +178,6 @@ position_cohort_captures <- function(posl) {
   }
   transform(
     tibble::tibble(
-      status = vapply(posl, \(d) any(d$exit), logical(1)),
       t = vapply(
         posl,
         function(d) {

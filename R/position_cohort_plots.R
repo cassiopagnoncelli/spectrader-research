@@ -165,8 +165,8 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
   }
 
   captures <- position_cohort_captures(posl)
-  captured <- captures %>% dplyr::filter(status)
-  uncaptured <- captures %>% dplyr::filter(!status)
+  captured <- captures %>% dplyr::filter(!is.na(exit_method))
+  uncaptured <- captures %>% dplyr::filter(is.na(exit_method))
   
   # Get ranges
   t_range <- range(captures$t, na.rm = TRUE)
@@ -201,25 +201,56 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
       mode = "markers",
       marker = list(symbol = "diamond", size = 8, color = "#d90a0a", line = list(width = 1, color = "#d90a0a")),
       name = "Uncaptured",
-      showlegend = FALSE,
+      showlegend = TRUE,
       xaxis = "x",
       yaxis = "y"
     )
   }
   
-  # Add captured points to main plot (green X)
+  # Add captured points to main plot, colored by exit_method
   if (nrow(captured) > 0) {
-    fig <- fig %>% plotly::add_trace(
-      data = captured,
-      x = ~t, y = ~S,
-      type = "scatter",
-      mode = "markers",
-      marker = list(symbol = "x", size = 12, color = "#2E7D32", line = list(width = 2, color = "#2E7D32")),
-      name = "Captured",
-      showlegend = FALSE,
-      xaxis = "x",
-      yaxis = "y"
+    # Get unique exit methods and assign colors
+    exit_methods <- unique(captured$exit_method)
+    
+    # Define a vibrant color palette (no greys)
+    predefined_colors <- c(
+      "fpt" = "#2E7D32",      # Forest Green
+      "ruleset" = "#1976D2",  # Royal Blue
+      "timeout" = "#F57C00",  # Vibrant Orange
+      "stop_loss" = "#C62828", # Crimson Red
+      "take_profit" = "#7B1FA2", # Purple
+      "trailing_stop" = "#00897B", # Teal
+      "exit_signal" = "#D81B60"  # Pink
     )
+    
+    # Generate additional vibrant colors if needed for unknown methods
+    vibrant_palette <- c("#FF6F00", "#4A148C", "#00695C", "#AD1457", "#C51162", "#AA00FF", "#0091EA", "#00B8D4")
+    
+    # Add a trace for each exit method
+    color_idx <- 1
+    for (method in exit_methods) {
+      method_data <- captured %>% dplyr::filter(exit_method == method)
+      
+      # Get color from predefined set, or from vibrant palette
+      if (method %in% names(predefined_colors)) {
+        color <- predefined_colors[[method]]
+      } else {
+        color <- vibrant_palette[((color_idx - 1) %% length(vibrant_palette)) + 1]
+        color_idx <- color_idx + 1
+      }
+      
+      fig <- fig %>% plotly::add_trace(
+        data = method_data,
+        x = ~t, y = ~S,
+        type = "scatter",
+        mode = "markers",
+        marker = list(symbol = "x", size = 12, color = color, line = list(width = 2, color = color)),
+        name = method,
+        showlegend = TRUE,
+        xaxis = "x",
+        yaxis = "y"
+      )
+    }
   }
   
   # ===== BOTTOM PANEL: Histogram of t values =====
@@ -470,7 +501,16 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
     shapes = shapes,
     annotations = annotations,
     hovermode = "closest",
-    showlegend = FALSE,
+    showlegend = TRUE,
+    legend = list(
+      x = 0.02,
+      y = 0.98,
+      xanchor = "left",
+      yanchor = "top",
+      bgcolor = "rgba(255, 255, 255, 0.8)",
+      bordercolor = "#cccccc",
+      borderwidth = 1
+    ),
     plot_bgcolor = "white",
     paper_bgcolor = "white",
     dragmode = FALSE
