@@ -264,6 +264,8 @@ exit_dqr_eval <- function(
   dqr_fits,
   enable_vol_bursts = TRUE,
   enable_time_decay = TRUE,
+  minS = NA,
+  minT = NA,
   history = FALSE,
   ...
 ) {
@@ -312,18 +314,26 @@ exit_dqr_eval <- function(
 
   if (side == "long") {
     result$exit_dqr <- result %>%
-      dplyr::mutate(exit_dqr = keep_first_true_only(S > qhat & S > 1 & t >= 3)) %>%
+      dplyr::mutate(
+        exit_dqr = keep_first_true_only(
+          S > qhat & S > max(1, minS, na.rm = TRUE) & t >= max(0, minT, na.rm = TRUE)
+        )
+      ) %>%
       dplyr::pull(exit_dqr)
   } else if (side == "short") {
     result$exit_dqr <- result %>%
-      dplyr::mutate(exit_dqr = keep_first_true_only(S < qhat & S < 1 & t >= 3)) %>%
+      dplyr::mutate(
+        exit_dqr = keep_first_true_only(
+          S < qhat & S < max(1, minS, na.rm = TRUE) & t >= max(0, minT, na.rm = TRUE)
+        )
+      ) %>%
       dplyr::pull(exit_dqr)
   }
 
   # Combine all exit signals
-  result$exit <- result$exit | result$exit_dqr
+  result$exit <- result$exit | (!is.na(result$exit_dqr) & result$exit_dqr)
 
   result %>%
     dplyr::mutate(dqr_line = qhat) %>%
-    dplyr::select(-dplyr::all_of(c("qhat_cols", "exit_cols", "qhat")))
+    dplyr::select(-dplyr::all_of(c(qhat_cols, exit_cols, "qhat")))
 }

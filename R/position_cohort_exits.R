@@ -34,7 +34,9 @@ exit_pipeline <- function(..., position) {
 #'
 #' @return A function that takes data and optional history parameter
 #' @export
-exit_dqr <- function(dqr_fits, max_position_days, side, enable_vol_bursts = TRUE, enable_time_decay = TRUE, ...) {
+exit_dqr <- function(
+  dqr_fits, max_position_days, side, enable_vol_bursts = TRUE, enable_time_decay = TRUE, minS = NA, minT = NA, ...
+) {
   if (!is.list(dqr_fits) || length(dqr_fits) == 0)
     stop("dqr_fits must be a list of fitted quantile regression models.")
   
@@ -52,6 +54,8 @@ exit_dqr <- function(dqr_fits, max_position_days, side, enable_vol_bursts = TRUE
       dqr_fits = dqr_fits,
       enable_vol_bursts = enable_vol_bursts,
       enable_time_decay = enable_time_decay,
+      minS = minS,
+      minT = minT,
       history = history,
       ...
     )
@@ -98,7 +102,7 @@ exit_vats <- function(sd_short = 6, sd_long = 20, k = 2.5, side = "long", minS =
             dplyr::lag(S, default = dplyr::first(S)) >=
               dplyr::lag(vats_stop, default = dplyr::first(vats_stop))
         ),
-        exit = exit | exit_vats
+        exit = exit | (!is.na(exit_vats) & exit_vats)
       ) %>%
       dplyr::select(-dplyr::all_of(c("sd_short", "sd_long", "sd_ratio", "Smax")))
   }
@@ -140,7 +144,7 @@ exit_fpt <- function(interest_rate = 0.0425, maturity = 15 / 365, side = "long",
           } else if (side == "short") {
             S < fpt_boundary & S < minS & t >= minT
           },
-        exit = exit | exit_fpt
+        exit = exit | (!is.na(exit_fpt) & exit_fpt)
       )
   }
 }
@@ -157,7 +161,7 @@ exit_ruleset <- function(upper = NA, lower = NA, ...) {
         ruleset_upper = if (!is.na(upper)) S > upper else FALSE,
         ruleset_lower = if (!is.na(lower)) S < lower else FALSE,
         exit_ruleset = keep_first_true_only(t >= 0 & (ruleset_upper | ruleset_lower)),
-        exit = exit | exit_ruleset
+        exit = exit | (!is.na(exit_ruleset) & exit_ruleset)
       ) %>% select(-dplyr::all_of(c("ruleset_upper", "ruleset_lower")))
   }
 }

@@ -47,6 +47,8 @@ posl <- lapply(seq_along(posl_raw), function(i) {
       side = "long",
       enable_time_decay = TRUE,
       enable_vol_bursts = TRUE,
+      minS = 1.2,
+      minT = 2,
       alpha = .1
     ),
     exit_vats(
@@ -59,7 +61,7 @@ posl <- lapply(seq_along(posl_raw), function(i) {
     exit_fpt(
       maturity = max_position_days / 365,
       side = "long",
-      minS = 1.1,
+      minS = 1.2,
       minT = 3
     ),
     exit_ruleset(
