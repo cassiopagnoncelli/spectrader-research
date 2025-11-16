@@ -136,7 +136,7 @@ exit_dqr_dc <- function(t_norm, method = "laplace", alpha = .15) {
   } else if (method == "gaussian") {
     exp(-t_norm^2 / 2)
   } else if (method == "laplace") { # Double-exponential
-    exp(-sqrt(alpha * t_norm))
+    exp(-sqrt(alpha * pmax(t_norm, 0)))
   } else if (method == "half-cosine") {
     0.5 * (1 + cos(pi * t_norm / 2))
   } else {
@@ -221,7 +221,6 @@ exit_dqr_weighted_probs <- function(t_norm, vol_norm, taus, method = "laplace", 
   }
 
   # Combine decay and burst matrices by selecting higher right energy
-  browser()
   if (!is.null(t_norm) && !is.null(vol_norm)) {
     final_matrix <- sapply(seq_len(ncol(decay_matrix)), function(i) {
       decay_right_energy <- right_energy(decay_matrix[, i])
