@@ -173,7 +173,8 @@ position_cohort_captures <- function(posl) {
     return(tibble::tibble(
       status = logical(0),
       t = integer(0),
-      S = numeric(0)
+      S = numeric(0),
+      exit_method = character(0)
     ))
   }
   transform(
@@ -194,8 +195,42 @@ position_cohort_captures <- function(posl) {
           }
         },
         integer(1)
+      ),
+      S = mapply(\(d, t) d$S[t], posl, t),
+      exit_method = vapply(
+        posl,
+        function(pos_data) {
+          # Find all exit_{em} columns
+          exit_cols <- grep("^exit_", names(pos_data), value = TRUE)
+          
+          # Determine which exit method triggered first
+          exit_method <- NA_character_
+          if (length(exit_cols) > 0) {
+            # For each row, find the first exit column that is TRUE
+            first_exit_row <- NA_integer_
+            first_exit_col <- NA_character_
+            
+            for (row_idx in seq_len(nrow(pos_data))) {
+              for (col_name in exit_cols) {
+                if (!is.na(pos_data[[col_name]][row_idx]) && pos_data[[col_name]][row_idx]) {
+                  first_exit_row <- row_idx
+                  first_exit_col <- col_name
+                  break
+                }
+              }
+              if (!is.na(first_exit_col)) break
+            }
+            
+            # Extract {em} from exit_{em}
+            if (!is.na(first_exit_col)) {
+              exit_method <- sub("^exit_", "", first_exit_col)
+            }
+          }
+          
+          exit_method
+        },
+        character(1)
       )
-    ),
-    S = mapply(\(d, t) d$S[t], posl, t)
+    )
   )
 }
