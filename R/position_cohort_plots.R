@@ -118,8 +118,9 @@ plot_position_cohort_exit <- function(position, plot = TRUE, ylim = NULL) {
 }
 
 plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
-  # Configuration: Bottom panel height as percentage of total plot height
+  # Configuration: Panel dimensions
   bottom_panel_height_pct <- 0.12
+  right_panel_width_pct <- 0.15
   
   if (is.null(posl)) {
     stop("Input 'posl' cannot be NULL.")
@@ -186,7 +187,7 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
     )
   }
   
-  # Calculate histogram and density for bottom plot
+  # ===== BOTTOM PANEL: Histogram of t values =====
   y_bottom_max <- 1
   if (nrow(captured) > 0 && length(unique(captured$t)) > 1) {
     hist_data <- hist(captured$t, breaks = 15, plot = FALSE)
@@ -223,6 +224,57 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
       yaxis = "y2",
       name = "Density"
     )
+  }
+  
+  # ===== RIGHT PANEL: Histogram of S values =====
+  x_right_max <- 1
+  
+  # Calculate histograms for captured S values
+  if (nrow(captured) > 0 && length(unique(captured$S)) > 1) {
+    hist_captured_S <- hist(captured$S, breaks = 15, plot = FALSE)
+    
+    # Add captured histogram bars (green, semi-transparent)
+    for (i in seq_along(hist_captured_S$counts)) {
+      fig <- fig %>% plotly::add_trace(
+        x = c(0, 0, hist_captured_S$counts[i], hist_captured_S$counts[i]),
+        y = c(hist_captured_S$breaks[i], hist_captured_S$breaks[i+1], hist_captured_S$breaks[i+1], hist_captured_S$breaks[i]),
+        type = "scatter",
+        mode = "lines",
+        fill = "toself",
+        fillcolor = "rgba(46, 125, 50, 0.4)",
+        line = list(color = "rgba(46, 125, 50, 0.4)", width = 0),
+        showlegend = FALSE,
+        xaxis = "x3",
+        yaxis = "y3",
+        hoverinfo = "skip"
+      )
+    }
+    
+    x_right_max <- max(x_right_max, max(hist_captured_S$counts, na.rm = TRUE))
+  }
+  
+  # Calculate histogram for uncaptured S values
+  if (nrow(uncaptured) > 0 && length(unique(uncaptured$S)) > 1) {
+    hist_uncaptured_S <- hist(uncaptured$S, breaks = 15, plot = FALSE)
+    
+    # Add uncaptured histogram bars (red, semi-transparent)
+    for (i in seq_along(hist_uncaptured_S$counts)) {
+      fig <- fig %>% plotly::add_trace(
+        x = c(0, 0, hist_uncaptured_S$counts[i], hist_uncaptured_S$counts[i]),
+        y = c(hist_uncaptured_S$breaks[i], hist_uncaptured_S$breaks[i+1], hist_uncaptured_S$breaks[i+1], hist_uncaptured_S$breaks[i]),
+        type = "scatter",
+        mode = "lines",
+        fill = "toself",
+        fillcolor = "rgba(217, 10, 10, 0.4)",
+        line = list(color = "rgba(217, 10, 10, 0.4)", width = 0),
+        showlegend = FALSE,
+        xaxis = "x3",
+        yaxis = "y3",
+        hoverinfo = "skip"
+      )
+    }
+    
+    x_right_max <- max(x_right_max, max(hist_uncaptured_S$counts, na.rm = TRUE))
   }
   
   # Create shapes for reference lines
@@ -293,27 +345,31 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
     )
   }
   
-  # Calculate panel domains based on bottom_panel_height_pct
+  # Calculate panel domains
   gap <- 0.05  # 5% gap between panels
-  main_panel_start <- bottom_panel_height_pct + gap
+  main_panel_start_y <- bottom_panel_height_pct + gap
+  main_panel_end_x <- 1 - right_panel_width_pct - gap
+  right_panel_start_x <- 1 - right_panel_width_pct
   
-  # Configure layout with two y-axes (main and bottom)
+  # Configure layout with three axis pairs (main, bottom, right)
   fig <- fig %>% plotly::layout(
+    # Main plot axes
     xaxis = list(
-      domain = c(0, 1),
+      domain = c(0, main_panel_end_x),
       range = c(-1, t_range[2]),
       showticklabels = FALSE,
       title = "",
       fixedrange = TRUE
     ),
     yaxis = list(
-      domain = c(main_panel_start, 1),
+      domain = c(main_panel_start_y, 1),
       range = c(y_min, y_max),
-      title = "Price Path",
+      title = "Value",
       fixedrange = TRUE
     ),
+    # Bottom panel axes
     xaxis2 = list(
-      domain = c(0, 1),
+      domain = c(0, main_panel_end_x),
       range = c(-1, t_range[2]),
       title = "t",
       anchor = "y2",
@@ -325,6 +381,23 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
       showticklabels = FALSE,
       title = "",
       anchor = "x2",
+      fixedrange = TRUE
+    ),
+    # Right panel axes
+    xaxis3 = list(
+      domain = c(right_panel_start_x, 1),
+      range = c(0, x_right_max * 1.1),
+      showticklabels = FALSE,
+      title = "",
+      anchor = "y3",
+      fixedrange = TRUE
+    ),
+    yaxis3 = list(
+      domain = c(main_panel_start_y, 1),
+      range = c(y_min, y_max),
+      showticklabels = FALSE,
+      title = "",
+      anchor = "x3",
       fixedrange = TRUE
     ),
     shapes = shapes,
