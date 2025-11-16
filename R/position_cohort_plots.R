@@ -301,33 +301,39 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
       domain = c(0, 1),
       range = c(-1, t_range[2]),
       showticklabels = FALSE,
-      title = ""
+      title = "",
+      fixedrange = TRUE
     ),
     yaxis = list(
       domain = c(0.15, 1),
       range = c(y_min, y_max),
-      title = "Value"
+      title = "Value",
+      fixedrange = TRUE
     ),
     xaxis2 = list(
       domain = c(0, 1),
       range = c(-1, t_range[2]),
       title = "t",
-      anchor = "y2"
+      anchor = "y2",
+      fixedrange = TRUE
     ),
     yaxis2 = list(
       domain = c(0, 0.1),
       range = c(0, y_bottom_max * 1.1),
       showticklabels = FALSE,
       title = "",
-      anchor = "x2"
+      anchor = "x2",
+      fixedrange = TRUE
     ),
     shapes = shapes,
     annotations = annotations,
     hovermode = "closest",
     showlegend = FALSE,
     plot_bgcolor = "white",
-    paper_bgcolor = "white"
-  )
+    paper_bgcolor = "white",
+    dragmode = FALSE
+  ) %>% 
+  plotly::config(displayModeBar = FALSE)
   
   if (plot) {
     print(fig)
