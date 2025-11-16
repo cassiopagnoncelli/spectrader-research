@@ -62,6 +62,10 @@ posl <- lapply(seq_along(posl_raw), function(i) {
       minS = 1,
       minT = 3
     ),
+    exit_ruleset(
+      upper = 1.18,
+      lower = 0.7
+    ),
     position = posl_raw[[i]]
   )
 })

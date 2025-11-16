@@ -145,3 +145,22 @@ exit_fpt <- function(interest_rate = 0.0425, maturity = 15 / 365, side = "long",
       )
   }
 }
+
+exit_ruleset <- function(upper = 1.2, lower = 0.8, ...) {
+  function(data, history = FALSE) {
+    if (!all(c("t", "S", "r", "exit") %in% colnames(data))) {
+      stop("Data must contain columns: t, S, r, and exit.")
+    }
+
+    data %>%
+      dplyr::filter(t >= ifelse(history, -Inf, 0)) %>%
+      dplyr::mutate(
+        exit_ruleset = keep_first_true_only(
+          ifelse(is.na(upper), FALSE, S > upper) |
+            ifelse(is.na(lower), FALSE, S < lower)
+        ),
+        exit = exit | exit_ruleset
+      ) %>%
+      dplyr::select(-dplyr::all_of(c()))
+  }
+}
