@@ -221,6 +221,7 @@ exit_dqr_weighted_probs <- function(t_norm, vol_norm, taus, method = "laplace", 
   }
 
   # Combine decay and burst matrices by selecting higher right energy
+  browser()
   if (!is.null(t_norm) && !is.null(vol_norm)) {
     final_matrix <- sapply(seq_len(ncol(decay_matrix)), function(i) {
       decay_right_energy <- right_energy(decay_matrix[, i])

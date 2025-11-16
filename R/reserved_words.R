@@ -49,7 +49,17 @@ constants <- list(
 }
 
 # Makes the list of constants available in the global environment.
-list2env(constants, .GlobalEnv)
+skipped <- character(0)
+for (name in names(constants)) {
+  if (exists(name, envir = .GlobalEnv)) {
+    skipped <- c(skipped, name)
+  } else {
+    assign(name, constants[[name]], envir = .GlobalEnv)
+  }
+}
+if (length(skipped) > 0) {
+  message("Constants already defined, skipping: ", paste(skipped, collapse = ", "))
+}
 
 # Document constants.
 #' @title Level level: error
@@ -82,9 +92,11 @@ W1 <- "W1"
 #' @title Timeframes: monthly
 MN1 <- "MN1"
 #' @title Timeframes: quarterly
-Q <- "Q"
+if (!exists("Q"))
+  Q <- "Q"
 #' @title Timeframes: yearly
-Y <- "Y"
+if (!exists("Y"))
+  Y <- "Y"
 #' @title Timeframes
 TIMEFRAMES <-
   c("M1", "M5", "M15", "M30", "H1", "H4", "D1", "W1", "MN1", "Q", "Y")

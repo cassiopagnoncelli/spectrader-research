@@ -3,8 +3,6 @@ devtools::load_all()
 source("rd/models/stock_crossover/entry_model.R")
 source("rd/models/stock_crossover/exit.R")
 
-max_position_days <- 20
-
 # Signal research
 # mnXYP$yhat_ehi_evt <- rep(NA_real_, nrow(mnXYP))
 # mnXYP[stages_idx, ] <- yhat_ehi_evt
@@ -17,7 +15,7 @@ mnXYP[test_idx, ] %>%
     yhat_ehi > quantile(yhat_ehi, .995),
     yhat_eli > quantile(yhat_eli, .995)
   ) %>%
-  filter_signals(within_days = max_position_days) %>%
+  filter_signals(within_days = 20) %>%
   mutate(y = extreme_high_identity - 1) %>%
   pull(y) %>%
   analyse_distribution(groups = c(.09))
@@ -28,7 +26,7 @@ signals <- mnXYP[val_idx, ] %>%
     yhat_ehi > quantile(yhat_ehi, .995),
     yhat_eli > quantile(yhat_eli, .995)
   ) %>%
-  filter_signals(within_days = max_position_days) %>% # Discard nearby signals
+  filter_signals(within_days = 20) %>% # Discard nearby signals
   arrange(date) %>%
   select(symbol, date)
 
@@ -39,6 +37,7 @@ if (nrow(signals) == 0) {
 }
 
 # Exits for each position
+max_position_days <- 20
 posl_raw <- position_cohorts(signals, 5, max_position_days, mcnXY)
 posl <- lapply(seq_along(posl_raw), function(i) {
   exit_pipeline(

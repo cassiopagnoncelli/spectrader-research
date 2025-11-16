@@ -475,7 +475,7 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
     paper_bgcolor = "white",
     dragmode = FALSE
   ) %>% 
-  plotly::config(displayModeBar = FALSE)
+    plotly::config(displayModeBar = FALSE)
   
   if (plot) {
     print(fig)

@@ -46,3 +46,4 @@ accuracy_uncaptured <- accuracy %>% filter(is.na(exit_method))
 - [Exit] Rule set: functions of (t, S, Smax, Smin) or set like take_profit, stop_loss
 - [Signal] xgboost, qr, evt gpd, evt gevd.
 - [Chart] Fix captures inspect: colour by exit method, add meta info if available
+- [Report] Include spectrader simulation
