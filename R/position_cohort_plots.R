@@ -118,6 +118,9 @@ plot_position_cohort_exit <- function(position, plot = TRUE, ylim = NULL) {
 }
 
 plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
+  # Configuration: Bottom panel height as percentage of total plot height
+  bottom_panel_height_pct <- 0.15
+  
   if (is.null(posl)) {
     stop("Input 'posl' cannot be NULL.")
   }
@@ -239,13 +242,8 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
     xref = "x", yref = "y"
   )
   
-  shapes[[length(shapes) + 1]] <- list(
-    type = "line", x0 = 1, x1 = 1, y0 = y_min, y1 = y_max,
-    line = list(color = "lightgrey", width = 1, dash = "dash"),
-    xref = "x", yref = "y"
-  )
-  
   # Mean lines for S
+  
   if (!is.na(mean_uncaptured)) {
     shapes[[length(shapes) + 1]] <- list(
       type = "line", x0 = -1, x1 = t_range[2], y0 = mean_uncaptured, y1 = mean_uncaptured,
@@ -295,6 +293,10 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
     )
   }
   
+  # Calculate panel domains based on bottom_panel_height_pct
+  gap <- 0.05  # 5% gap between panels
+  main_panel_start <- bottom_panel_height_pct + gap
+  
   # Configure layout with two y-axes (main and bottom)
   fig <- fig %>% plotly::layout(
     xaxis = list(
@@ -305,7 +307,7 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
       fixedrange = TRUE
     ),
     yaxis = list(
-      domain = c(0.15, 1),
+      domain = c(main_panel_start, 1),
       range = c(y_min, y_max),
       title = "Value",
       fixedrange = TRUE
@@ -318,7 +320,7 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
       fixedrange = TRUE
     ),
     yaxis2 = list(
-      domain = c(0, 0.1),
+      domain = c(0, bottom_panel_height_pct),
       range = c(0, y_bottom_max * 1.1),
       showticklabels = FALSE,
       title = "",
