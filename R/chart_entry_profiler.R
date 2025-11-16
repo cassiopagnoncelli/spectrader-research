@@ -97,7 +97,7 @@ entry_profiler_density <- function(position_df) {
     })
 }
 
-plot_entry_profiler <- function(metrics_df, density_arr, lookback = 15) {
+plot_entry_profiler <- function(metrics_df, density_arr, lookback = 15, ylim = NULL) {
   # Rename columns for better labels
   colnames(metrics_df) <- c(
     "Average", "Min", "Bottom 1%", "Bottom 5%",
@@ -189,6 +189,15 @@ plot_entry_profiler <- function(metrics_df, density_arr, lookback = 15) {
     }
   }
 
+  # Validate ylim parameter
+  use_ylim <- FALSE
+  if (!is.null(ylim) && is.numeric(ylim) && length(ylim) == 2 && !any(is.na(ylim))) {
+    use_ylim <- TRUE
+    y_range <- ylim
+  } else {
+    y_range <- c(min(metrics_df, na.rm = TRUE), max(metrics_df, na.rm = TRUE))
+  }
+
   # Add layout details with dragmode set to 'pan', fixedrange on Y axis, and hovermode set to 'x unified'
   p <- p %>% plotly::layout(
     title = NULL,
@@ -200,7 +209,7 @@ plot_entry_profiler <- function(metrics_df, density_arr, lookback = 15) {
       title = "Gain",
       showgrid = TRUE,
       tickformat = ".0%",
-      range = c(min(metrics_df, na.rm = TRUE), max(metrics_df, na.rm = TRUE)),
+      range = y_range,
       fixedrange = TRUE # Lock Y axis
     ),
     plot_bgcolor = "white",
@@ -219,7 +228,8 @@ plot_entry_profiler <- function(metrics_df, density_arr, lookback = 15) {
 entry_profiler <- function(aggregates,
                            entry_timestamps,
                            lookback = 15,
-                           lookahead = 50) {
+                           lookahead = 50,
+                           ylim = NULL) {
   if (nrow(aggregates) <= 300) {
     message("Provide a valid OHLC series")
     return()
@@ -239,6 +249,6 @@ entry_profiler <- function(aggregates,
   metrics_df <- entry_profiler_metrics(position_df)
   density_arr <- entry_profiler_density(position_df)
 
-  plot <- plot_entry_profiler(metrics_df, density_arr, lookback = lookback)
+  plot <- plot_entry_profiler(metrics_df, density_arr, lookback = lookback, ylim = ylim)
   plot
 }

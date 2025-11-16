@@ -375,7 +375,20 @@ ui <- dashboardPage(
             title = "Position Cohort Entry Profiler",
             status = "primary",
             solidHeader = TRUE,
-            numericInput("cohort_lookback", "Lookback:", value = 5, min = 1, max = 50, step = 1),
+            fluidRow(
+              column(
+                width = 4,
+                numericInput("cohort_lookback", "Lookback:", value = 5, min = 1, max = 50, step = 1)
+              ),
+              column(
+                width = 4,
+                numericInput("cohort_ylim_min", "Y-axis Min (leave empty for auto):", value = -0.35, step = 0.1)
+              ),
+              column(
+                width = 4,
+                numericInput("cohort_ylim_max", "Y-axis Max (leave empty for auto):", value = 0.6, step = 0.1)
+              )
+            ),
             p("Entry profiler analysis showing aggregated position behavior after entry across all trades.")
           )
         ),
@@ -1426,8 +1439,14 @@ server <- function(input, output, session) {
       posm_metrics <- entry_profiler_metrics(posm)
       posm_density <- entry_profiler_density(posm)
       
+      # Build ylim parameter conditionally
+      ylim <- NULL
+      if (!is.na(input$cohort_ylim_min) && !is.na(input$cohort_ylim_max)) {
+        ylim <- c(input$cohort_ylim_min, input$cohort_ylim_max)
+      }
+      
       # Generate the plot
-      plot_entry_profiler(posm_metrics, posm_density, lookback = input$cohort_lookback)
+      plot_entry_profiler(posm_metrics, posm_density, lookback = input$cohort_lookback, ylim = ylim)
     } else {
       # If posl_raw doesn't exist, show a message
       plotly::plot_ly() %>%
