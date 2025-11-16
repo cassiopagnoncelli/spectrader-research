@@ -1,5 +1,3 @@
-devtools::load_all()
-
 #
 # ETL.
 #
@@ -46,7 +44,7 @@ mcnXY <- tibble::tibble(meta, close, nX, Y)
 nXY <- tibble::tibble(nX, Y)
 
 #
-# Pre-train
+# Feature set enrichment.
 # Enrich feature set with y-hat predictions
 #
 source("rd/models/stock_crossover/entry_pretrain.R")
@@ -60,43 +58,19 @@ nXY <- tibble::tibble(nX, Y)
 rm(vix, quotes, quotes_fwd_fe, decomposed, close)
 gc()
 
-#
-# Training
-#
-fets::fwd_methods()
+# Lock variables
+lock_etl_vars <- function() {
+  lock_all(
+    meta, nX, X, Y, nX, mnX, mcnXY, nXY, mXY,
+    train_idx, val_idx, test_idx, stages_idx
+  )
+}
 
-# Model for extreme value of extreme high identity
-fit_lasso_high <- rqPen::rq.pen(
-  x = nX[train_idx, ],
-  y = Y$extreme_high_identity[train_idx],
-  tau = .993,
-  penalty = "LASSO"
-  # lambda = NULL  # triggers cross-validation path
-)
+unlock_etl_vars <- function() {
+  unlock_all(
+    meta, nX, X, Y, nX, mnX, mcnXY, nXY, mXY,
+    train_idx, val_idx, test_idx, stages_idx
+  )
+}
 
-# Model filter for extreme low identity
-tau_low <- quantile(Y$extreme_low_identity[train_idx], probs = 0.9, na.rm = TRUE)
-fit_lasso_low <- rqPen::rq.pen(
-  x = nX[train_idx, ],
-  y = Y$extreme_low_identity[train_idx],
-  tau = tau_low,
-  penalty = "LASSO"
-  # lambda = NULL  # triggers cross-validation path
-)
-
-# Predictions
-P <- tibble::tibble(
-  yhat_eli = rep(NA, nrow(nX)),
-  yhat_ehi = rep(NA, nrow(nX))
-)
-P[stages_idx, ] <- tibble::tibble(
-  yhat_ehi = predict(fit_lasso_high, newx = as.matrix(nX[stages_idx, ]))[, 12],
-  yhat_eli = predict(fit_lasso_low, newx = as.matrix(nX[stages_idx, ]))[, 12]
-)
-
-mnXYP <- tibble::tibble(
-  meta,
-  Y[, c("extreme_high_identity", "extreme_low_identity")],
-  P,
-  nX
-)
+lock_etl_vars()

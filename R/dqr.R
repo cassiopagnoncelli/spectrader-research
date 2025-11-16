@@ -299,14 +299,16 @@ exit_dqr_eval <- function(
       result[[exit_cols[i]]] <- result$S <= result[[qhat_cols[i]]]
   }
 
-  # Combine all exit signals with OR logic
+  # Combine all exit signals with OR logic (mutually exclusive conditions)
+  # Condition 1 (early exit): quantile-based exit for t < 15
+  # Condition 2 (late exit): time-based fallback for t >= 15
   if (side == "long") {
     result$exit <- result %>%
-      dplyr::mutate(exit = keep_first_true_only(S > qhat & S > 1 & t >= 3)) %>%
+      dplyr::mutate(exit = keep_first_true_only((S > qhat & S > 1 & t >= 3 & t < 15) | (t >= 15 & S > 1))) %>%
       dplyr::pull(exit)
   } else if (side == "short") {
     result$exit <- result %>%
-      dplyr::mutate(exit = keep_first_true_only(S < qhat & S < 1 & t >= 3)) %>%
+      dplyr::mutate(exit = keep_first_true_only((S < qhat & S < 1 & t >= 3 & t < 15) | (t >= 15 & S < 1))) %>%
       dplyr::pull(exit)
   }
 

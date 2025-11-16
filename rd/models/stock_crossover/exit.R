@@ -14,7 +14,7 @@ dqr_signals_train
 dqr_fits <- train_dqr(
   dqr_signals_train,
   quotes = mcnXY[train_idx, ],
-  taus = c(.92, .86, .82, .32),
+  taus = c(.92, .86, .82, .75),
   formulas = list(
     dqr_general_formula,
     dqr_general_formula,

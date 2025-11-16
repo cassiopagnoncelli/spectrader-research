@@ -1,13 +1,16 @@
 devtools::load_all()
 
-source("rd/models/stock_crossover/entry.R")
+source("rd/models/stock_crossover/entry_model.R")
 source("rd/models/stock_crossover/exit.R")
 
 max_position_days <- 20
 
 # Signal research
-mnXYP[test_idx, ] %>%
-  summarise(cor = cor(extreme_high_identity, yhat_eli))
+# mnXYP$yhat_ehi_evt <- rep(NA_real_, nrow(mnXYP))
+# mnXYP[stages_idx, ] <- yhat_ehi_evt
+
+# mnXYP[test_idx, ] %>%
+#   summarise(cor = cor(extreme_high_identity, yhat_eli))
 
 mnXYP[test_idx, ] %>%
   filter(
@@ -38,23 +41,21 @@ if (nrow(signals) == 0) {
 # Exits for each position
 posl_raw <- position_cohorts(signals, 5, max_position_days, mcnXY)
 posl <- lapply(seq_along(posl_raw), function(i) {
-  exit_dqr(
-    dqr_fits,
-    max_position_days = max_position_days,
-    side = "long",
-    enable_time_decay = TRUE,
-    enable_vol_bursts = TRUE,
-    alpha = .1
-  )(posl_raw[[i]])
+  exit_pipeline(
+    exit_dqr(
+      dqr_fits,
+      max_position_days = max_position_days,
+      side = "long",
+      enable_time_decay = TRUE,
+      enable_vol_bursts = FALSE,
+      alpha = .1
+    ),
+    position = posl_raw[[i]]
+  )
 })
 
 # Signals & Returns
 dfsr <- position_cohort_returns(posl, signals, y_name = "extreme_high_identity")
-
-# Signal accuracy analysis
-accuracy <- exit_accuracy(dfsr, side = "long")
-accuracy_captured <- accuracy %>% filter(!is.na(exit_method))
-accuracy_uncaptured <- accuracy %>% filter(is.na(exit_method))
 
 # Dashboard
 shiny::runApp("rd/models/stock_crossover/dashboard.R")
