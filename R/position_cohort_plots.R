@@ -119,7 +119,7 @@ plot_position_cohort_exit <- function(position, plot = TRUE, ylim = NULL) {
 
 plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
   # Configuration: Bottom panel height as percentage of total plot height
-  bottom_panel_height_pct <- 0.15
+  bottom_panel_height_pct <- 0.12
   
   if (is.null(posl)) {
     stop("Input 'posl' cannot be NULL.")
@@ -178,7 +178,7 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
       x = ~t, y = ~S,
       type = "scatter",
       mode = "markers",
-      marker = list(symbol = "x", size = 12, color = "#19b119", line = list(width = 2)),
+      marker = list(symbol = "x", size = 12, color = "#2E7D32", line = list(width = 2, color = "#2E7D32")),
       name = "Captured",
       showlegend = FALSE,
       xaxis = "x",
@@ -309,7 +309,7 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
     yaxis = list(
       domain = c(main_panel_start, 1),
       range = c(y_min, y_max),
-      title = "Value",
+      title = "Price Path",
       fixedrange = TRUE
     ),
     xaxis2 = list(
