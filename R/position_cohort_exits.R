@@ -14,7 +14,7 @@ exit_pipeline <- function(..., position) {
     stop("At least one exit function must be provided")
   }
   
-  position$exit <- rep(NA, nrow(position))
+  position$exit <- rep(FALSE, nrow(position))
   purrr::reduce(funs, function(data, fun) fun(data, history = TRUE), .init = position) %>%
     dplyr::filter(t >= 0)
 }

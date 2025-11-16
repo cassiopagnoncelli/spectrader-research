@@ -1,3 +1,20 @@
+#' Plot Position Cohort Exit Points
+#'
+#' Visualizes position trajectory over time with exit points marked.
+#' Displays main trajectory line (S), optional qhat line, and dynamically colored
+#' exit points from logical exit columns.
+#'
+#' @param position A tibble or data frame containing position data with columns
+#'   't' (time), 'S' (value), optional 'exit' (logical), optional 'qhat', and
+#'   optional 'exit_*' columns (logical) for additional exit conditions.
+#' @param plot Logical indicating whether to print the plot (default: TRUE).
+#' @param ylim Numeric vector of length 2 specifying y-axis limits (default: NULL).
+#'
+#' @return A ggplot2 object representing the position cohort exit visualization.
+#'
+#' @details Exit points are marked with an 'X' symbol. Multiple exit conditions
+#'   (exit_*) are displayed with gradient colors from yellow to red.
+#'
 plot_position_cohort_exit <- function(position, plot = TRUE, ylim = NULL) {
   if (is.null(position)) {
     stop("Input 'position' cannot be NULL.")
@@ -89,9 +106,9 @@ plot_position_cohort_exit <- function(position, plot = TRUE, ylim = NULL) {
   }
   
   # Add qhat line if yhat column exists
-  if ("qhat" %in% names(position)) {
+  if ("dqr_line" %in% names(position)) {
     p <- p + ggplot2::geom_line(
-      ggplot2::aes(y = qhat),
+      ggplot2::aes(y = dqr_line),
       color = "red",
       linewidth = 0.7,
       linetype = "dashed"
@@ -117,6 +134,24 @@ plot_position_cohort_exit <- function(position, plot = TRUE, ylim = NULL) {
   p
 }
 
+#' Plot Position Cohort Captures
+#'
+#' Creates an interactive multi-panel visualization showing captured vs uncaptured
+#' positions in price-time space, with marginal distributions.
+#'
+#' @param posl A list of position data used to compute captures via
+#'   \code{position_cohort_captures()}.
+#' @param plot Logical indicating whether to print the plot (default: TRUE).
+#' @param ylim Numeric vector of length 2 specifying y-axis limits for S values
+#'   (default: NULL, auto-computed from data).
+#'
+#' @return A plotly figure with three panels: main scatter plot (t vs S),
+#'   bottom histogram (t distribution), and right histogram (S distributions).
+#'
+#' @details The visualization distinguishes captured (green X) from uncaptured
+#'   (red diamond) positions. Marginal panels show distributions with density
+#'   overlays and summary statistics (mean, standard deviation).
+#'
 plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
   # Configuration: Panel dimensions
   bottom_panel_height_pct <- 0.12

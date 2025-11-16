@@ -47,7 +47,7 @@ posl <- lapply(seq_along(posl_raw), function(i) {
       max_position_days = max_position_days,
       side = "long",
       enable_time_decay = TRUE,
-      enable_vol_bursts = FALSE,
+      enable_vol_bursts = TRUE,
       alpha = .1
     ),
     position = posl_raw[[i]]

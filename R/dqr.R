@@ -156,6 +156,17 @@ exit_dqr_extract_quantiles <- function(dqr_fits) {
   as.numeric(sub("q", "", qnames)) / 100
 }
 
+#' Right-weighted energy metric
+#'
+#' Computes weighted sum with quadratic position-based weights favoring later elements.
+#'
+#' @param x Numeric vector
+#' @return Numeric scalar of right-weighted energy
+right_energy <- function(x) {
+  w <- seq_along(x) / length(x)
+  sum(w^2 * x)
+}
+
 #' Compute quantile weights based on decay curve
 #'
 #' Calculates probability weights for each quantile using a decay curve approach
@@ -300,14 +311,22 @@ exit_dqr_eval <- function(
   }
 
   if (side == "long") {
-    result$exit <- result %>%
-      dplyr::mutate(exit = exit | keep_first_true_only(S > qhat & S > 1 & t >= 3)) %>%
-      dplyr::pull(exit)
+    result$exit_dqr <- result %>%
+      dplyr::mutate(exit_dqr = keep_first_true_only(S > qhat & S > 1 & t >= 3)) %>%
+      dplyr::pull(exit_dqr)
   } else if (side == "short") {
-    result$exit <- result %>%
-      dplyr::mutate(exit = exit | keep_first_true_only(S < qhat & S < 1 & t >= 3)) %>%
-      dplyr::pull(exit)
+    result$exit_dqr <- result %>%
+      dplyr::mutate(exit_dqr = keep_first_true_only(S < qhat & S < 1 & t >= 3)) %>%
+      dplyr::pull(exit_dqr)
   }
 
-  result %>% select(-qhat_cols, -exit_cols)
+  # Combine all exit signals
+  if (!"exit" %in% colnames(result)) {
+    result$exit <- FALSE
+  }
+  result$exit <- result$exit | result$exit_dqr
+
+  result %>%
+    dplyr::mutate(dqr_line = qhat) %>%
+    dplyr::select(-qhat_cols, -exit_cols, -qhat)
 }

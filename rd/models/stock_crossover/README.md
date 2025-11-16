@@ -24,7 +24,7 @@ During this process a plethora of variables are generated
   table `dfsr`. This list and table are required for generating the interactive
   report.
 
-## Reviewing the trade
+### Reviewing the simulation
 
 In order to spelunk the data, you may recreate some variables for further
 perquiring.
@@ -41,4 +41,8 @@ accuracy_uncaptured <- accuracy %>% filter(is.na(exit_method))
 - [Report] Realistic portfolio growth simulation with wallet concurrency
 - [Report]Volatility Analysis in Options
 - [ETL] Download volatility (IV) data
+- [ETL] Add macro indicators (UNRATE, SP500, etc)
 - [Exit] Expected Shortfall maximisation on long/short capture.
+- [Exit] Rule set: functions of (t, S, Smax, Smin) or set like take_profit, stop_loss
+- [Signal] xgboost, qr, evt gpd, evt gevd.
+- [Chart] Fix captures inspect: colour by exit method, add meta info if available

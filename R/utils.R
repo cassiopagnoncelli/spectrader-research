@@ -9,11 +9,6 @@ keep_first_true_only <- function(x) {
   xx
 }
 
-right_energy <- function(x) {
-  w <- seq_along(x) / length(x)
-  sum(w^2 * x)
-}
-
 scale_new_data <- function(new_data, center, scale) {
   # assume new_data is a data.frame or matrix
   new_data <- as.matrix(new_data)
