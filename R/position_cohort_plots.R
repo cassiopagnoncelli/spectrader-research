@@ -334,14 +334,6 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
       line = list(color = "#985656", width = 1, dash = "dot"),
       xref = "x", yref = "y"
     )
-    annotations[[length(annotations) + 1]] <- list(
-      x = 1.2, y = mean_uncaptured,
-      text = sprintf("%.3f, σ=%.3f", mean_uncaptured, sd_uncaptured),
-      showarrow = FALSE,
-      font = list(color = "#de8383", size = 10),
-      yshift = 10,
-      xref = "x", yref = "y"
-    )
   }
   
   if (!is.na(mean_captured)) {
@@ -350,13 +342,26 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
       line = list(color = "#61a861", width = 1, dash = "dot"),
       xref = "x", yref = "y"
     )
+  }
+  
+  # Right panel annotations for mean S values
+  if (!is.na(mean_uncaptured)) {
     annotations[[length(annotations) + 1]] <- list(
-      x = 1.2, y = mean_captured,
+      x = x_right_max * 0.5, y = mean_uncaptured,
+      text = sprintf("%.3f, σ=%.3f", mean_uncaptured, sd_uncaptured),
+      showarrow = FALSE,
+      font = list(color = "#de8383", size = 10),
+      xref = "x3", yref = "y3"
+    )
+  }
+  
+  if (!is.na(mean_captured)) {
+    annotations[[length(annotations) + 1]] <- list(
+      x = x_right_max * 0.5, y = mean_captured,
       text = sprintf("%.3f, σ=%.3f", mean_captured, sd_captured),
       showarrow = FALSE,
       font = list(color = "#508e50", size = 10),
-      yshift = 10,
-      xref = "x", yref = "y"
+      xref = "x3", yref = "y3"
     )
   }
   
