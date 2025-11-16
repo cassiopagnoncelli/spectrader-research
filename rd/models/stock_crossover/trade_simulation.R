@@ -53,7 +53,14 @@ posl <- lapply(seq_along(posl_raw), function(i) {
       sd_short = 6,
       sd_long = 20,
       k = 2.5,
-      minS = 1
+      minS = 1,
+      minT = 3
+    ),
+    exit_fpt(
+      maturity = max_position_days / 365,
+      side = "long",
+      minS = 1,
+      minT = 3
     ),
     position = posl_raw[[i]]
   )

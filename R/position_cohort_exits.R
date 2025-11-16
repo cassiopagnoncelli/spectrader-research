@@ -69,7 +69,14 @@ exit_dqr <- function(dqr_fits, max_position_days, side, enable_vol_bursts = TRUE
 #'
 #' @return A function that takes data and optional history parameter
 #' @export
-exit_vats <- function(sd_short = 6, sd_long = 20, k = 2.5, minS = 1) {
+exit_vats <- function(sd_short = 6, sd_long = 20, k = 2.5, side = "long", minS = 1, minT = 3) {
+  if (side != "long" && side != "short")
+    stop("side must be either 'long' or 'short'.")
+
+  if (side == "short") {
+    stop("exit_vats currently only supports 'long' side.")
+  }
+
   function(data, history = FALSE) {
     if (!all(c("t", "S", "r", "exit") %in% colnames(data))) {
       stop("Data must contain columns: t, S, r, and exit.")
@@ -83,6 +90,7 @@ exit_vats <- function(sd_short = 6, sd_long = 20, k = 2.5, minS = 1) {
       dplyr::filter(t >= ifelse(history, -Inf, 0)) %>%
       dplyr::mutate(
         Smax = cummax(ifelse(t >= 0, S, -Inf)),
+        Smin = cummin(ifelse(t >= 0, S, Inf)),
         vats_stop = Smax * exp(-k * sd_long),
         exit_vats = keep_first_true_only(
           t >= 0 &
@@ -93,7 +101,7 @@ exit_vats <- function(sd_short = 6, sd_long = 20, k = 2.5, minS = 1) {
         ),
         exit = exit | exit_vats
       ) %>%
-      dplyr::select(-dplyr::all_of(c("sd_short", "sd_long", "sd_ratio", "Smax")))
+      dplyr::select(-dplyr::all_of(c("sd_short", "sd_long", "sd_ratio", "Smax", "Smin")))
   }
 }
 
@@ -108,7 +116,10 @@ exit_vats <- function(sd_short = 6, sd_long = 20, k = 2.5, minS = 1) {
 #'
 #' @return A function that takes data and optional history parameter
 #' @export
-exit_fpt <- function(interest_rate = 0.0425, maturity = 15 / 365, side = "long") {
+exit_fpt <- function(interest_rate = 0.0425, maturity = 15 / 365, side = "long", minS = 1, minT = 3) {
+  if (side != "long" && side != "short")
+    stop("side must be either 'long' or 'short'.")
+
   function(data, history = FALSE) {
     if (!all(c("t", "S", "r", "exit") %in% colnames(data))) {
       stop("Data must contain columns: t, S, r, and exit.")
@@ -124,7 +135,12 @@ exit_fpt <- function(interest_rate = 0.0425, maturity = 15 / 365, side = "long")
           t = maturity,
           side = side
         ),
-        exit_fpt = if (side == "long") X > fpt_boundary else X < fpt_boundary,
+        exit_fpt =
+          if (side == "long") {
+            S > fpt_boundary & S > minS & t >= minT
+          } else if (side == "short") {
+            S < fpt_boundary & S < minS & t >= minT
+          },
         exit = exit | exit_fpt
       )
   }
