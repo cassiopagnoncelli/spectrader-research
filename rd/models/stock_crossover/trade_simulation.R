@@ -5,28 +5,34 @@ source("rd/models/stock_crossover/exit.R")
 
 max_position_days <- 20
 
-# Signal filters
-yhat_high_cutoff <- quantile(mnXYP[val_idx, ]$y_high_hat, .998, na.rm = TRUE)
-yhat_low_cutoff <- quantile(mnXYP[val_idx, ]$y_low_hat, .0015, na.rm = TRUE)
-cat(sprintf(
-  "Cutoffs:\n  High_q:  %.4f\n   Low_q:  %.4f\n",
-  yhat_high_cutoff,
-  yhat_low_cutoff
-))
+# Signal research
+mnXYP[test_idx, ] %>%
+  summarise(cor = cor(extreme_high_identity, yhat_eli))
+
+mnXYP[test_idx, ] %>%
+  filter(
+    yhat_ehi > quantile(yhat_ehi, .995),
+    yhat_eli > quantile(yhat_eli, .995)
+  ) %>%
+  filter_signals(within_days = max_position_days) %>%
+  mutate(y = extreme_high_identity - 1) %>%
+  pull(y) %>%
+  analyse_distribution(groups = c(.09))
 
 # Generate trading signals
 signals <- mnXYP[val_idx, ] %>%
   filter(
-    y_high_hat > yhat_high_cutoff
-    # , y_low_hat > yhat_low_cutoff
+    yhat_ehi > quantile(yhat_ehi, .995),
+    yhat_eli > quantile(yhat_eli, .995)
   ) %>%
   filter_signals(within_days = max_position_days) %>% # Discard nearby signals
   arrange(date) %>%
   select(symbol, date)
-signals
 
 if (nrow(signals) == 0) {
   stop("No signals generated. Adjust cutoffs or check data.")
+} else {
+  signals
 }
 
 # Exits for each position

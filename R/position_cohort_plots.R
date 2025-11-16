@@ -396,7 +396,7 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
     yaxis = list(
       domain = c(main_panel_start_y, 1),
       range = c(y_min, y_max),
-      title = "Value",
+      title = "Price Path (S)",
       fixedrange = TRUE
     ),
     # Bottom panel axes
