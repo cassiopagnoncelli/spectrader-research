@@ -16,7 +16,8 @@ exit_pipeline <- function(..., position) {
   
   position$exit <- rep(FALSE, nrow(position))
   purrr::reduce(funs, function(data, fun) fun(data, history = TRUE), .init = position) %>%
-    dplyr::filter(t >= 0)
+    dplyr::filter(t >= 0) %>%
+    dplyr::mutate(exit = keep_first_true_only(as.logical(exit)))
 }
 
 #' Decaying Quantile Regression Exit Strategy
@@ -41,6 +42,9 @@ exit_dqr <- function(dqr_fits, max_position_days, side, enable_vol_bursts = TRUE
     stop("side must be either 'long' or 'short'.")
 
   function(data, history = FALSE) {
+    if (!all(c("t", "S", "r", "exit") %in% colnames(data))) {
+      stop("Data must contain columns: t, S, r, and exit.")
+    }
     exit_dqr_eval(
       data,
       max_position_days = max_position_days,
@@ -67,6 +71,9 @@ exit_dqr <- function(dqr_fits, max_position_days, side, enable_vol_bursts = TRUE
 #' @export
 exit_vats <- function(sd_short = 6, sd_long = 20, k = 2.5) {
   function(data, history = FALSE) {
+    if (!all(c("t", "S", "r", "exit") %in% colnames(data))) {
+      stop("Data must contain columns: t, S, r, and exit.")
+    }
     data %>%
       dplyr::mutate(
         sd_short = RcppRoll::roll_sd(r, n = sd_short, fill = NA, align = "right"),
@@ -75,13 +82,17 @@ exit_vats <- function(sd_short = 6, sd_long = 20, k = 2.5) {
       ) %>%
       dplyr::filter(t >= ifelse(history, -Inf, 0)) %>%
       dplyr::mutate(
-        Smax = cummax(S),
-        stop = Smax * exp(-k * sd_long),
-        exit_vats = S < stop &
-          lag(S, default = first(S)) >= lag(stop, default = first(stop)),
-        exit = exit_vats
+        Smax = cummax(ifelse(t >= 0, S, -Inf)),
+        vats_stop = Smax * exp(-k * sd_long),
+        exit_vats = keep_first_true_only(
+          t >= 0 &
+            S < vats_stop &
+            dplyr::lag(S, default = dplyr::first(S)) >=
+              dplyr::lag(vats_stop, default = dplyr::first(vats_stop))
+        ),
+        exit = exit | exit_vats
       ) %>%
-      dplyr::select(-c(sd_short, sd_long, Smax))
+      dplyr::select(-sd_short, -sd_long, -sd_ratio, -Smax)
   }
 }
 
@@ -98,10 +109,13 @@ exit_vats <- function(sd_short = 6, sd_long = 20, k = 2.5) {
 #' @export
 exit_fpt <- function(interest_rate = 0.0425, maturity = 15 / 365, side = "long") {
   function(data, history = FALSE) {
+    if (!all(c("t", "S", "r", "exit") %in% colnames(data))) {
+      stop("Data must contain columns: t, S, r, and exit.")
+    }
     data %>%
       dplyr::filter(t >= ifelse(history, -Inf, 0)) %>%
       dplyr::mutate(
-        boundary = exit_fpt_boundary(
+        fpt_boundary = exit_fpt_boundary(
           mu_hat,
           sd_hat,
           interest_rate,
@@ -109,8 +123,8 @@ exit_fpt <- function(interest_rate = 0.0425, maturity = 15 / 365, side = "long")
           t = maturity,
           side = side
         ),
-        exit_fpt = if (side == "long") X > boundary else X < boundary,
-        exit = exit
+        exit_fpt = if (side == "long") X > fpt_boundary else X < fpt_boundary,
+        exit = exit | exit_fpt
       )
   }
 }

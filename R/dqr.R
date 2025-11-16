@@ -321,9 +321,6 @@ exit_dqr_eval <- function(
   }
 
   # Combine all exit signals
-  if (!"exit" %in% colnames(result)) {
-    result$exit <- FALSE
-  }
   result$exit <- result$exit | result$exit_dqr
 
   result %>%
