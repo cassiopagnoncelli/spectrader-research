@@ -89,8 +89,7 @@ exit_vats <- function(sd_short = 6, sd_long = 20, k = 2.5, side = "long", minS =
       ) %>%
       dplyr::filter(t >= ifelse(history, -Inf, 0)) %>%
       dplyr::mutate(
-        Smax = cummax(ifelse(t >= 0, S, -Inf)),
-        Smin = cummin(ifelse(t >= 0, S, Inf)),
+        Smax = cummax(ifelse(t >= 0, S, 0)),
         vats_stop = Smax * exp(-k * sd_long),
         exit_vats = keep_first_true_only(
           t >= 0 &
@@ -101,7 +100,7 @@ exit_vats <- function(sd_short = 6, sd_long = 20, k = 2.5, side = "long", minS =
         ),
         exit = exit | exit_vats
       ) %>%
-      dplyr::select(-dplyr::all_of(c("sd_short", "sd_long", "sd_ratio", "Smax", "Smin")))
+      dplyr::select(-dplyr::all_of(c("sd_short", "sd_long", "sd_ratio", "Smax")))
   }
 }
 
@@ -160,7 +159,6 @@ exit_ruleset <- function(upper = 1.2, lower = 0.8, ...) {
             ifelse(is.na(lower), FALSE, S < lower)
         ),
         exit = exit | exit_ruleset
-      ) %>%
-      dplyr::select(-dplyr::all_of(c()))
+      )
   }
 }
