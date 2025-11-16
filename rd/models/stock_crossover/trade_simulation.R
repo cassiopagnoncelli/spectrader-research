@@ -38,7 +38,7 @@ posl <- lapply(seq_along(posl_raw), function(i) {
     side = "long",
     enable_time_decay = TRUE,
     enable_vol_bursts = TRUE,
-    alpha = .29
+    alpha = .1
   )(posl_raw[[i]])
 })
 

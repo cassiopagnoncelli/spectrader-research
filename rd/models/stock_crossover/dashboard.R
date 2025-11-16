@@ -19,7 +19,8 @@ ui <- dashboardPage(
       menuItem("Returns Analysis", tabName = "returns", icon = icon("chart-area")),
       menuItem("Concurrency", tabName = "concurrency", icon = icon("layer-group")),
       hr(),
-      menuItem("Captures", tabName = "accuracy", icon = icon("bullseye")),
+      menuItem("Captures Cohort", tabName = "position_captures_plot", icon = icon("chart-area")),
+      menuItem("Captures Summary", tabName = "accuracy", icon = icon("bullseye")),
       menuItem("Captures Inspect", tabName = "exits", icon = icon("chart-line")),
       menuItem("Captures Breakdown", tabName = "captures_breakdown", icon = icon("chart-pie")),
       menuItem("Capture Methods", tabName = "capture_methods", icon = icon("table")),
@@ -385,6 +386,49 @@ ui <- dashboardPage(
             status = "info",
             solidHeader = TRUE,
             plotly::plotlyOutput("position_cohort_plot", height = "600px")
+          )
+        )
+      ),
+      
+      # Position Captures Plot Tab
+      tabItem(
+        tabName = "position_captures_plot",
+        fluidRow(
+          box(
+            width = 12,
+            title = "Position Captures Scatter Plot",
+            status = "primary",
+            solidHeader = TRUE,
+            fluidRow(
+              column(
+                width = 4,
+                numericInput(
+                  "captures_ylim_min",
+                  "Y-axis Min (leave empty for auto):",
+                  value = NA,
+                  step = 0.1
+                )
+              ),
+              column(
+                width = 4,
+                numericInput(
+                  "captures_ylim_max",
+                  "Y-axis Max (leave empty for auto):",
+                  value = NA,
+                  step = 0.1
+                )
+              )
+            ),
+            p("Scatter plot showing captured (green X) and uncaptured (red diamonds) positions with exit time t on x-axis and final value S on y-axis.")
+          )
+        ),
+        fluidRow(
+          box(
+            width = 12,
+            title = "Captures Plot",
+            status = "info",
+            solidHeader = TRUE,
+            plotly::plotlyOutput("position_captures_scatter_plot", height = "800px")
           )
         )
       ),
@@ -1404,6 +1448,20 @@ server <- function(input, output, session) {
           )
         )
     }
+  })
+  
+  # Position Captures Plot - Render scatter plot
+  output$position_captures_scatter_plot <- plotly::renderPlotly({
+    req(rv$posl)
+    
+    # Build ylim parameter conditionally - resolve to NA if inputs are NA
+    ylim <- NULL
+    if (!is.na(input$captures_ylim_min) && !is.na(input$captures_ylim_max)) {
+      ylim <- c(input$captures_ylim_min, input$captures_ylim_max)
+    }
+    
+    # Call the plot function with ylim (will be NULL for auto-scale)
+    plot_position_cohort_captures(rv$posl, plot = FALSE, ylim = ylim)
   })
   
   # Models Carousel Navigation - Previous Button
