@@ -304,11 +304,11 @@ exit_dqr_eval <- function(
   # Condition 2 (late exit): time-based fallback for t >= 15
   if (side == "long") {
     result$exit <- result %>%
-      dplyr::mutate(exit = keep_first_true_only((S > qhat & S > 1 & t >= 3 & t < 15) | (t >= 15 & S > 1))) %>%
+      dplyr::mutate(exit = keep_first_true_only(S > qhat & S > 1 & t >= 3 & t < 15)) %>%
       dplyr::pull(exit)
   } else if (side == "short") {
     result$exit <- result %>%
-      dplyr::mutate(exit = keep_first_true_only((S < qhat & S < 1 & t >= 3 & t < 15) | (t >= 15 & S < 1))) %>%
+      dplyr::mutate(exit = keep_first_true_only(S < qhat & S < 1 & t >= 3 & t < 15)) %>%
       dplyr::pull(exit)
   }
 
