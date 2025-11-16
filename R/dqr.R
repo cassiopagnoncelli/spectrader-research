@@ -301,13 +301,13 @@ exit_dqr_eval <- function(
 
   if (side == "long") {
     result$exit <- result %>%
-      dplyr::mutate(exit = keep_first_true_only(S > qhat & S > 1 & t >= 3)) %>%
+      dplyr::mutate(exit = exit | keep_first_true_only(S > qhat & S > 1 & t >= 3)) %>%
       dplyr::pull(exit)
   } else if (side == "short") {
     result$exit <- result %>%
-      dplyr::mutate(exit = keep_first_true_only(S < qhat & S < 1 & t >= 3)) %>%
+      dplyr::mutate(exit = exit | keep_first_true_only(S < qhat & S < 1 & t >= 3)) %>%
       dplyr::pull(exit)
   }
 
-  result
+  result %>% select(-qhat_cols, -exit_cols)
 }
