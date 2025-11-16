@@ -405,7 +405,7 @@ ui <- dashboardPage(
                 numericInput(
                   "captures_ylim_min",
                   "Y-axis Min (leave empty for auto):",
-                  value = NA,
+                  value = 0.7,
                   step = 0.1
                 )
               ),
@@ -414,7 +414,7 @@ ui <- dashboardPage(
                 numericInput(
                   "captures_ylim_max",
                   "Y-axis Max (leave empty for auto):",
-                  value = NA,
+                  value = 1.7,
                   step = 0.1
                 )
               )
