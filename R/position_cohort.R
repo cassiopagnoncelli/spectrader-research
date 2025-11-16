@@ -105,7 +105,33 @@ position_cohort_metrics <- function(pos_data, trade, y_name = "y") {
     R <- pos_data$S[idx] - 1
     r <- log(pos_data$S[idx])
   }
-  exit_method <- ifelse(any(pos_data$exit, na.rm = TRUE), "dqr", NA_character_)
+  # Find all exit_{em} columns
+  exit_cols <- grep("^exit_", names(pos_data), value = TRUE)
+  
+  # Determine which exit method triggered first
+  exit_method <- NA_character_
+  if (length(exit_cols) > 0) {
+    # For each row, find the first exit column that is TRUE
+    first_exit_row <- NA_integer_
+    first_exit_col <- NA_character_
+    
+    for (row_idx in seq_len(nrow(pos_data))) {
+      for (col_name in exit_cols) {
+        if (!is.na(pos_data[[col_name]][row_idx]) && pos_data[[col_name]][row_idx]) {
+          first_exit_row <- row_idx
+          first_exit_col <- col_name
+          break
+        }
+      }
+      if (!is.na(first_exit_col)) break
+    }
+    
+    # Extract {em} from exit_{em}
+    if (!is.na(first_exit_col)) {
+      exit_method <- sub("^exit_", "", first_exit_col)
+    }
+  }
+  
   tibble::tibble(trade, t = idx - 1, exit_method, R, r, y)
 }
 
