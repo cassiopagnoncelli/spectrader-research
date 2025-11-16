@@ -92,7 +92,7 @@ exit_vats <- function(sd_short = 6, sd_long = 20, k = 2.5) {
         ),
         exit = exit | exit_vats
       ) %>%
-      dplyr::select(-sd_short, -sd_long, -sd_ratio, -Smax)
+      dplyr::select(-dplyr::all_of(c("sd_short", "sd_long", "sd_ratio", "Smax")))
   }
 }
 

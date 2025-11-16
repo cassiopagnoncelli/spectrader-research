@@ -325,5 +325,5 @@ exit_dqr_eval <- function(
 
   result %>%
     dplyr::mutate(dqr_line = qhat) %>%
-    dplyr::select(-qhat_cols, -exit_cols, -qhat)
+    dplyr::select(-dplyr::all_of(c("qhat_cols", "exit_cols", "qhat")))
 }
