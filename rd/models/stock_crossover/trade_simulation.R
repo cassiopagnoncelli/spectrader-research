@@ -49,6 +49,12 @@ posl <- lapply(seq_along(posl_raw), function(i) {
       enable_vol_bursts = TRUE,
       alpha = .1
     ),
+    exit_vats(
+      sd_short = 6,
+      sd_long = 20,
+      k = 2.5,
+      minS = 1
+    ),
     position = posl_raw[[i]]
   )
 })

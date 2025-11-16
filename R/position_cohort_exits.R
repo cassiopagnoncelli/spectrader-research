@@ -69,7 +69,7 @@ exit_dqr <- function(dqr_fits, max_position_days, side, enable_vol_bursts = TRUE
 #'
 #' @return A function that takes data and optional history parameter
 #' @export
-exit_vats <- function(sd_short = 6, sd_long = 20, k = 2.5) {
+exit_vats <- function(sd_short = 6, sd_long = 20, k = 2.5, minS = 1) {
   function(data, history = FALSE) {
     if (!all(c("t", "S", "r", "exit") %in% colnames(data))) {
       stop("Data must contain columns: t, S, r, and exit.")
@@ -86,6 +86,7 @@ exit_vats <- function(sd_short = 6, sd_long = 20, k = 2.5) {
         vats_stop = Smax * exp(-k * sd_long),
         exit_vats = keep_first_true_only(
           t >= 0 &
+            S > minS &
             S < vats_stop &
             dplyr::lag(S, default = dplyr::first(S)) >=
               dplyr::lag(vats_stop, default = dplyr::first(vats_stop))
