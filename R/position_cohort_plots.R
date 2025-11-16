@@ -218,7 +218,7 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
       y = dens_t$y * dens_scale,
       type = "scatter",
       mode = "lines",
-      line = list(color = "#606060", width = 2),
+      line = list(color = "#606060", width = 0.7),
       showlegend = FALSE,
       xaxis = "x2",
       yaxis = "y2",
@@ -250,7 +250,23 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
       )
     }
     
-    x_right_max <- max(x_right_max, max(hist_captured_S$counts, na.rm = TRUE))
+    # Calculate and add density line for captured S values
+    dens_captured_S <- density(captured$S, n = 512)
+    dens_captured_scale <- max(hist_captured_S$counts) / max(dens_captured_S$y)
+    
+    fig <- fig %>% plotly::add_trace(
+      x = dens_captured_S$y * dens_captured_scale,
+      y = dens_captured_S$x,
+      type = "scatter",
+      mode = "lines",
+      line = list(color = "#2E7D32", width = .7),
+      showlegend = FALSE,
+      xaxis = "x3",
+      yaxis = "y3",
+      name = "Density Captured"
+    )
+    
+    x_right_max <- max(x_right_max, max(hist_captured_S$counts, dens_captured_S$y * dens_captured_scale, na.rm = TRUE))
   }
   
   # Calculate histogram for uncaptured S values
@@ -274,7 +290,23 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
       )
     }
     
-    x_right_max <- max(x_right_max, max(hist_uncaptured_S$counts, na.rm = TRUE))
+    # Calculate and add density line for uncaptured S values
+    dens_uncaptured_S <- density(uncaptured$S, n = 512)
+    dens_uncaptured_scale <- max(hist_uncaptured_S$counts) / max(dens_uncaptured_S$y)
+    
+    fig <- fig %>% plotly::add_trace(
+      x = dens_uncaptured_S$y * dens_uncaptured_scale,
+      y = dens_uncaptured_S$x,
+      type = "scatter",
+      mode = "lines",
+      line = list(color = "#d90a0a", width = .7),
+      showlegend = FALSE,
+      xaxis = "x3",
+      yaxis = "y3",
+      name = "Density Uncaptured"
+    )
+    
+    x_right_max <- max(x_right_max, max(hist_uncaptured_S$counts, dens_uncaptured_S$y * dens_uncaptured_scale, na.rm = TRUE))
   }
   
   # Create shapes for reference lines
