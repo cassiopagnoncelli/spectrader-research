@@ -17,7 +17,7 @@ if (TRUE) {
 #
 cat(sprintf("Signal q:\n  ehi_tau: %.4f\n  eli_tau: %.4f\n", ehi_tau, eli_tau))
 
-ehi_cutoff <- .99
+ehi_cutoff <- .995
 eli_cutoff <- .999
 
 # Generate trading signals
