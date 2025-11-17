@@ -15,10 +15,13 @@ if (FALSE) {
 #
 fets::fwd_methods()
 
+ehi_tau <- 0.98
+eli_tau <- 0.995
+
 fit_ehi <- qboost::qboost(
   x = nX[train_idx, ],
   y = Y$extreme_high_identity[train_idx],
-  tau = 0.993,
+  tau = ehi_tau,
   nrounds = 500,
   nfolds = 5,
   params = list(),
@@ -29,7 +32,7 @@ fit_ehi <- qboost::qboost(
 fit_eli <- qboost::qboost(
   x = nX[train_idx, ],
   y = Y$extreme_low_identity[train_idx],
-  tau = 0.996,
+  tau = eli_tau,
   nrounds = 800,
   nfolds = 8,
   params = list(),
