@@ -90,7 +90,7 @@ plot_position_cohort_exit <- function(position, plot = TRUE, ylim = NULL) {
             x = ~t, y = ~S,
             type = "scatter",
             mode = "markers",
-            marker = list(symbol = "circle", size = 10, color = "red"),
+            marker = list(symbol = "circle", size = 10, color = "#4CAF50"),
             name = "DQR exit",
             showlegend = FALSE,
             hovertemplate = "DQR exit at t: %{x}<br>S: %{y:.4f}<extra></extra>"
@@ -108,7 +108,7 @@ plot_position_cohort_exit <- function(position, plot = TRUE, ylim = NULL) {
       x = ~t, y = ~dqr_line,
       type = "scatter",
       mode = "lines",
-      line = list(color = "red", width = 1.8, dash = "dash"),
+      line = list(color = "#4CAF50", width = 1.8, dash = "dash"),
       name = "DQR line",
       legendgroup = "DQR line",
       showlegend = TRUE,
@@ -241,7 +241,7 @@ plot_position_cohort_exit <- function(position, plot = TRUE, ylim = NULL) {
       x = c(NA), y = c(NA),
       type = "scatter",
       mode = "lines",
-      line = list(color = "red", width = 1.8, dash = "dash"),
+      line = list(color = "#4CAF50", width = 1.8, dash = "dash"),
       name = "DQR line",
       legendgroup = "DQR line",
       showlegend = TRUE,
@@ -465,10 +465,10 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
     predefined_colors <- c(
       "fpt" = "orange",       # Match FPT boundary
       "ruleset" = "#808000",  # Match Ruleset (olive)
-      "dqr" = "red",          # Match DQR line
+      "dqr" = "#4CAF50",      # Match DQR line (mid-green)
       "vats" = "purple",      # Match VATS stop
       "timeout" = "#F57C00",  # Vibrant Orange
-      "stop_loss" = "red",    # Use DQR red
+      "stop_loss" = "#4CAF50",    # Use DQR mid-green
       "take_profit" = "purple", # Use VATS purple
       "trailing_stop" = "#00897B", # Teal
       "exit_signal" = "#D81B60"  # Pink
