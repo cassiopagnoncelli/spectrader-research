@@ -94,10 +94,9 @@ exit_vats <- function(sd_short = 6, sd_long = 20, k = 2.5, side = "long", minS =
       dplyr::filter(t >= ifelse(history, -Inf, 0)) %>%
       dplyr::mutate(
         Smax = cummax(ifelse(t >= 0, S, 0)),
-        vats_stop = Smax * exp(-k * sd_long),
+        vats_stop = ifelse(t >= minT, Smax * exp(-k * sd_long), NA),
         exit_vats = keep_first_true_only(
-          t >= 0 &
-            S > minS &
+          S > minS &
             S < vats_stop &
             dplyr::lag(S, default = dplyr::first(S)) >=
               dplyr::lag(vats_stop, default = dplyr::first(vats_stop))

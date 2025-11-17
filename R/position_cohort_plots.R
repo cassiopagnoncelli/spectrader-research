@@ -1,19 +1,20 @@
 #' Plot Position Cohort Exit Points
 #'
 #' Visualizes position trajectory over time with exit points marked.
-#' Displays main trajectory line (S), optional qhat line, and dynamically colored
-#' exit points from logical exit columns.
+#' Displays main trajectory line (S) with exit points for different exit methods:
+#' DQR (red), VATS (purple), and Ruleset (orange).
 #'
 #' @param position A tibble or data frame containing position data with columns
-#'   't' (time), 'S' (value), optional 'exit' (logical), optional 'qhat', and
-#'   optional 'exit_*' columns (logical) for additional exit conditions.
+#'   't' (time), 'S' (value), optional 'exit' (logical), and optional exit method
+#'   columns: 'exit_dqr', 'exit_vats', 'exit_ruleset' (all logical). May also
+#'   include boundary lines: 'dqr_line', 'vats_stop', 'ruleset_*'.
 #' @param plot Logical indicating whether to print the plot (default: TRUE).
 #' @param ylim Numeric vector of length 2 specifying y-axis limits (default: NULL).
 #'
 #' @return A ggplot2 object representing the position cohort exit visualization.
 #'
-#' @details Exit points are marked with an 'X' symbol. Multiple exit conditions
-#'   (exit_*) are displayed with gradient colors from yellow to red.
+#' @details Exit points are marked with colored dots for each exit method.
+#'   Boundary lines are shown as dashed lines with corresponding colors and legends.
 #'
 plot_position_cohort_exit <- function(position, plot = TRUE, ylim = NULL) {
   if (is.null(position)) {
@@ -61,61 +62,130 @@ plot_position_cohort_exit <- function(position, plot = TRUE, ylim = NULL) {
       )
   }
   
-  # Dynamically add exit points with gradient colors
-  exit_cols <- grep("^exit_.*$", names(position), value = TRUE)
-  if (length(exit_cols) > 0) {
-    # Filter to only logical columns that exist
-    is_logical_vec <- sapply(exit_cols, function(col) {
-      tryCatch({
-        col %in% names(position) && is.logical(position[[col]])
-      }, error = function(e) FALSE)
-    })
-    exit_cols <- exit_cols[is_logical_vec]
-    
-    if (length(exit_cols) > 0) {
-      # Extract suffix from column names (e.g., "exit_condition1" -> "condition1")
-      exit_suffixes <- sub("^exit_", "", exit_cols)
-      # Sort by suffix
-      sorted_idx <- order(exit_suffixes)
-      exit_cols <- exit_cols[sorted_idx]
-      exit_suffixes <- exit_suffixes[sorted_idx]
-      
-      # Create color gradient from yellow to red
-      colors <- grDevices::colorRampPalette(c("#cfec2e", "#fc8d0e", "#ff4314"))(length(exit_cols))
-      
-      # Add geom_point for each exit column
-      for (i in seq_along(exit_cols)) {
-        col_name <- exit_cols[i]
-        tryCatch({
-          if (col_name %in% names(position) && is.logical(position[[col_name]])) {
-            col_subset <- position[position[[col_name]] %in% TRUE & !is.na(position[[col_name]]), ]
-            if (!is.null(col_subset) && nrow(col_subset) > 0) {
-              p <- p + ggplot2::geom_point(
-                data = col_subset,
-                ggplot2::aes(y = S),
-                color = colors[i],
-                size = 5
-              )
-            }
-          }
-        }, error = function(e) {
-          # Silently skip columns that cause errors
-        })
+  # DQR exit method
+  if ("exit_dqr" %in% names(position)) {
+    tryCatch({
+      if (is.logical(position[["exit_dqr"]])) {
+        dqr_subset <- position[position[["exit_dqr"]] %in% TRUE & !is.na(position[["exit_dqr"]]), ]
+        if (!is.null(dqr_subset) && nrow(dqr_subset) > 0) {
+          p <- p + ggplot2::geom_point(
+            data = dqr_subset,
+            ggplot2::aes(y = S),
+            color = "red",
+            size = 5
+          )
+        }
       }
-    }
+    }, error = function(e) {})
   }
   
-  # Add qhat line if yhat column exists
+  # Add DQR line if it exists
   if ("dqr_line" %in% names(position)) {
     p <- p + ggplot2::geom_line(
-      ggplot2::aes(y = dqr_line),
-      color = "red",
+      ggplot2::aes(y = dqr_line, color = "DQR line"),
       linewidth = 0.7,
       linetype = "dashed"
     )
   }
   
+  # VATS exit method
+  if ("exit_vats" %in% names(position)) {
+    tryCatch({
+      if (is.logical(position[["exit_vats"]])) {
+        vats_subset <- position[position[["exit_vats"]] %in% TRUE & !is.na(position[["exit_vats"]]), ]
+        if (!is.null(vats_subset) && nrow(vats_subset) > 0) {
+          p <- p + ggplot2::geom_point(
+            data = vats_subset,
+            ggplot2::aes(y = S),
+            color = "purple",
+            size = 5
+          )
+        }
+      }
+    }, error = function(e) {})
+  }
+  
+  # Add VATS stop line if it exists
+  if ("vats_stop" %in% names(position)) {
+    p <- p + ggplot2::geom_line(
+      ggplot2::aes(y = vats_stop, color = "VATS stop"),
+      linewidth = 0.7,
+      linetype = "dashed"
+    )
+  }
+  
+  # FPT exit method
+  if ("exit_fpt" %in% names(position)) {
+    tryCatch({
+      if (is.logical(position[["exit_fpt"]])) {
+        fpt_subset <- position[position[["exit_fpt"]] %in% TRUE & !is.na(position[["exit_fpt"]]), ]
+        if (!is.null(fpt_subset) && nrow(fpt_subset) > 0) {
+          p <- p + ggplot2::geom_point(
+            data = fpt_subset,
+            ggplot2::aes(y = S),
+            color = "orange",
+            size = 5
+          )
+        }
+      }
+    }, error = function(e) {})
+  }
+  
+  # Add FPT boundary if it exists
+  if ("fpt_boundary" %in% names(position)) {
+    p <- p + ggplot2::geom_line(
+      ggplot2::aes(y = fpt_boundary, color = "FPT boundary"),
+      linewidth = 0.7,
+      linetype = "dashed"
+    )
+  }
+  
+  # Ruleset exit method
+  if ("exit_ruleset" %in% names(position)) {
+    tryCatch({
+      if (is.logical(position[["exit_ruleset"]])) {
+        ruleset_subset <- position[position[["exit_ruleset"]] %in% TRUE & !is.na(position[["exit_ruleset"]]), ]
+        if (!is.null(ruleset_subset) && nrow(ruleset_subset) > 0) {
+          p <- p + ggplot2::geom_point(
+            data = ruleset_subset,
+            ggplot2::aes(y = S),
+            color = "orange",
+            size = 5
+          )
+        }
+      }
+    }, error = function(e) {})
+  }
+  
+  # Add ruleset_* lines if they exist
+  ruleset_cols <- grep("^ruleset_.*$", names(position), value = TRUE)
+  if (length(ruleset_cols) > 0) {
+    for (col_name in ruleset_cols) {
+      tryCatch({
+        if (col_name %in% names(position)) {
+          p <- p + ggplot2::geom_line(
+            ggplot2::aes(y = .data[[col_name]], color = "Ruleset"),
+            linewidth = 0.7,
+            linetype = "dashed"
+          )
+        }
+      }, error = function(e) {})
+    }
+  }
+  
+  # Add dummy layers to ensure all legend items appear
+  dummy_data <- data.frame(t = NA_real_, val = NA_real_)
   p <- p +
+    ggplot2::geom_line(data = dummy_data, ggplot2::aes(x = t, y = val, color = "DQR line"), na.rm = TRUE) +
+    ggplot2::geom_line(data = dummy_data, ggplot2::aes(x = t, y = val, color = "VATS stop"), na.rm = TRUE) +
+    ggplot2::geom_line(data = dummy_data, ggplot2::aes(x = t, y = val, color = "FPT boundary"), na.rm = TRUE) +
+    ggplot2::geom_line(data = dummy_data, ggplot2::aes(x = t, y = val, color = "Ruleset"), na.rm = TRUE) +
+    ggplot2::scale_color_manual(
+      name = NULL,
+      values = c("DQR line" = "red", "VATS stop" = "purple", "FPT boundary" = "orange", "Ruleset" = "cyan3"),
+      breaks = c("DQR line", "VATS stop", "FPT boundary", "Ruleset"),
+      drop = FALSE
+    ) +
     ggplot2::geom_hline(
       yintercept = 1,
       color = "gray",
@@ -123,6 +193,22 @@ plot_position_cohort_exit <- function(position, plot = TRUE, ylim = NULL) {
       linewidth = 0.5
     ) +
     ggplot2::theme_minimal() +
+    ggplot2::theme(
+      legend.position = c(0.02, 0.98),
+      legend.justification = c(0, 1),
+      legend.background = ggplot2::element_rect(fill = "white", color = "gray80"),
+      legend.key = ggplot2::element_blank()
+    ) +
+    ggplot2::guides(
+      color = ggplot2::guide_legend(
+        override.aes = list(
+          linetype = "solid",
+          linewidth = 3,
+          shape = 16,
+          size = 3
+        )
+      )
+    ) +
     ggplot2::labs(
       x = "t",
       y = "Value"
