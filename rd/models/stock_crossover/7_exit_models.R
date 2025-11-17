@@ -33,6 +33,8 @@ dqr_signals_train <- mnXYP[train_idx, ] %>%
 
 dqr_signals_train
 
+start_time <- Sys.time()
+
 dqr_fits <- train_dqr(
   dqr_signals_train,
   quotes = mcnXY[train_idx, ],
@@ -44,4 +46,11 @@ dqr_fits <- train_dqr(
     dqr_general_formula
   ),
   max_position_days = 20
+)
+
+message(
+  sprintf(
+    "DQR exit models fitted in %0.2f mins",
+    as.numeric(Sys.time() - start_time, units = "mins")
+  )
 )

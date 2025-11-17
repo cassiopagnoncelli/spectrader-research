@@ -13,6 +13,8 @@ source("rd/models/stock_crossover/exploratory_analysis/entry_model.R")
 #
 # Output: yhat H and its normalised nH datasets.
 #
+start_time <- Sys.time()
+
 if (exists("train_ehi")) {
   message("Entry models `ehi`` already trained. Skipping training step.")
 } else {
@@ -24,8 +26,9 @@ if (exists("train_ehi")) {
     y = Y$extreme_high_identity,
     aux = list(),
     cache = NULL,
-    verbose = TRUE
+    verbose = FALSE
   )
+  message("  extreme high identity")
 }
 
 if (exists("train_eli")) {
@@ -39,8 +42,9 @@ if (exists("train_eli")) {
     y = Y$extreme_low_identity,
     aux = list(),
     cache = NULL,
-    verbose = TRUE
+    verbose = FALSE
   )
+  message("  extreme low identity")
 }
 
 if (exists("train_pas")) {
@@ -54,8 +58,9 @@ if (exists("train_pas")) {
     y = Y$pas,
     aux = list(),
     cache = NULL,
-    verbose = TRUE
+    verbose = FALSE
   )
+  message("  pas")
 }
 
 if (exists("train_kurtosis")) {
@@ -69,8 +74,9 @@ if (exists("train_kurtosis")) {
     y = Y$kurtosis,
     aux = list(),
     cache = NULL,
-    verbose = TRUE
+    verbose = FALSE
   )
+  message("  kurtosis")
 }
 
 if (exists("train_mh")) {
@@ -84,8 +90,9 @@ if (exists("train_mh")) {
     y = Y$mass_high,
     aux = list(),
     cache = NULL,
-    verbose = TRUE
+    verbose = FALSE
   )
+  message("  mass high")
 }
 
 if (exists("train_ml")) {
@@ -99,9 +106,13 @@ if (exists("train_ml")) {
     y = Y$mass_low,
     aux = list(),
     cache = NULL,
-    verbose = TRUE
+    verbose = FALSE
   )
+  message("  mass low")
 }
+
+message(sprintf("Feature enrichment complete in %0.2f mins", 
+                as.numeric(Sys.time() - start_time, units = "mins")))
 
 # Build predictions tibble.
 H <- tibble::tibble(

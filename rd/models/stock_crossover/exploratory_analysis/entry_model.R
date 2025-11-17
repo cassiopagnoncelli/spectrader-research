@@ -1,6 +1,6 @@
 # set.seed(123)
 
-# Stacked XGBoost Model for Stock Crossover Prediction
+# Stacked LightGBM Model for Stock Crossover Prediction
 # This file contains the model training logic with caching support
 train_stacked_model <- function(train_indices, val_indices, test_indices,
                                 X, y, aux = list(),
@@ -27,12 +27,13 @@ train_stacked_model <- function(train_indices, val_indices, test_indices,
 
 sm_level_1 <- list(
   hyperparams = list(
-    objective = "reg:squarederror",
-    eta = 0.2,              # conservative: <.1, aggressive: >.1
-    max_depth = 3,           # default: 5
-    min_child_weight = 3,    # default: 3
-    subsample = 1,           # default: .8
-    colsample_bytree = 1     # default: .8
+    objective = "regression",
+    metric = "rmse",
+    learning_rate = 0.2,              # conservative: <.1, aggressive: >.1
+    max_depth = 3,                    # default: 5
+    min_data_in_leaf = 3,             # default: 20
+    bagging_fraction = 1,             # default: 1
+    feature_fraction = 1              # default: 1
   ),
   control = list(
     nrounds = 200,
@@ -42,12 +43,13 @@ sm_level_1 <- list(
 
 sm_level_2 <- list(
   hyperparams = list(
-    objective = "reg:squarederror",
-    eta = 0.2,              # conservative: <.1, aggressive: >.1
-    max_depth = 3,           # default: 5
-    min_child_weight = 2,    # default: 3
-    subsample = 0.8,
-    colsample_bytree = 0.8
+    objective = "regression",
+    metric = "rmse",
+    learning_rate = 0.2,              # conservative: <.1, aggressive: >.1
+    max_depth = 3,                    # default: 5
+    min_data_in_leaf = 2,             # default: 20
+    bagging_fraction = 0.8,
+    feature_fraction = 0.8
   ),
   control = list(
     nrounds = 250,
@@ -55,10 +57,29 @@ sm_level_2 <- list(
   )
 )
 
+prepare_lgb_params <- function(params) {
+  # Ensure LightGBM parameters are coherent with the chosen caps
+  updated <- params
+  if (!is.null(updated$max_depth) &&
+      is.null(updated$num_leaves) &&
+      updated$max_depth > 0) {
+    updated$num_leaves <- max(2, 2^updated$max_depth)
+  }
+  if (!is.null(updated$bagging_fraction) &&
+      updated$bagging_fraction < 1 &&
+      is.null(updated$bagging_freq)) {
+    updated$bagging_freq <- 1
+  }
+  if (is.null(updated$metric)) {
+    updated$metric <- "rmse"
+  }
+  updated
+}
+
 perform_train_stacked_model <- function(
   train_indices, val_indices, test_indices, X, y, aux, verbose = TRUE
 ) {
-  # LEVEL 1: Train XGBoost models for each auxiliary target
+  # LEVEL 1: Train LightGBM models for each auxiliary target
   n_aux <- length(aux)
 
   # Check if aux is empty - if so, skip Level 1 entirely
@@ -93,12 +114,11 @@ perform_train_stacked_model <- function(
       cat("\n=== Generating Level 1 Predictions ===\n")
     }
     X_matrix <- as.matrix(X)
-    dmatrix_all <- xgboost::xgb.DMatrix(data = X_matrix)
 
     # Generate predictions dynamically for all auxiliary models
     level1_preds <- list()
     for (i in seq_along(models_level1)) {
-      level1_preds[[i]] <- predict(models_level1[[i]], dmatrix_all)
+      level1_preds[[i]] <- predict(models_level1[[i]], X_matrix)
     }
 
     # LEVEL 2: Create stacked dataset with X + predictions
@@ -122,39 +142,39 @@ perform_train_stacked_model <- function(
     cat("\n=== Training Final Stacked Model ===\n")
   }
 
-  # Train final XGBoost model
+  # Train final LightGBM model
   X_train_stacked <- as.matrix(X_stacked[train_indices, ])
   y_train <- y[train_indices]
   X_val_stacked <- as.matrix(X_stacked[val_indices, ])
   y_val <- y[val_indices]
 
-  dtrain_final <- xgboost::xgb.DMatrix(data = X_train_stacked, label = y_train)
-  dval_final <- xgboost::xgb.DMatrix(data = X_val_stacked, label = y_val)
+  dtrain_final <- lightgbm::lgb.Dataset(data = X_train_stacked, label = y_train)
+  dval_final <- lightgbm::lgb.Dataset(data = X_val_stacked, label = y_val)
 
   watchlist_final <- list(train = dtrain_final, val = dval_final)
-  model_final <- xgboost::xgb.train(
-    params = sm_level_2$hyperparams,
+  params_final <- prepare_lgb_params(sm_level_2$hyperparams)
+  model_final <- lightgbm::lgb.train(
+    params = params_final,
     data = dtrain_final,
+    valids = watchlist_final,
     nrounds = sm_level_2$control$nrounds,
-    watchlist = watchlist_final,
     early_stopping_rounds = sm_level_2$control$early_stopping_rounds,
-    verbose = ifelse(verbose, 1, 0)
+    verbose = ifelse(verbose, 1, 0),
+    eval_freq = if (isTRUE(verbose)) 1 else 0,
+    record = TRUE
   )
 
   if (verbose) {
-    cat(sprintf("\nBest iteration: %d\n", model_final$best_iteration))
+    cat(sprintf("\nBest iteration: %d\n", model_final$best_iter))
   }
 
   # EVALUATION
   # Predictions on all splits
-  X_train_stacked_dm <- xgboost::xgb.DMatrix(data = X_train_stacked)
-  X_val_stacked_dm <- xgboost::xgb.DMatrix(data = X_val_stacked)
   X_test_stacked <- as.matrix(X_stacked[test_indices, ])
-  X_test_stacked_dm <- xgboost::xgb.DMatrix(data = X_test_stacked)
 
-  pred_train <- predict(model_final, X_train_stacked_dm)
-  pred_val <- predict(model_final, X_val_stacked_dm)
-  pred_test <- predict(model_final, X_test_stacked_dm)
+  pred_train <- predict(model_final, X_train_stacked)
+  pred_val <- predict(model_final, X_val_stacked)
+  pred_test <- predict(model_final, X_test_stacked)
 
   y_test <- y[test_indices]
 
@@ -172,7 +192,7 @@ perform_train_stacked_model <- function(
   r2_test <- 1 - sum((pred_test - y_test)^2, na.rm = TRUE) / sum((y_test - mean(y_test, na.rm = TRUE))^2, na.rm = TRUE)
 
   # Feature importance
-  importance_matrix <- xgboost::xgb.importance(model = model_final)
+  importance_matrix <- lightgbm::lgb.importance(model = model_final)
 
   # Prepare results
   results <- list(
@@ -234,27 +254,30 @@ train_level1_model <- function(X_data, y_aux, train_idx, val_idx, model_name, ve
   X_val <- as.matrix(X_data[val_idx, ])
   y_val <- y_aux[val_idx]
 
-  # Create DMatrix
-  dtrain <- xgboost::xgb.DMatrix(data = X_train, label = y_train)
-  dval <- xgboost::xgb.DMatrix(data = X_val, label = y_val)
+  # Create LightGBM datasets
+  dtrain <- lightgbm::lgb.Dataset(data = X_train, label = y_train)
+  dval <- lightgbm::lgb.Dataset(data = X_val, label = y_val)
 
   # Train with early stopping
   watchlist <- list(train = dtrain, val = dval)
-  model <- xgboost::xgb.train(
-    params = sm_level_1$hyperparams,
+  params_level1 <- prepare_lgb_params(sm_level_1$hyperparams)
+  model <- lightgbm::lgb.train(
+    params = params_level1,
     data = dtrain,
+    valids = watchlist,
     nrounds = sm_level_1$control$nrounds,
-    watchlist = watchlist,
     early_stopping_rounds = sm_level_1$control$early_stopping_rounds,
-    verbose = ifelse(verbose, 1, 0)
+    verbose = ifelse(verbose, 1, 0),
+    eval_freq = if (isTRUE(verbose)) 1 else 0,
+    record = TRUE
   )
 
   if (verbose) {
     cat(sprintf(
       "  Best iteration: %d\n  Train RMSE: %.6f\n  Val RMSE: %.6f\n",
-      model$best_iteration,
-      model$evaluation_log$train_rmse_mean[model$best_iteration],
-      model$evaluation_log$val_rmse_mean[model$best_iteration]
+      model$best_iter,
+      model$record_evals$train$rmse$eval[model$best_iter],
+      model$record_evals$val$rmse$eval[model$best_iter]
     ))
   }
 
