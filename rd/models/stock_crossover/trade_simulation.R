@@ -1,4 +1,4 @@
-if (FALSE) {
+if (TRUE) {
   devtools::load_all()
 
   source("rd/models/stock_crossover/1_etl.R")
@@ -17,8 +17,8 @@ if (FALSE) {
 #
 cat(sprintf("Signal q:\n  ehi_tau: %.4f\n  eli_tau: %.4f\n", ehi_tau, eli_tau))
 
-ehi_cutoff <- .99
-eli_cutoff <- .999
+ehi_cutoff <- .98
+eli_cutoff <- .9997
 
 # Generate trading signals
 signals <- mnXYP[test_idx, ] %>%

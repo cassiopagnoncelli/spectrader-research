@@ -16,7 +16,7 @@ if (FALSE) {
 fets::fwd_methods()
 
 ehi_tau <- 0.98
-eli_tau <- 0.995
+eli_tau <- 0.999
 
 fit_ehi <- qboost::qboost(
   x = nX[train_idx, ],
