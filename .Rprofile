@@ -8,4 +8,8 @@ source("~/.Rprofile")
 
 options(scipen = 999)
 
+if (requireNamespace("magrittr", quietly = TRUE)) {
+  library(magrittr)
+}
+
 message("✔ .Rprofile\n")

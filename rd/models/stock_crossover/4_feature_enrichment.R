@@ -1,5 +1,18 @@
+if (FALSE) {
+  # devtools::load_all()
+
+  source("rd/models/stock_crossover/1_etl.R")
+  source("rd/models/stock_crossover/2_feature_engineering.R")
+  source("rd/models/stock_crossover/3_splits.R")
+}
+
 source("rd/models/stock_crossover/exploratory_analysis/entry_model.R")
 
+# FEATURE ENRICHMENT.
+# Training further predictors.
+#
+# Output: yhat H and its normalised nH datasets.
+#
 if (exists("train_ehi")) {
   message("Entry models `ehi`` already trained. Skipping training step.")
 } else {
@@ -7,7 +20,7 @@ if (exists("train_ehi")) {
     train_idx,
     val_idx,
     test_idx,
-    X = nX,
+    X = zX,
     y = Y$extreme_high_identity,
     aux = list(),
     cache = NULL,
@@ -22,7 +35,7 @@ if (exists("train_eli")) {
     train_idx,
     val_idx,
     test_idx,
-    X = nX,
+    X = zX,
     y = Y$extreme_low_identity,
     aux = list(),
     cache = NULL,
@@ -37,7 +50,7 @@ if (exists("train_pas")) {
     train_idx,
     val_idx,
     test_idx,
-    X = nX,
+    X = zX,
     y = Y$pas,
     aux = list(),
     cache = NULL,
@@ -52,7 +65,7 @@ if (exists("train_kurtosis")) {
     train_idx,
     val_idx,
     test_idx,
-    X = nX,
+    X = zX,
     y = Y$kurtosis,
     aux = list(),
     cache = NULL,
@@ -67,7 +80,7 @@ if (exists("train_mh")) {
     train_idx,
     val_idx,
     test_idx,
-    X = nX,
+    X = zX,
     y = Y$mass_high,
     aux = list(),
     cache = NULL,
@@ -82,7 +95,7 @@ if (exists("train_ml")) {
     train_idx,
     val_idx,
     test_idx,
-    X = nX,
+    X = zX,
     y = Y$mass_low,
     aux = list(),
     cache = NULL,
@@ -90,53 +103,55 @@ if (exists("train_ml")) {
   )
 }
 
+# Build predictions tibble.
 H <- tibble::tibble(
-  ehi_hat = rep(NA, nrow(nX)),
-  eli_hat = rep(NA, nrow(nX)),
-  pas_hat = rep(NA, nrow(nX)),
-  kurtosis_hat = rep(NA, nrow(nX)),
-  mh_hat = rep(NA, nrow(nX)),
-  ml_hat = rep(NA, nrow(nX))
+  extreme_high_identity_hat = rep(NA, nrow(zX)),
+  extreme_low_identity_hat = rep(NA, nrow(zX)),
+  pas_hat = rep(NA, nrow(zX)),
+  kurtosis_hat = rep(NA, nrow(zX)),
+  mass_high_hat = rep(NA, nrow(zX)),
+  mass_low_hat = rep(NA, nrow(zX))
 )
 
 H[train_idx, ] <- data.frame(
-  ehi_hat = train_ehi$predictions$train,
-  eli_hat = train_eli$predictions$train,
+  extreme_high_identity_hat = train_ehi$predictions$train,
+  extreme_low_identity_hat = train_eli$predictions$train,
   pas_hat = train_pas$predictions$train,
   kurtosis_hat = train_kurtosis$predictions$train,
-  mh_hat = train_mh$predictions$train,
-  ml_hat = train_ml$predictions$train
+  mass_high_hat = train_mh$predictions$train,
+  mass_low_hat = train_ml$predictions$train
 )
 
 H[val_idx, ] <- data.frame(
-  ehi_hat = train_ehi$predictions$val,
-  eli_hat = train_eli$predictions$val,
+  extreme_high_identity_hat = train_ehi$predictions$val,
+  extreme_low_identity_hat = train_eli$predictions$val,
   pas_hat = train_pas$predictions$val,
   kurtosis_hat = train_kurtosis$predictions$val,
-  mh_hat = train_mh$predictions$val,
-  ml_hat = train_ml$predictions$val
+  mass_high_hat = train_mh$predictions$val,
+  mass_low_hat = train_ml$predictions$val
 )
 
 H[test_idx, ] <- data.frame(
-  ehi_hat = train_ehi$predictions$test,
-  eli_hat = train_eli$predictions$test,
+  extreme_high_identity_hat = train_ehi$predictions$test,
+  extreme_low_identity_hat = train_eli$predictions$test,
   pas_hat = train_pas$predictions$test,
   kurtosis_hat = train_kurtosis$predictions$test,
-  mh_hat = train_mh$predictions$test,
-  ml_hat = train_ml$predictions$test
+  mass_high_hat = train_mh$predictions$test,
+  mass_low_hat = train_ml$predictions$test
 )
 
+# Scale H to nH based on train set statistics.
 H_scaled <- scale(H[train_idx, ])
 H_center <- attr(H_scaled, "scaled:center")
 H_scales <- attr(H_scaled, "scaled:scale")
 
 nH <- tibble::tibble(
-  ehi_hat = rep(NA, nrow(nX)),
-  eli_hat = rep(NA, nrow(nX)),
-  pas_hat = rep(NA, nrow(nX)),
-  kurtosis_hat = rep(NA, nrow(nX)),
-  mh_hat = rep(NA, nrow(nX)),
-  ml_hat = rep(NA, nrow(nX))
+  extreme_high_identity_hat = rep(NA, nrow(zX)),
+  extreme_low_identity_hat = rep(NA, nrow(zX)),
+  pas_hat = rep(NA, nrow(zX)),
+  kurtosis_hat = rep(NA, nrow(zX)),
+  mass_high_hat = rep(NA, nrow(zX)),
+  mass_low_hat = rep(NA, nrow(zX))
 )
 
 nH[c(train_idx, val_idx, test_idx), ] <- scale_new_data(

@@ -1,9 +1,17 @@
-devtools::load_all()
+if (FALSE) {
+  # devtools::load_all()
 
-source("rd/models/stock_crossover/etl.R")
+  source("rd/models/stock_crossover/1_etl.R")
+  source("rd/models/stock_crossover/2_feature_engineering.R")
+  source("rd/models/stock_crossover/3_splits.R")
+  source("rd/models/stock_crossover/4_feature_enrichment.R")
+  source("rd/models/stock_crossover/5_datasets.R")
+}
 
+# SIGNAL MODELS.
+# Train models for diverse fwd goals.
 #
-# Training
+# Outpput: fwd predictions P and complessive dataset mnXYP.
 #
 fets::fwd_methods()
 

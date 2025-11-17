@@ -42,6 +42,7 @@ accuracy_uncaptured <- accuracy %>% filter(is.na(exit_method))
 - [Report] Volatility Analysis in Options
 - [ETL] Download volatility (IV) data
 - [ETL] Add macro indicators (UNRATE, SP500, etc)
+- [FE] Add GARCH(1, 1) params
 - [Exit] Expected Shortfall maximisation on long/short capture.
 - [Exit] Rule set: functions of (t, S, Smax, Smin)
 - [Signal] xgboost, qr, rq.Pen, evt gpd, evt gevd.
