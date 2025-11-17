@@ -87,14 +87,12 @@ exit_vats <- function(sd_short = 6, sd_long = 20, k = 2.5, side = "long", minS =
     }
     data %>%
       dplyr::mutate(
-        sd_short = RcppRoll::roll_sd(r, n = sd_short, fill = NA, align = "right"),
-        sd_long = RcppRoll::roll_sd(r, n = sd_long, fill = NA, align = "right"),
-        sd_ratio = sd_short / sd_long
+        sd_long = RcppRoll::roll_sd(r, n = sd_long, fill = NA, align = "right")
       ) %>%
       dplyr::filter(t >= ifelse(history, -Inf, 0)) %>%
       dplyr::mutate(
         Smax = cummax(ifelse(t >= 0, S, 0)),
-        vats_stop = ifelse(t >= minT, Smax * exp(-k * sd_long), NA),
+        vats_stop = Smax * exp(-k * sd_long),
         exit_vats = keep_first_true_only(
           S > minS &
             S < vats_stop &
@@ -103,7 +101,8 @@ exit_vats <- function(sd_short = 6, sd_long = 20, k = 2.5, side = "long", minS =
         ),
         exit = exit | (!is.na(exit_vats) & exit_vats)
       ) %>%
-      dplyr::select(-dplyr::all_of(c("sd_short", "sd_long", "sd_ratio", "Smax")))
+      dplyr::mutate(vats_stop = ifelse(t < minT, NA, vats_stop)) %>%
+      dplyr::select(-dplyr::all_of(c("sd_long", "Smax")))
   }
 }
 
@@ -144,7 +143,8 @@ exit_fpt <- function(interest_rate = 0.0425, maturity = 15 / 365, side = "long",
             S < fpt_boundary & S < minS & t >= minT
           },
         exit = exit | (!is.na(exit_fpt) & exit_fpt)
-      )
+      ) %>%
+      dplyr::mutate(fpt_boundary = ifelse(t < minT, NA, fpt_boundary))
   }
 }
 
@@ -161,6 +161,7 @@ exit_ruleset <- function(upper = NA, lower = NA, ...) {
         ruleset_lower = if (!is.na(lower)) S < lower else FALSE,
         exit_ruleset = keep_first_true_only(t >= 0 & (ruleset_upper | ruleset_lower)),
         exit = exit | (!is.na(exit_ruleset) & exit_ruleset)
-      ) %>% select(-dplyr::all_of(c("ruleset_upper", "ruleset_lower")))
+      ) %>%
+      dplyr::select(-dplyr::all_of(c("ruleset_upper", "ruleset_lower")))
   }
 }

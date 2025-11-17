@@ -334,6 +334,6 @@ exit_dqr_eval <- function(
   result$exit <- result$exit | (!is.na(result$exit_dqr) & result$exit_dqr)
 
   result %>%
-    dplyr::mutate(dqr_line = qhat) %>%
+    dplyr::mutate(dqr_line = ifelse(t < minT, NA, qhat)) %>%
     dplyr::select(-dplyr::all_of(c(qhat_cols, exit_cols, "qhat")))
 }
