@@ -11,7 +11,7 @@ if (FALSE) {
 #
 
 # Calculate forward features
-invisible(fets::fwd(quotes, lookahead = 20, inplace = TRUE))
+invisible(fets::fwd(quotes, lookahead = 12, inplace = TRUE))
 
 # Engineer features for time series
 quotes_fwd_fe <- fets::fe(quotes, inplace = TRUE)
