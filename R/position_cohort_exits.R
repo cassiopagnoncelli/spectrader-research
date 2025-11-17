@@ -98,7 +98,7 @@ exit_vats <- function(sd_short = 6, sd_n = 20, k = 2.5, side = "long", minS = 1,
             dplyr::lag(S, default = dplyr::first(S)) >=
               dplyr::lag(vats_stop, default = dplyr::first(vats_stop))
         ),
-        exit = exit | (!is.na(exit_vats) & exit_vats)
+        exit = exit | tidyr::replace_na(exit_vats, FALSE)
       ) %>%
       dplyr::mutate(vats_stop = ifelse(t < minT, NA, vats_stop)) %>%
       dplyr::select(-dplyr::all_of(c("sd_n", "Smax")))
@@ -138,7 +138,7 @@ exit_fpt <- function(interest_rate = 0.0425, maturity = 15 / 365, side = "long",
         exit_fpt_long = S > fpt_boundary & S > minS & t >= minT,
         exit_fpt_short = S < fpt_boundary & S < minS & t >= minT,
         exit_fpt = ifelse(side == "long", exit_fpt_long, exit_fpt_short),
-        exit = exit | (!is.na(exit_fpt) & exit_fpt)
+        exit = exit | tidyr::replace_na(exit_fpt, FALSE)
       ) %>%
       dplyr::mutate(fpt_boundary = ifelse(t < minT, NA, fpt_boundary)) %>%
       dplyr::select(-dplyr::all_of(c("exit_fpt_long", "exit_fpt_short")))
@@ -154,11 +154,15 @@ exit_ruleset <- function(upper = NA, lower = NA, ...) {
     data %>%
       dplyr::filter(t >= ifelse(history, -Inf, 0)) %>%
       dplyr::mutate(
-        ruleset_upper = if (!is.na(upper)) S > upper else FALSE,
-        ruleset_lower = if (!is.na(lower)) S < lower else FALSE,
-        exit_ruleset = keep_first_true_only(t >= 0 & (ruleset_upper | ruleset_lower)),
-        exit = exit | (!is.na(exit_ruleset) & exit_ruleset)
-      ) %>%
-      dplyr::select(-dplyr::all_of(c("ruleset_upper", "ruleset_lower")))
+        ruleset_upper = upper,
+        ruleset_lower = lower,
+        exit_ruleset = keep_first_true_only(
+          t >= 0 & (
+            tidyr::replace_na(S > ruleset_upper, FALSE) |
+              tidyr::replace_na(S < ruleset_lower, FALSE)
+          )
+        ),
+        exit = exit | tidyr::replace_na(exit_ruleset, FALSE)
+      )
   }
 }
