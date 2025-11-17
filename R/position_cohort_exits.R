@@ -136,15 +136,13 @@ exit_fpt <- function(interest_rate = 0.0425, maturity = 15 / 365, side = "long",
           t = maturity,
           side = side
         ),
-        exit_fpt =
-          if (side == "long") {
-            S > fpt_boundary & S > minS & t >= minT
-          } else if (side == "short") {
-            S < fpt_boundary & S < minS & t >= minT
-          },
+        exit_fpt_long = S > fpt_boundary & S > minS & t >= minT,
+        exit_fpt_short = S < fpt_boundary & S < minS & t >= minT,
+        exit_fpt = ifelse(side == "long", exit_fpt_long, exit_fpt_short),
         exit = exit | (!is.na(exit_fpt) & exit_fpt)
       ) %>%
-      dplyr::mutate(fpt_boundary = ifelse(t < minT, NA, fpt_boundary))
+      dplyr::mutate(fpt_boundary = ifelse(t < minT, NA, fpt_boundary)) %>%
+      dplyr::select(-dplyr::all_of(c("exit_fpt_long", "exit_fpt_short")))
   }
 }
 
