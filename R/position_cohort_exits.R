@@ -145,7 +145,10 @@ exit_fpt <- function(interest_rate = 0.0425, maturity = 15 / 365, side = "long",
   }
 }
 
-exit_ruleset <- function(side = c("long", "short"), upper = NA, lower = NA, breakeven = NA, breakeven_t = NA, ...) {
+exit_ruleset <- function(
+  side = c("long", "short"), upper = NA, upper_t = NA, lower = NA, lower_t = NA,
+  breakeven = NA, breakeven_t = NA, ...
+) {
   side <- match.arg(side)
 
   function(data, history = FALSE) {
@@ -158,8 +161,8 @@ exit_ruleset <- function(side = c("long", "short"), upper = NA, lower = NA, brea
       dplyr::mutate(
         Smax = cummax(ifelse(t >= 0, S, 1)),
         Smin = cummin(ifelse(t >= 0, S, 1)),
-        ruleset_upper = upper,
-        ruleset_lower = lower,
+        ruleset_upper = ifelse(!is.na(upper_t) & t >= upper_t, upper, NA),
+        ruleset_lower = ifelse(!is.na(lower_t) & t >= lower_t, lower, NA),
         ruleset_breakeven = ifelse(!is.na(breakeven_t) & t >= breakeven_t, breakeven, NA),
         exit_ruleset = keep_first_true_only(
           t >= 0 & (

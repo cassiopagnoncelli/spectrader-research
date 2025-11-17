@@ -71,7 +71,9 @@ posl <- lapply(seq_along(posl_raw), function(i) {
     exit_ruleset(
       side = "long",
       upper = NA,
+      upper_t = NA,
       lower = NA,
+      lower_t = NA,
       breakeven = 1.12,
       breakeven_t = 15
     ),
