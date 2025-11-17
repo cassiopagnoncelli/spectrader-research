@@ -35,7 +35,7 @@ plot_position_cohort_exit <- function(position, plot = TRUE, ylim = NULL) {
     })
   }
 
-  p <- ggplot2::ggplot(na.omit(position), ggplot2::aes(x = t)) +
+  p <- ggplot2::ggplot(position, ggplot2::aes(x = t)) +
     ggplot2::geom_line(
       ggplot2::aes(y = S),
       color = "black",
