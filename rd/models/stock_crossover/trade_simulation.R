@@ -17,8 +17,8 @@ if (TRUE) {
 #
 cat(sprintf("Signal q:\n  ehi_tau: %.4f\n  eli_tau: %.4f\n", ehi_tau, eli_tau))
 
-ehi_cutoff <- .995
-eli_cutoff <- .999
+ehi_cutoff <- .99
+eli_cutoff <- .995
 
 # Generate trading signals
 signals <- mnXYP[test_idx, ] %>%
@@ -38,7 +38,7 @@ if (nrow(signals) == 0) {
 
 # Exits for each position
 before_days <- 50 # Exit methods require long enough history for calculations.
-max_position_days <- 30
+max_position_days <- 60
 posl_raw <- position_cohorts(signals, before_days, max_position_days, mcnXY)
 posl <- lapply(seq_along(posl_raw), function(i) {
   exit_pipeline(
@@ -68,10 +68,13 @@ posl <- lapply(seq_along(posl_raw), function(i) {
     #   minT = 15
     # ),
     # # Fixed rule sets
-    # exit_ruleset(
-    #   upper = 1.2,
-    #   lower = .6
-    # ),
+    exit_ruleset(
+      side = "long",
+      upper = NA,
+      lower = NA,
+      breakeven = 1.12,
+      breakeven_t = 15
+    ),
     position = posl_raw[[i]]
   )
 })

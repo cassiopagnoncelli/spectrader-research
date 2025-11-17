@@ -145,7 +145,9 @@ exit_fpt <- function(interest_rate = 0.0425, maturity = 15 / 365, side = "long",
   }
 }
 
-exit_ruleset <- function(upper = NA, lower = NA, ...) {
+exit_ruleset <- function(side = c("long", "short"), upper = NA, lower = NA, breakeven = NA, breakeven_t = NA, ...) {
+  side <- match.arg(side)
+
   function(data, history = FALSE) {
     if (!all(c("t", "S", "r", "exit") %in% colnames(data))) {
       stop("Data must contain columns: t, S, r, and exit.")
@@ -154,12 +156,17 @@ exit_ruleset <- function(upper = NA, lower = NA, ...) {
     data %>%
       dplyr::filter(t >= ifelse(history, -Inf, 0)) %>%
       dplyr::mutate(
+        Smax = cummax(ifelse(t >= 0, S, 1)),
+        Smin = cummin(ifelse(t >= 0, S, 1)),
         ruleset_upper = upper,
         ruleset_lower = lower,
+        ruleset_breakeven = ifelse(!is.na(breakeven_t) & t >= breakeven_t, breakeven, NA),
         exit_ruleset = keep_first_true_only(
           t >= 0 & (
             tidyr::replace_na(S > ruleset_upper, FALSE) |
-              tidyr::replace_na(S < ruleset_lower, FALSE)
+              tidyr::replace_na(S < ruleset_lower, FALSE) |
+              tidyr::replace_na(side == "long" & Smax > ruleset_breakeven & S < 1.005, FALSE) |
+              tidyr::replace_na(side == "short" & Smin < ruleset_breakeven & S > 0.995, FALSE)
           )
         ),
         exit = exit | tidyr::replace_na(exit_ruleset, FALSE)
