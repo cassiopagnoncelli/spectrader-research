@@ -1,30 +1,33 @@
 devtools::load_all()
 
 source("rd/models/stock_crossover/entry_model.R")
-source("rd/models/stock_crossover/exit.R")
+source("rd/models/stock_crossover/exit_model.R")
+
+ehi_cutoff <- .98
+eli_cutoff <- .9993
 
 # Signal research
-# mnXYP$yhat_ehi_evt <- rep(NA_real_, nrow(mnXYP))
-# mnXYP[stages_idx, ] <- yhat_ehi_evt
+mnXYP[test_idx, ] %>%
+  summarise(
+    cor_ehi = cor(extreme_high_identity, yhat_ehi),
+    cor_eli = cor(extreme_high_identity, yhat_eli)
+  )
 
-# mnXYP[test_idx, ] %>%
-#   summarise(cor = cor(extreme_high_identity, yhat_eli))
-
-# mnXYP[test_idx, ] %>%
-#   filter(
-#     yhat_ehi > quantile(yhat_ehi, .9993),
-#     yhat_eli > quantile(yhat_eli, .99)
-#   ) %>%
-#   filter_signals(within_days = 20) %>%
-#   mutate(y = extreme_high_identity - 1) %>%
-#   pull(y) %>%
-#   analyse_distribution(groups = c(.09))
+mnXYP[test_idx, ] %>%
+  filter(
+    yhat_ehi > quantile(yhat_ehi, ehi_cutoff),
+    yhat_eli > quantile(yhat_eli, eli_cutoff)
+  ) %>%
+  filter_signals(within_days = 20) %>%
+  mutate(y = extreme_high_identity - 1) %>%
+  pull(y) %>%
+  analyse_distribution(groups = c(.09))
 
 # Generate trading signals
-signals <- mnXYP[val_idx, ] %>%
+signals <- mnXYP[test_idx, ] %>%
   filter(
-    yhat_ehi > quantile(yhat_ehi, .9995),
-    yhat_eli > quantile(yhat_eli, .99)
+    yhat_ehi > quantile(yhat_ehi, ehi_cutoff),
+    yhat_eli > quantile(yhat_eli, eli_cutoff)
   ) %>%
   filter_signals(within_days = 20) %>% # Discard nearby signals
   arrange(date) %>%
@@ -50,16 +53,16 @@ posl <- lapply(seq_along(posl_raw), function(i) {
       enable_time_decay = TRUE,
       enable_vol_bursts = TRUE,
       minS = 1.1,
-      minT = 3,
-      alpha = .4
+      minT = 0,
+      alpha = .3
     ),
     # # Volatility Adjusted Trailing Stops
-    # exit_vats(
-    #   sd_n = 9,
-    #   k = 2.8,
-    #   minS = 1.08,
-    #   minT = 5
-    # ),
+    exit_vats(
+      sd_n = 15,
+      k = 2.2,
+      minS = 1.05,
+      minT = 5
+    ),
     # # First Passage Time
     # exit_fpt(
     #   maturity = max_position_days / 365,
