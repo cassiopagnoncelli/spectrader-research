@@ -59,10 +59,10 @@ plot_position_cohort_exit <- function(position, plot = TRUE, ylim = NULL) {
       type = "scatter",
       mode = "markers+text",
       marker = list(
-        symbol = "x",
-        size = 16,
-        color = "#000000",
-        line = list(width = 2.5, color = "#000000")
+        symbol = "star-diamond",
+        size = 21,
+        color = "rgba(255, 193, 7, 0.5)",
+        line = list(width = 3, color = "rgba(255, 193, 7, 1)")
       ),
       text = ~round(S, 4),
       textposition = "middle left",

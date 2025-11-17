@@ -52,22 +52,23 @@ posl <- lapply(seq_along(posl_raw), function(i) {
     #   minT = 2,
     #   alpha = .1
     # ),
-    # exit_vats(
-    #   sd_n = 12,
-    #   k = 2.5,
-    #   minS = 1,
-    #   minT = 3
-    # ),
+    exit_vats(
+      sd_n = 12,
+      k = 2.5,
+      minS = 1,
+      minT = 5
+    ),
     # exit_fpt(
     #   maturity = max_position_days / 365,
     #   side = "long",
     #   minS = 1,
     #   minT = 3
     # ),
-    exit_ruleset(
-      upper = 1.2,
-      lower = .6
-    ),
+    # Fixed rule sets
+    # exit_ruleset(
+    #   upper = 1.2,
+    #   lower = .6
+    # ),
     position = posl_raw[[i]]
   )
 })
