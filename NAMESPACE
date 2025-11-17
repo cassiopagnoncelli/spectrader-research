@@ -39,3 +39,5 @@ importFrom("MASS", `truehist`)
 # Specifics
 import("TTR")
 import("rugarch")
+
+import("qboost")

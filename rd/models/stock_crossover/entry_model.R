@@ -7,20 +7,26 @@ source("rd/models/stock_crossover/etl.R")
 #
 fets::fwd_methods()
 
-fit_ehi <- lgb_quantile_cv(
-  x = as.matrix(nX[train_idx, ]),
+fit_ehi <- qboost::qboost(
+  x = nX[train_idx, ],
   y = Y$extreme_high_identity[train_idx],
   tau = 0.993,
-  nfold = 5,
-  nrounds = 400
+  nrounds = 500,
+  nfolds = 5,
+  params = list(),
+  early_stopping_rounds = 50,
+  seed = 1,
 )
 
-fit_eli <- lgb_quantile_cv(
-  x = as.matrix(nX[train_idx, ]),
+fit_eli <- qboost::qboost(
+  x = nX[train_idx, ],
   y = Y$extreme_low_identity[train_idx],
   tau = 0.996,
-  nfold = 8,
-  nrounds = 600
+  nrounds = 800,
+  nfolds = 8,
+  params = list(),
+  early_stopping_rounds = 50,
+  seed = 1,
 )
 
 # Predictions
@@ -32,8 +38,8 @@ P <- tibble::tibble(
   yhat_ehi = rep(NA, nrow(nX))
 )
 P[stages_idx, ] <- tibble::tibble(
-  yhat_ehi = fit_ehi$predict(as.matrix(nX[stages_idx, ])),
-  yhat_eli = fit_eli$predict(as.matrix(nX[stages_idx, ]))
+  yhat_ehi = predict(fit_ehi, nX[stages_idx, ]),
+  yhat_eli = predict(fit_eli, nX[stages_idx, ])
 )
 
 mnXYP <- tibble::tibble(
