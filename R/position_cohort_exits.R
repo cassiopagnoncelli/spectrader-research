@@ -67,13 +67,12 @@ exit_dqr <- function(
 #' Creates an exit function using a volatility-adjusted trailing stop based on
 #' short and long-term standard deviations.
 #'
-#' @param sd_short Window for short-term standard deviation (default: 6)
-#' @param sd_long Window for long-term standard deviation (default: 20)
+#' @param sd_n Window for long-term standard deviation (default: 20)
 #' @param k Multiplier for stop distance in standard deviations (default: 2.5)
 #'
 #' @return A function that takes data and optional history parameter
 #' @export
-exit_vats <- function(sd_short = 6, sd_long = 20, k = 2.5, side = "long", minS = 1, minT = 3) {
+exit_vats <- function(sd_short = 6, sd_n = 20, k = 2.5, side = "long", minS = 1, minT = 3) {
   if (side != "long" && side != "short")
     stop("side must be either 'long' or 'short'.")
 
@@ -87,12 +86,12 @@ exit_vats <- function(sd_short = 6, sd_long = 20, k = 2.5, side = "long", minS =
     }
     data %>%
       dplyr::mutate(
-        sd_long = RcppRoll::roll_sd(r, n = sd_long, fill = NA, align = "right")
+        sd_n = RcppRoll::roll_sd(r, n = sd_n, fill = NA, align = "right")
       ) %>%
       dplyr::filter(t >= ifelse(history, -Inf, 0)) %>%
       dplyr::mutate(
         Smax = cummax(ifelse(t >= 0, S, 0)),
-        vats_stop = Smax * exp(-k * sd_long),
+        vats_stop = Smax * exp(-k * sd_n),
         exit_vats = keep_first_true_only(
           S > minS &
             S < vats_stop &
@@ -102,7 +101,7 @@ exit_vats <- function(sd_short = 6, sd_long = 20, k = 2.5, side = "long", minS =
         exit = exit | (!is.na(exit_vats) & exit_vats)
       ) %>%
       dplyr::mutate(vats_stop = ifelse(t < minT, NA, vats_stop)) %>%
-      dplyr::select(-dplyr::all_of(c("sd_long", "Smax")))
+      dplyr::select(-dplyr::all_of(c("sd_n", "Smax")))
   }
 }
 

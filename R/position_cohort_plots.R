@@ -105,10 +105,10 @@ plot_position_cohort_exit <- function(position, plot = TRUE, ylim = NULL) {
     }, error = function(e) {})
   }
   
-  # Add VATS stop line if it exists
+  # Add VATS stop (cross) line if it exists
   if ("vats_stop" %in% names(position)) {
     p <- p + ggplot2::geom_line(
-      ggplot2::aes(y = vats_stop, color = "VATS stop"),
+      ggplot2::aes(y = vats_stop, color = "VATS stop (cross)"),
       linewidth = 0.7,
       linetype = "dashed"
     )
@@ -177,13 +177,13 @@ plot_position_cohort_exit <- function(position, plot = TRUE, ylim = NULL) {
   dummy_data <- data.frame(t = NA_real_, val = NA_real_)
   p <- p +
     ggplot2::geom_line(data = dummy_data, ggplot2::aes(x = t, y = val, color = "DQR line"), na.rm = TRUE) +
-    ggplot2::geom_line(data = dummy_data, ggplot2::aes(x = t, y = val, color = "VATS stop"), na.rm = TRUE) +
+    ggplot2::geom_line(data = dummy_data, ggplot2::aes(x = t, y = val, color = "VATS stop (cross)"), na.rm = TRUE) +
     ggplot2::geom_line(data = dummy_data, ggplot2::aes(x = t, y = val, color = "FPT boundary"), na.rm = TRUE) +
     ggplot2::geom_line(data = dummy_data, ggplot2::aes(x = t, y = val, color = "Ruleset"), na.rm = TRUE) +
     ggplot2::scale_color_manual(
       name = NULL,
-      values = c("DQR line" = "red", "VATS stop" = "purple", "FPT boundary" = "orange", "Ruleset" = "cyan3"),
-      breaks = c("DQR line", "VATS stop", "FPT boundary", "Ruleset"),
+      values = c("DQR line" = "red", "VATS stop (cross)" = "purple", "FPT boundary" = "orange", "Ruleset" = "cyan3"),
+      breaks = c("DQR line", "VATS stop (cross)", "FPT boundary", "Ruleset"),
       drop = FALSE
     ) +
     ggplot2::geom_hline(
