@@ -42,33 +42,33 @@ max_position_days <- 20
 posl_raw <- position_cohorts(signals, before_days, max_position_days, mcnXY)
 posl <- lapply(seq_along(posl_raw), function(i) {
   exit_pipeline(
-    # exit_dqr(
-    #   dqr_fits,
-    #   max_position_days = max_position_days,
-    #   side = "long",
-    #   enable_time_decay = TRUE,
-    #   enable_vol_bursts = TRUE,
-    #   minS = 1,
-    #   minT = 2,
-    #   alpha = .1
-    # ),
+    exit_dqr(
+      dqr_fits,
+      max_position_days = max_position_days,
+      side = "long",
+      enable_time_decay = TRUE,
+      enable_vol_bursts = TRUE,
+      minS = 1,
+      minT = 2,
+      alpha = .1
+    ),
     exit_vats(
       sd_n = 12,
       k = 2.5,
       minS = 1,
       minT = 5
     ),
-    # exit_fpt(
-    #   maturity = max_position_days / 365,
-    #   side = "long",
-    #   minS = 1,
-    #   minT = 3
-    # ),
+    exit_fpt(
+      maturity = max_position_days / 365,
+      side = "long",
+      minS = 1,
+      minT = 3
+    ),
     # Fixed rule sets
-    # exit_ruleset(
-    #   upper = 1.2,
-    #   lower = .6
-    # ),
+    exit_ruleset(
+      upper = 1.2,
+      lower = .6
+    ),
     position = posl_raw[[i]]
   )
 })
