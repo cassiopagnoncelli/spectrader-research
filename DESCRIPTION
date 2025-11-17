@@ -47,6 +47,7 @@ Suggests:
     cyclocomp,
     forecast,
     xgboost,
+    lightgbm,
     ggfortify,
     RQuantLib,
     gridExtra,
