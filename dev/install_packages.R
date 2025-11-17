@@ -10,14 +10,24 @@ library("spectrader")
 
 # Shipped-in packages: fets, qboost
 for (pkg_file in dir("packages")) {
-  # Extract clean package name (e.g., "fets_1.3.2.9000.tar.gz" -> "fets")
   pkg <- sub("_.*", "", pkg_file)
+  pkg_path <- file.path("packages", pkg_file)
+  pkg_search <- paste0("package:", pkg)
 
-  renv::remove(pkg)
-  renv::install(paste0("packages/", pkg_file), prompt = FALSE)
-
-  if (paste0("package:", pkg) %in% search()) {
-    detach(paste0("package:", pkg), unload = TRUE)
+  # Fully unload everything
+  if (pkg %in% loadedNamespaces()) {
+    try(unloadNamespace(pkg), silent = TRUE)
   }
+  if (pkg_search %in% search()) {
+    try(detach(pkg_search, unload = TRUE, character.only = TRUE), silent = TRUE)
+  }
+
+  # Remove from renv
+  renv::remove(pkg)
+
+  # Install clean
+  renv::install(pkg_path, prompt = FALSE)
+
+  # Attach clean version
   library(pkg, character.only = TRUE)
 }
