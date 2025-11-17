@@ -196,7 +196,7 @@ exit_dqr_weighted_probs <- function(t_norm, vol_norm, taus, method = "laplace", 
         seq_along(taus),
         \(i) dnorm(t, mean = taus[i], sd = sds[i])
       )
-      densities <- densities / sum(densities)
+      densities <- densities / max(sum(densities), 1e-30)
       densities
     })
     if (is.null(vol_norm)) {
