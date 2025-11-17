@@ -1,6 +1,6 @@
-# devtools::load_all()
-
 if (FALSE) {
+  devtools::load_all()
+
   source("rd/models/stock_crossover/1_etl.R")
   source("rd/models/stock_crossover/2_feature_engineering.R")
   source("rd/models/stock_crossover/3_splits.R")
