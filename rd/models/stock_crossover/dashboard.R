@@ -128,7 +128,7 @@ ui <- dashboardPage(
                 )
               )
             ),
-            plotOutput("current_exit_plot", height = 670)
+            plotly::plotlyOutput("current_exit_plot", height = "670px")
           )
         )
       ),
@@ -803,7 +803,7 @@ server <- function(input, output, session) {
   })
   
   # Carousel - Render Current Chart
-  output$current_exit_plot <- renderPlot({
+  output$current_exit_plot <- plotly::renderPlotly({
     req(rv$sample_trades, rv$posl)
     
     current_idx <- rv$current_chart_index
@@ -811,9 +811,9 @@ server <- function(input, output, session) {
     
     # Build ylim parameter conditionally
     if (!is.na(input$ylim_min) && !is.na(input$ylim_max)) {
-      plot_position_cohort_exit(rv$posl[[trade_id]], ylim = c(input$ylim_min, input$ylim_max))
+      plot_position_cohort_exit(rv$posl[[trade_id]], plot = FALSE, ylim = c(input$ylim_min, input$ylim_max))
     } else {
-      plot_position_cohort_exit(rv$posl[[trade_id]])
+      plot_position_cohort_exit(rv$posl[[trade_id]], plot = FALSE)
     }
   })
   

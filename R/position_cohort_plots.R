@@ -36,43 +36,64 @@ plot_position_cohort_exit <- function(position, plot = TRUE, ylim = NULL) {
     })
   }
 
-  p <- ggplot2::ggplot(position, ggplot2::aes(x = t)) +
-    ggplot2::geom_line(
-      ggplot2::aes(y = S),
-      color = "black",
-      linewidth = 0.8
-    ) +
-    ggplot2::coord_cartesian(ylim = if (is.null(ylim)) NULL else ylim)
-
-  if (!is.null(exit_subset)) {
-    p <- p + ggplot2::geom_point(
+  # Initialize plotly figure
+  fig <- plotly::plot_ly()
+  
+  # Add main trajectory line (S)
+  fig <- fig %>% plotly::add_trace(
+    data = position,
+    x = ~t, y = ~S,
+    type = "scatter",
+    mode = "lines",
+    line = list(color = "black", width = 2),
+    name = "S",
+    showlegend = FALSE,
+    hovertemplate = "t: %{x}<br>S: %{y:.4f}<extra></extra>"
+  )
+  
+  # Add exit points with X marks and text labels
+  if (!is.null(exit_subset) && nrow(exit_subset) > 0) {
+    fig <- fig %>% plotly::add_trace(
       data = exit_subset,
-      aes(y = S),
-      color = "#000000",
-      size = 12,
-      shape = 4
-    ) +
-      ggplot2::geom_text(
-        data = exit_subset,
-        aes(y = S, label = round(S, 4)),
+      x = ~t, y = ~S,
+      type = "scatter",
+      mode = "markers+text",
+      marker = list(
+        symbol = "x",
+        size = 16,
         color = "#000000",
-        size = 5.5,
-        hjust = 1.5,
-        vjust = .3
-      )
+        line = list(width = 2.5, color = "#000000")
+      ),
+      text = ~round(S, 4),
+      textposition = "middle left",
+      textfont = list(color = "#000000", size = 14),
+      name = "Exit",
+      showlegend = FALSE,
+      hovertemplate = "Exit at t: %{x}<br>S: %{y:.4f}<extra></extra>"
+    )
   }
   
-  # DQR exit method
+  # Track which legend items actually have data
+  has_dqr_line <- FALSE
+  has_vats_stop <- FALSE
+  has_fpt_boundary <- FALSE
+  has_ruleset <- FALSE
+  
+  # DQR exit method points
   if ("exit_dqr" %in% names(position)) {
     tryCatch({
       if (is.logical(position[["exit_dqr"]])) {
         dqr_subset <- position[position[["exit_dqr"]] %in% TRUE & !is.na(position[["exit_dqr"]]), ]
         if (!is.null(dqr_subset) && nrow(dqr_subset) > 0) {
-          p <- p + ggplot2::geom_point(
+          fig <- fig %>% plotly::add_trace(
             data = dqr_subset,
-            ggplot2::aes(y = S),
-            color = "red",
-            size = 5
+            x = ~t, y = ~S,
+            type = "scatter",
+            mode = "markers",
+            marker = list(symbol = "circle", size = 10, color = "red"),
+            name = "DQR exit",
+            showlegend = FALSE,
+            hovertemplate = "DQR exit at t: %{x}<br>S: %{y:.4f}<extra></extra>"
           )
         }
       }
@@ -81,24 +102,35 @@ plot_position_cohort_exit <- function(position, plot = TRUE, ylim = NULL) {
   
   # Add DQR line if it exists
   if ("dqr_line" %in% names(position)) {
-    p <- p + ggplot2::geom_line(
-      ggplot2::aes(y = dqr_line, color = "DQR line"),
-      linewidth = 0.7,
-      linetype = "dashed"
+    has_dqr_line <- TRUE
+    fig <- fig %>% plotly::add_trace(
+      data = position,
+      x = ~t, y = ~dqr_line,
+      type = "scatter",
+      mode = "lines",
+      line = list(color = "red", width = 1.8, dash = "dash"),
+      name = "DQR line",
+      legendgroup = "DQR line",
+      showlegend = TRUE,
+      hovertemplate = "DQR line<br>t: %{x}<br>value: %{y:.4f}<extra></extra>"
     )
   }
   
-  # VATS exit method
+  # VATS exit method points
   if ("exit_vats" %in% names(position)) {
     tryCatch({
       if (is.logical(position[["exit_vats"]])) {
         vats_subset <- position[position[["exit_vats"]] %in% TRUE & !is.na(position[["exit_vats"]]), ]
         if (!is.null(vats_subset) && nrow(vats_subset) > 0) {
-          p <- p + ggplot2::geom_point(
+          fig <- fig %>% plotly::add_trace(
             data = vats_subset,
-            ggplot2::aes(y = S),
-            color = "purple",
-            size = 5
+            x = ~t, y = ~S,
+            type = "scatter",
+            mode = "markers",
+            marker = list(symbol = "circle", size = 10, color = "purple"),
+            name = "VATS exit",
+            showlegend = FALSE,
+            hovertemplate = "VATS exit at t: %{x}<br>S: %{y:.4f}<extra></extra>"
           )
         }
       }
@@ -107,24 +139,35 @@ plot_position_cohort_exit <- function(position, plot = TRUE, ylim = NULL) {
   
   # Add VATS stop line if it exists
   if ("vats_stop" %in% names(position)) {
-    p <- p + ggplot2::geom_line(
-      ggplot2::aes(y = vats_stop, color = "VATS stop"),
-      linewidth = 0.7,
-      linetype = "dashed"
+    has_vats_stop <- TRUE
+    fig <- fig %>% plotly::add_trace(
+      data = position,
+      x = ~t, y = ~vats_stop,
+      type = "scatter",
+      mode = "lines",
+      line = list(color = "purple", width = 1.8, dash = "dash"),
+      name = "VATS stop",
+      legendgroup = "VATS stop",
+      showlegend = TRUE,
+      hovertemplate = "VATS stop<br>t: %{x}<br>value: %{y:.4f}<extra></extra>"
     )
   }
   
-  # FPT exit method
+  # FPT exit method points
   if ("exit_fpt" %in% names(position)) {
     tryCatch({
       if (is.logical(position[["exit_fpt"]])) {
         fpt_subset <- position[position[["exit_fpt"]] %in% TRUE & !is.na(position[["exit_fpt"]]), ]
         if (!is.null(fpt_subset) && nrow(fpt_subset) > 0) {
-          p <- p + ggplot2::geom_point(
+          fig <- fig %>% plotly::add_trace(
             data = fpt_subset,
-            ggplot2::aes(y = S),
-            color = "orange",
-            size = 5
+            x = ~t, y = ~S,
+            type = "scatter",
+            mode = "markers",
+            marker = list(symbol = "circle", size = 10, color = "orange"),
+            name = "FPT exit",
+            showlegend = FALSE,
+            hovertemplate = "FPT exit at t: %{x}<br>S: %{y:.4f}<extra></extra>"
           )
         }
       }
@@ -133,24 +176,35 @@ plot_position_cohort_exit <- function(position, plot = TRUE, ylim = NULL) {
   
   # Add FPT boundary if it exists
   if ("fpt_boundary" %in% names(position)) {
-    p <- p + ggplot2::geom_line(
-      ggplot2::aes(y = fpt_boundary, color = "FPT boundary"),
-      linewidth = 0.7,
-      linetype = "dashed"
+    has_fpt_boundary <- TRUE
+    fig <- fig %>% plotly::add_trace(
+      data = position,
+      x = ~t, y = ~fpt_boundary,
+      type = "scatter",
+      mode = "lines",
+      line = list(color = "orange", width = 1.8, dash = "dash"),
+      name = "FPT boundary",
+      legendgroup = "FPT boundary",
+      showlegend = TRUE,
+      hovertemplate = "FPT boundary<br>t: %{x}<br>value: %{y:.4f}<extra></extra>"
     )
   }
   
-  # Ruleset exit method
+  # Ruleset exit method points
   if ("exit_ruleset" %in% names(position)) {
     tryCatch({
       if (is.logical(position[["exit_ruleset"]])) {
         ruleset_subset <- position[position[["exit_ruleset"]] %in% TRUE & !is.na(position[["exit_ruleset"]]), ]
         if (!is.null(ruleset_subset) && nrow(ruleset_subset) > 0) {
-          p <- p + ggplot2::geom_point(
+          fig <- fig %>% plotly::add_trace(
             data = ruleset_subset,
-            ggplot2::aes(y = S),
-            color = "#808000",
-            size = 5
+            x = ~t, y = ~S,
+            type = "scatter",
+            mode = "markers",
+            marker = list(symbol = "circle", size = 10, color = "#808000"),
+            name = "Ruleset exit",
+            showlegend = FALSE,
+            hovertemplate = "Ruleset exit at t: %{x}<br>S: %{y:.4f}<extra></extra>"
           )
         }
       }
@@ -160,64 +214,136 @@ plot_position_cohort_exit <- function(position, plot = TRUE, ylim = NULL) {
   # Add ruleset_* lines if they exist
   ruleset_cols <- grep("^ruleset_.*$", names(position), value = TRUE)
   if (length(ruleset_cols) > 0) {
-    for (col_name in ruleset_cols) {
+    has_ruleset <- TRUE
+    for (i in seq_along(ruleset_cols)) {
+      col_name <- ruleset_cols[i]
       tryCatch({
         if (col_name %in% names(position)) {
-          p <- p + ggplot2::geom_line(
-            ggplot2::aes(y = .data[[col_name]], color = "Ruleset"),
-            linewidth = 0.7,
-            linetype = "dashed"
+          fig <- fig %>% plotly::add_trace(
+            data = position,
+            x = ~t, y = position[[col_name]],
+            type = "scatter",
+            mode = "lines",
+            line = list(color = "#808000", width = 1.8, dash = "dash"),
+            name = "Ruleset",
+            legendgroup = "Ruleset",
+            showlegend = (i == 1),  # Only show legend for first ruleset line
+            hovertemplate = paste0("Ruleset (", col_name, ")<br>t: %{x}<br>value: %{y:.4f}<extra></extra>")
           )
         }
       }, error = function(e) {})
     }
   }
   
-  # Add dummy layers to ensure all legend items appear
-  dummy_data <- data.frame(t = NA_real_, val = NA_real_)
-  p <- p +
-    ggplot2::geom_line(data = dummy_data, ggplot2::aes(x = t, y = val, color = "DQR line"), na.rm = TRUE) +
-    ggplot2::geom_line(data = dummy_data, ggplot2::aes(x = t, y = val, color = "VATS stop"), na.rm = TRUE) +
-    ggplot2::geom_line(data = dummy_data, ggplot2::aes(x = t, y = val, color = "FPT boundary"), na.rm = TRUE) +
-    ggplot2::geom_line(data = dummy_data, ggplot2::aes(x = t, y = val, color = "Ruleset"), na.rm = TRUE) +
-    ggplot2::scale_color_manual(
-      name = NULL,
-      values = c("DQR line" = "red", "VATS stop" = "purple", "FPT boundary" = "orange", "Ruleset" = "#808000"),
-      breaks = c("DQR line", "VATS stop", "FPT boundary", "Ruleset"),
-      drop = FALSE
-    ) +
-    ggplot2::geom_hline(
-      yintercept = 1,
-      color = "gray",
-      linetype = "dashed",
-      linewidth = 0.5
-    ) +
-    ggplot2::theme_minimal() +
-    ggplot2::theme(
-      legend.position = c(0.02, 0.98),
-      legend.justification = c(0, 1),
-      legend.background = ggplot2::element_rect(fill = "white", color = "gray80"),
-      legend.key = ggplot2::element_blank()
-    ) +
-    ggplot2::guides(
-      color = ggplot2::guide_legend(
-        override.aes = list(
-          linetype = "solid",
-          linewidth = 3,
-          shape = 16,
-          size = 3
-        )
-      )
-    ) +
-    ggplot2::labs(
-      x = "t",
-      y = "Value"
+  # Add dummy traces to ensure all legend items appear (only if not already present)
+  if (!has_dqr_line) {
+    fig <- fig %>% plotly::add_trace(
+      x = c(NA), y = c(NA),
+      type = "scatter",
+      mode = "lines",
+      line = list(color = "red", width = 1.8, dash = "dash"),
+      name = "DQR line",
+      legendgroup = "DQR line",
+      showlegend = TRUE,
+      hoverinfo = "skip"
     )
+  }
+  
+  if (!has_vats_stop) {
+    fig <- fig %>% plotly::add_trace(
+      x = c(NA), y = c(NA),
+      type = "scatter",
+      mode = "lines",
+      line = list(color = "purple", width = 1.8, dash = "dash"),
+      name = "VATS stop",
+      legendgroup = "VATS stop",
+      showlegend = TRUE,
+      hoverinfo = "skip"
+    )
+  }
+  
+  if (!has_fpt_boundary) {
+    fig <- fig %>% plotly::add_trace(
+      x = c(NA), y = c(NA),
+      type = "scatter",
+      mode = "lines",
+      line = list(color = "orange", width = 1.8, dash = "dash"),
+      name = "FPT boundary",
+      legendgroup = "FPT boundary",
+      showlegend = TRUE,
+      hoverinfo = "skip"
+    )
+  }
+  
+  if (!has_ruleset) {
+    fig <- fig %>% plotly::add_trace(
+      x = c(NA), y = c(NA),
+      type = "scatter",
+      mode = "lines",
+      line = list(color = "#808000", width = 1.8, dash = "dash"),
+      name = "Ruleset",
+      legendgroup = "Ruleset",
+      showlegend = TRUE,
+      hoverinfo = "skip"
+    )
+  }
+  
+  # Create shapes for horizontal line at y=1
+  shapes <- list(
+    list(
+      type = "line",
+      x0 = min(position$t, na.rm = TRUE),
+      x1 = max(position$t, na.rm = TRUE),
+      y0 = 1, y1 = 1,
+      line = list(color = "gray", width = 1, dash = "dash"),
+      xref = "x", yref = "y"
+    )
+  )
+  
+  # Determine y-axis range
+  y_range <- if (is.null(ylim)) {
+    NULL
+  } else {
+    ylim
+  }
+  
+  # Configure layout to match ggplot styling
+  fig <- fig %>% plotly::layout(
+    xaxis = list(
+      title = "t",
+      showgrid = TRUE,
+      gridcolor = "rgba(220, 220, 220, 0.5)",
+      zeroline = FALSE
+    ),
+    yaxis = list(
+      title = "Value",
+      showgrid = TRUE,
+      gridcolor = "rgba(220, 220, 220, 0.5)",
+      zeroline = FALSE,
+      range = y_range
+    ),
+    shapes = shapes,
+    hovermode = "closest",
+    showlegend = TRUE,
+    legend = list(
+      x = 0.02,
+      y = 0.98,
+      xanchor = "left",
+      yanchor = "top",
+      bgcolor = "rgba(255, 255, 255, 1)",
+      bordercolor = "rgba(192, 192, 192, 1)",
+      borderwidth = 1,
+      font = list(size = 12)
+    ),
+    plot_bgcolor = "white",
+    paper_bgcolor = "white",
+    margin = list(l = 60, r = 30, t = 30, b = 50)
+  )
 
   if (plot) {
-    print(p)
+    print(fig)
   }
-  p
+  invisible(fig)
 }
 
 #' Plot Position Cohort Captures
