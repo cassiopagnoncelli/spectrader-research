@@ -39,11 +39,10 @@ accuracy_uncaptured <- accuracy %>% filter(is.na(exit_method))
 ## TODO list
 
 - [Report] Realistic portfolio growth simulation with wallet concurrency
-- [Report]Volatility Analysis in Options
+- [Report] Volatility Analysis in Options
 - [ETL] Download volatility (IV) data
 - [ETL] Add macro indicators (UNRATE, SP500, etc)
 - [Exit] Expected Shortfall maximisation on long/short capture.
-- [Exit] Rule set: functions of (t, S, Smax, Smin) or set like take_profit, stop_loss
+- [Exit] Rule set: functions of (t, S, Smax, Smin)
 - [Signal] xgboost, qr, evt gpd, evt gevd.
-- [Chart] Fix captures inspect: colour by exit method, add meta info if available
 - [Report] Include spectrader simulation
