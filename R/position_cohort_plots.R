@@ -307,6 +307,42 @@ plot_position_cohort_exit <- function(position, plot = TRUE, ylim = NULL) {
     ylim
   }
   
+  # Prepare annotation text for symbol and date at t=0
+  annotation_text <- ""
+  if ("symbol" %in% names(position) && "date" %in% names(position) && "t" %in% names(position)) {
+    t0_rows <- position[position$t == 0, ]
+    if (nrow(t0_rows) > 0) {
+      symbol_val <- t0_rows$symbol[1]
+      date_val <- t0_rows$date[1]
+      
+      if (!is.na(symbol_val) && !is.na(date_val)) {
+        annotation_text <- paste0(symbol_val, " - ", date_val)
+      }
+    }
+  }
+  
+  # Prepare annotations list
+  annotations_list <- list()
+  if (nchar(annotation_text) > 0) {
+    annotations_list <- list(
+      list(
+        x = 0.98,
+        y = 0.98,
+        xref = "paper",
+        yref = "paper",
+        text = annotation_text,
+        showarrow = FALSE,
+        font = list(size = 14, color = "black"),
+        xanchor = "right",
+        yanchor = "top",
+        bgcolor = "rgba(255, 255, 255, 0.8)",
+        bordercolor = "rgba(192, 192, 192, 1)",
+        borderwidth = 1,
+        borderpad = 4
+      )
+    )
+  }
+  
   # Configure layout to match ggplot styling
   fig <- fig %>% plotly::layout(
     xaxis = list(
@@ -323,6 +359,7 @@ plot_position_cohort_exit <- function(position, plot = TRUE, ylim = NULL) {
       range = y_range
     ),
     shapes = shapes,
+    annotations = annotations_list,
     hovermode = "closest",
     showlegend = TRUE,
     legend = list(

@@ -81,4 +81,3 @@ dfsr <- position_cohort_returns(posl, signals, y_name = "extreme_high_identity")
 
 # Dashboard
 shiny::runApp("rd/models/stock_crossover/dashboard.R")
-
