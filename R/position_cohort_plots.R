@@ -424,13 +424,15 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
     # Get unique exit methods and assign colors
     exit_methods <- unique(captured$exit_method)
     
-    # Define a vibrant color palette (no greys)
+    # Define color palette matching plot_position_cohort_exit
     predefined_colors <- c(
-      "fpt" = "#2E7D32",      # Forest Green
-      "ruleset" = "#1976D2",  # Royal Blue
+      "fpt" = "orange",       # Match FPT boundary
+      "ruleset" = "#808000",  # Match Ruleset (olive)
+      "dqr" = "red",          # Match DQR line
+      "vats" = "purple",      # Match VATS stop
       "timeout" = "#F57C00",  # Vibrant Orange
-      "stop_loss" = "#C62828", # Crimson Red
-      "take_profit" = "#7B1FA2", # Purple
+      "stop_loss" = "red",    # Use DQR red
+      "take_profit" = "purple", # Use VATS purple
       "trailing_stop" = "#00897B", # Teal
       "exit_signal" = "#D81B60"  # Pink
     )

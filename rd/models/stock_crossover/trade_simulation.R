@@ -12,8 +12,8 @@ source("rd/models/stock_crossover/exit.R")
 
 mnXYP[test_idx, ] %>%
   filter(
-    yhat_ehi > quantile(yhat_ehi, .995),
-    yhat_eli > quantile(yhat_eli, .995)
+    yhat_ehi > quantile(yhat_ehi, .9993),
+    yhat_eli > quantile(yhat_eli, .99)
   ) %>%
   filter_signals(within_days = 20) %>%
   mutate(y = extreme_high_identity - 1) %>%
@@ -23,8 +23,8 @@ mnXYP[test_idx, ] %>%
 # Generate trading signals
 signals <- mnXYP[val_idx, ] %>%
   filter(
-    yhat_ehi > quantile(yhat_ehi, .995),
-    yhat_eli > quantile(yhat_eli, .995)
+    yhat_ehi > quantile(yhat_ehi, .9995),
+    yhat_eli > quantile(yhat_eli, .99)
   ) %>%
   filter_signals(within_days = 20) %>% # Discard nearby signals
   arrange(date) %>%
@@ -38,37 +38,37 @@ if (nrow(signals) == 0) {
 
 # Exits for each position
 before_days <- 50 # Exit methods require long enough history for calculations.
-max_position_days <- 20
+max_position_days <- 30
 posl_raw <- position_cohorts(signals, before_days, max_position_days, mcnXY)
 posl <- lapply(seq_along(posl_raw), function(i) {
   exit_pipeline(
-    exit_dqr(
-      dqr_fits,
-      max_position_days = max_position_days,
-      side = "long",
-      enable_time_decay = TRUE,
-      enable_vol_bursts = TRUE,
-      minS = 1,
-      minT = 2,
-      alpha = .1
-    ),
+    # exit_dqr(
+    #   dqr_fits,
+    #   max_position_days = max_position_days,
+    #   side = "long",
+    #   enable_time_decay = TRUE,
+    #   enable_vol_bursts = TRUE,
+    #   minS = 1.1,
+    #   minT = 3,
+    #   alpha = .1
+    # ),
     exit_vats(
-      sd_n = 12,
-      k = 2.5,
-      minS = 1,
+      sd_n = 9,
+      k = 2.8,
+      minS = 1.08,
       minT = 5
     ),
-    exit_fpt(
-      maturity = max_position_days / 365,
-      side = "long",
-      minS = 1,
-      minT = 3
-    ),
+    # exit_fpt(
+    #   maturity = max_position_days / 365,
+    #   side = "long",
+    #   minS = 1.01,
+    #   minT = 15
+    # ),
     # Fixed rule sets
-    exit_ruleset(
-      upper = 1.2,
-      lower = .6
-    ),
+    # exit_ruleset(
+    #   upper = 1.2,
+    #   lower = .6
+    # ),
     position = posl_raw[[i]]
   )
 })
@@ -78,3 +78,4 @@ dfsr <- position_cohort_returns(posl, signals, y_name = "extreme_high_identity")
 
 # Dashboard
 shiny::runApp("rd/models/stock_crossover/dashboard.R")
+
