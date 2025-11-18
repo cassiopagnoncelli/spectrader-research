@@ -4,7 +4,7 @@ library(evgam)
 ## 1. Data
 ## -----------------------------------------
 x <- nX[train_idx, ]
-y <- log(Y$extreme_high_identity[train_idx])
+y <- log(Y$excursion_high[train_idx])
 x_names <- colnames(x)
 
 ## -----------------------------------------

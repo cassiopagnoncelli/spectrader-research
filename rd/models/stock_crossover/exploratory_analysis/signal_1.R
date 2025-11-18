@@ -4,7 +4,7 @@ library(evgam)
 ## 1. Data
 ## ----------------------------
 x <- nX[train_idx, ]
-y <- log(Y$extreme_high_identity[train_idx])   # AS YOU SAID, unchanged
+y <- log(Y$excursion_high[train_idx])   # AS YOU SAID, unchanged
 
 ## ----------------------------
 ## 2. Threshold selection
@@ -258,7 +258,7 @@ res <- prob_exceed(nX[sample_test_idx, ], log(1.4))
 res[is.nan(res)] <- 0
 res %>% analyse_distribution
 
-yhat_gpd <- rep(NA, length(Y$extreme_high_identity))
+yhat_gpd <- rep(NA, length(Y$excursion_high))
 yhat_gpd[sample_test_idx] <- res
 mnXYP$yhat_gpd <- yhat_gpd
 

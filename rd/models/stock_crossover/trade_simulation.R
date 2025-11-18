@@ -82,7 +82,7 @@ posl <- lapply(seq_along(posl_raw), function(i) {
 })
 
 # Signals & Returns
-dfsr <- position_cohort_returns(posl, signals, y_name = "extreme_high_identity")
+dfsr <- position_cohort_returns(posl, signals, y_name = "excursion_high")
 
 # Dashboard
 shiny::runApp("rd/models/stock_crossover/dashboard.R")

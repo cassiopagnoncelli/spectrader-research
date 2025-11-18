@@ -15,7 +15,7 @@ build_base_df <- function(indices) {
   if (is.null(indices) || length(indices) == 0) return(NULL)
   df <- copy(X[indices])
   setDT(df)
-  df[, y := ys$extreme_high_identity[indices]]
+  df[, y := ys$excursion_high[indices]]
   df <- df |> as.data.frame() |> tidyr::drop_na(y)
   df
 }

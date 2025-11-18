@@ -16,8 +16,8 @@ if (FALSE) {
 
 mnXYP[test_idx, ] %>%
   summarise(
-    cor_ehi = cor(extreme_high_identity, yhat_ehi),
-    cor_eli = cor(extreme_high_identity, yhat_eli)
+    cor_ehi = cor(excursion_high, yhat_ehi),
+    cor_eli = cor(excursion_high, yhat_eli)
   )
 
 mnXYP[test_idx, ] %>%
@@ -26,6 +26,6 @@ mnXYP[test_idx, ] %>%
     yhat_eli > quantile(yhat_eli, eli_cutoff)
   ) %>%
   filter_signals(within_days = 20) %>%
-  mutate(y = extreme_high_identity - 1) %>%
+  mutate(y = excursion_high - 1) %>%
   pull(y) %>%
   analyse_distribution(groups = c(.09))

@@ -9,7 +9,7 @@ cat(sprintf("Cut-offs:\n  high_hat: %.4f\n   low_hat: %4f\n",
 # Distribution
 mnXYP[val_idx, ] %>%
   filter(y_high_hat > y_high_hat_cutoff, y_low_hat > y_low_hat_cutoff) %>%
-  pull(extreme_high_identity) %>%
+  pull(excursion_high) %>%
   { print(analyse_distribution(.)); . } %>%
   cap_distribution(c(.005, .995)) %>%
   plot_distribution(vline = 1)

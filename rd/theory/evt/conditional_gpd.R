@@ -1,7 +1,7 @@
 library(evgam)
 
 x <- nX[train_idx, ]
-y <- log(Y$extreme_low_identity[train_idx])
+y <- log(Y$excursion_low[train_idx])
 
 me_stability <- function(y, q_seq) {
   me_vals <- numeric(length(q_seq))

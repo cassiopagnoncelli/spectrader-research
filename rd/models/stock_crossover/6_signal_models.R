@@ -13,14 +13,14 @@ if (FALSE) {
 #
 # Outpput: fwd predictions P and complessive dataset mnXYP.
 #
-fets::fwd_methods()
+fets::fwd_goals()
 
 ehi_tau <- 0.995
 eli_tau <- 0.999
 
 fit_ehi <- qboost::qboost(
   x = nX[train_idx, ],
-  y = Y$extreme_high_identity[train_idx],
+  y = Y$excursion_high[train_idx],
   tau = ehi_tau,
   nrounds = 500,
   nfolds = 5,
@@ -31,7 +31,7 @@ fit_ehi <- qboost::qboost(
 
 fit_eli <- qboost::qboost(
   x = nX[train_idx, ],
-  y = Y$extreme_low_identity[train_idx],
+  y = Y$excursion_low[train_idx],
   tau = eli_tau,
   nrounds = 800,
   nfolds = 8,
@@ -55,7 +55,7 @@ P[stages_idx, ] <- tibble::tibble(
 
 mnXYP <- tibble::tibble(
   meta,
-  Y[, c("extreme_high_identity", "extreme_low_identity")],
+  Y[, c("excursion_high", "excursion_low")],
   P,
   nX
 )

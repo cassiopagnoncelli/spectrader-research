@@ -23,7 +23,7 @@ if (exists("train_ehi")) {
     val_idx,
     test_idx,
     X = zX,
-    y = Y$extreme_high_identity,
+    y = Y$excursion_high,
     aux = list(),
     cache = NULL,
     verbose = FALSE
@@ -39,7 +39,7 @@ if (exists("train_eli")) {
     val_idx,
     test_idx,
     X = zX,
-    y = Y$extreme_low_identity,
+    y = Y$excursion_low,
     aux = list(),
     cache = NULL,
     verbose = FALSE
@@ -116,8 +116,8 @@ message(sprintf("Feature enrichment complete in %0.2f mins",
 
 # Build predictions tibble.
 H <- tibble::tibble(
-  extreme_high_identity_hat = rep(NA, nrow(zX)),
-  extreme_low_identity_hat = rep(NA, nrow(zX)),
+  excursion_high_hat = rep(NA, nrow(zX)),
+  excursion_low_hat = rep(NA, nrow(zX)),
   pas_hat = rep(NA, nrow(zX)),
   kurtosis_hat = rep(NA, nrow(zX)),
   mass_high_hat = rep(NA, nrow(zX)),
@@ -125,8 +125,8 @@ H <- tibble::tibble(
 )
 
 H[train_idx, ] <- data.frame(
-  extreme_high_identity_hat = train_ehi$predictions$train,
-  extreme_low_identity_hat = train_eli$predictions$train,
+  excursion_high_hat = train_ehi$predictions$train,
+  excursion_low_hat = train_eli$predictions$train,
   pas_hat = train_pas$predictions$train,
   kurtosis_hat = train_kurtosis$predictions$train,
   mass_high_hat = train_mh$predictions$train,
@@ -134,8 +134,8 @@ H[train_idx, ] <- data.frame(
 )
 
 H[val_idx, ] <- data.frame(
-  extreme_high_identity_hat = train_ehi$predictions$val,
-  extreme_low_identity_hat = train_eli$predictions$val,
+  excursion_high_hat = train_ehi$predictions$val,
+  excursion_low_hat = train_eli$predictions$val,
   pas_hat = train_pas$predictions$val,
   kurtosis_hat = train_kurtosis$predictions$val,
   mass_high_hat = train_mh$predictions$val,
@@ -143,8 +143,8 @@ H[val_idx, ] <- data.frame(
 )
 
 H[test_idx, ] <- data.frame(
-  extreme_high_identity_hat = train_ehi$predictions$test,
-  extreme_low_identity_hat = train_eli$predictions$test,
+  excursion_high_hat = train_ehi$predictions$test,
+  excursion_low_hat = train_eli$predictions$test,
   pas_hat = train_pas$predictions$test,
   kurtosis_hat = train_kurtosis$predictions$test,
   mass_high_hat = train_mh$predictions$test,
@@ -157,8 +157,8 @@ H_center <- attr(H_scaled, "scaled:center")
 H_scales <- attr(H_scaled, "scaled:scale")
 
 nH <- tibble::tibble(
-  extreme_high_identity_hat = rep(NA, nrow(zX)),
-  extreme_low_identity_hat = rep(NA, nrow(zX)),
+  excursion_high_hat = rep(NA, nrow(zX)),
+  excursion_low_hat = rep(NA, nrow(zX)),
   pas_hat = rep(NA, nrow(zX)),
   kurtosis_hat = rep(NA, nrow(zX)),
   mass_high_hat = rep(NA, nrow(zX)),

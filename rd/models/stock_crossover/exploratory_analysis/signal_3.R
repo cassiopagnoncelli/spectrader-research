@@ -14,7 +14,7 @@ set.seed(123)
 ###############################################
 
 x <- nX[train_idx, ]                 # predictors (scaled already)
-y_raw <- Y$extreme_high_identity[train_idx]
+y_raw <- Y$excursion_high[train_idx]
 y <- log(y_raw)                      # objective function as requested
 x_names <- colnames(x)
 

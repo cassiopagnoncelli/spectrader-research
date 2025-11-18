@@ -2,7 +2,7 @@ fit_tail_qr_enet <- function(nXY, Y, train_idx, tau = 0.99, alpha = 0.35) {
 
   # 1. Extract
   xx <- as.matrix(nXY[train_idx, , drop = FALSE])
-  yy <- as.numeric(Y[train_idx, ]$extreme_high_identity)
+  yy <- as.numeric(Y[train_idx, ]$excursion_high)
   stopifnot(nrow(xx) == length(yy))
 
   # 2. Remove invalid rows

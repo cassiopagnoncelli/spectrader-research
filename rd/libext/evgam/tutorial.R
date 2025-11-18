@@ -23,7 +23,7 @@ suppressPackageStartupMessages({
 df_train <- X[train_indices]   # <-- DO NOT TOUCH X
 setDT(df_train)                # <-- make df_train a data.table
 
-df_train[, y          := ys$extreme_high_identity[train_indices]]
+df_train[, y          := ys$excursion_high[train_indices]]
 df_train[, y_kurtosis := ys$kurtosis[train_indices]]
 df_train[, y_skewness := ys$skewness[train_indices]]
 
