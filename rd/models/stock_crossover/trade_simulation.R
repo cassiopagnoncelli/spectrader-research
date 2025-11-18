@@ -18,7 +18,7 @@ if (TRUE && !exists("dfsr")) {
 cat(sprintf("Signal q:\n  qeh_tau: %.4f\n  qel_tau: %.4f\n", qeh_tau, qel_tau))
 
 qeh_cutoff <- .5
-qel_cutoff <- .9999
+qel_cutoff <- .9997
 
 # Generate trading signals
 signals <- mnXYP[test_idx, ] %>%
@@ -50,15 +50,15 @@ posl <- lapply(seq_along(posl_raw), function(i) {
       enable_time_decay = TRUE,
       enable_vol_bursts = TRUE,
       minS = 1.08,
-      minT = 15,
+      minT = 16,
       alpha = .3
     ),
     # # Volatility Adjusted Trailing Stops
     exit_vats(
       sd_n = 15,
       k = 2.5,
-      minS = 1.05,
-      minT = 15
+      minS = 1.15,
+      minT = 16
     ),
     # # First Passage Time
     # exit_fpt(
@@ -75,7 +75,7 @@ posl <- lapply(seq_along(posl_raw), function(i) {
       lower = NA,
       lower_t = NA,
       breakeven = 1.12,
-      breakeven_t = 35
+      breakeven_t = 27
     ),
     position = posl_raw[[i]]
   )

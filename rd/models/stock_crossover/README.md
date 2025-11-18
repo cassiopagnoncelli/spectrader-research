@@ -36,7 +36,11 @@ accuracy_captured <- accuracy %>% filter(!is.na(exit_method))
 accuracy_uncaptured <- accuracy %>% filter(is.na(exit_method))
 ```
 
-## TODO list
+# Top Strategies
+
+1. Minimise losses (train qel=.999), add exit at t>=40%.
+
+# TODO list
 
 - [Report] Realistic portfolio growth simulation with wallet concurrency
 - [Report] Volatility Analysis in Options
