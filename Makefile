@@ -49,13 +49,23 @@ style:
 
 stats:
 	@echo "Current lines: "
-	@find R dev tests -name '*.R' -exec cat {} + | wc -l
+	@dirs=$$(for d in R dev tests rd; do [ -d "$$d" ] && echo "$$d"; done); \
+	if [ -n "$$dirs" ]; then \
+		find $$dirs -name '*.R' -exec cat {} + | wc -l; \
+	else \
+		echo "0"; \
+	fi
 
 	@changes_so_far=$$(git log --format=%H | \
 		xargs -I {} \
 		git show --format= --numstat {} | \
 		awk '{add+=$$1; subs+=$$2} END {print add+subs}') && \
-	data_lines=$$(cat data{,-raw}/* | wc -l | sed 's/^ *//') && \
+	data_lines=0 && \
+	for d in data data-raw; do \
+		if [ -d "$$d" ] && [ -n "$$(ls -A $$d 2>/dev/null)" ]; then \
+			data_lines=$$(($$data_lines + $$(cat $$d/* | wc -l | sed 's/^ *//'))); \
+		fi; \
+	done && \
 	total=$$(($$changes_so_far - $$data_lines)) && \
 	echo "\nChanges (without data directories): " && \
 	echo "   $$total"

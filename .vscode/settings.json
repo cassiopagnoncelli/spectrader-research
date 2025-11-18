@@ -6,4 +6,5 @@
   "r.lintr.linters": {
     "line_length_linter": 120
   },
+  "makefile.configureOnOpen": true,
 }
