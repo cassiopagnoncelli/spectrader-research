@@ -44,14 +44,11 @@ accuracy_uncaptured <- accuracy %>% filter(is.na(exit_method))
 
 - [Report] Realistic portfolio growth simulation with wallet concurrency
 - [Report] Volatility Analysis in Options
+- [ETL] Create new library qetl for handling data
 - [ETL] Download volatility (IV) data
 - [ETL] Add macro indicators (UNRATE, SP500, etc)
-- [ETL] Create new library qetl for handling data
 - [ETL] Add volume, bid-ask spreads, macro, etc
+- [FE] Fit E-GARCH models for individual series
 - [Exit] Expected Shortfall maximisation on long/short capture.
 - [Exit] Rule set: functions of (t, S, Smax, Smin)
-- [Signal] xgboost, qr, rq.Pen, evt gpd, evt gevd.
 - [Report] Include spectrader simulation
-- [Models] Explore NNs: FT-Transformer, DeepGBM, NODE, TabNet, AutoInt
-- [Models] Champion Models: TabR, DCNv2 (Google AI), DNN-MoE, Neural
-  Additive Models (NAM, EBM, NODE-GAM).
