@@ -7,8 +7,6 @@
 #
 # TO DO: Bring further macro series, like UNRATE, CPI, etc.
 #
-fetl <- fets::Fetl$new()
-
-vix <- fets::get_vix(fetl)
-quotes <- fets::get_quotes(fetl)
+vix <- fets::get_vix()
+quotes <- fets::get_quotes()
 fets::add_vix(quotes, vix)

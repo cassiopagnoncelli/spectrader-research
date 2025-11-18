@@ -1,5 +1,6 @@
-# Shipped-in packages: fets, qboost, spectrader (built tarballs now live under each repo's builds directory)
+# Shipped-in packages: qetl, fets, qboost, spectrader (built tarballs now live under each repo's builds directory)
 pkg_patterns <- c(
+  qetl = "../qetl/builds/qetl_*.tar.gz",
   fets = "../fets/builds/fets_*.tar.gz",
   qboost = "../qboost/builds/qboost_*.tar.gz",
   spectrader = "../spectrader/builds/spectrader_*.tar.gz"
