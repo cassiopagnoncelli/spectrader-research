@@ -16,14 +16,14 @@ if (FALSE) {
 
 mnXYP[test_idx, ] %>%
   summarise(
-    cor_ehi = cor(excursion_high, yhat_ehi),
-    cor_eli = cor(excursion_high, yhat_eli)
+    cor_ehi = cor(qeh, yhat_qeh),
+    cor_eli = cor(qel, yhat_qel)
   )
 
 mnXYP[test_idx, ] %>%
   filter(
-    yhat_ehi > quantile(yhat_ehi, ehi_cutoff),
-    yhat_eli > quantile(yhat_eli, eli_cutoff)
+    yhat_qeh > quantile(yhat_qeh, qeh_cutoff),
+    yhat_qel > quantile(yhat_qel, qel_cutoff)
   ) %>%
   filter_signals(within_days = 20) %>%
   mutate(y = excursion_high - 1) %>%

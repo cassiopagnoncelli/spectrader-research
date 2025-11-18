@@ -168,8 +168,8 @@ exit_ruleset <- function(
           t >= 0 & (
             tidyr::replace_na(S > ruleset_upper, FALSE) |
               tidyr::replace_na(S < ruleset_lower, FALSE) |
-              tidyr::replace_na(side == "long" & Smax > ruleset_breakeven & S < 1.005, FALSE) |
-              tidyr::replace_na(side == "short" & Smin < ruleset_breakeven & S > 0.995, FALSE)
+              tidyr::replace_na(side == "long" & Smax > ruleset_breakeven & S < 1.05 & S > .98, FALSE) |
+              tidyr::replace_na(side == "short" & Smin < ruleset_breakeven & S > 0.95 & S < 1.02, FALSE)
           )
         ),
         exit = exit | tidyr::replace_na(exit_ruleset, FALSE)

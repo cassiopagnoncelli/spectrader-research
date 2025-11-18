@@ -15,47 +15,51 @@ if (FALSE) {
 #
 fets::fwd_goals()
 
-ehi_tau <- 0.995
-eli_tau <- 0.999
+qeh_tau <- 0.6
+qel_tau <- 0.995
 
-fit_ehi <- qboost::qboost(
+fit_qeh <- qboost::qboost(
   x = nX[train_idx, ],
-  y = Y$excursion_high[train_idx],
-  tau = ehi_tau,
-  nrounds = 500,
-  nfolds = 5,
+  y = Y$qeh[train_idx],
+  tau = qeh_tau,
+  nrounds = 600,
+  nfolds = 6,
   params = list(),
   early_stopping_rounds = 50,
   seed = 1,
 )
 
-fit_eli <- qboost::qboost(
+fit_qel <- qboost::qboost(
   x = nX[train_idx, ],
-  y = Y$excursion_low[train_idx],
-  tau = eli_tau,
-  nrounds = 800,
-  nfolds = 8,
+  y = Y$qel[train_idx],
+  tau = qel_tau,
+  nrounds = 600,
+  nfolds = 6,
   params = list(),
   early_stopping_rounds = 50,
   seed = 1,
 )
 
 # Predictions
-if (exists("P")) { unlock_all(P) }
-if (exists("mnXYP")) { unlock_all(mnXYP) }
+if (exists("P")) {
+  unlock_all(P)
+}
+if (exists("mnXYP")) {
+  unlock_all(mnXYP)
+}
 
 P <- tibble::tibble(
-  yhat_eli = rep(NA, nrow(nX)),
-  yhat_ehi = rep(NA, nrow(nX))
+  yhat_qeh = rep(NA, nrow(nX)),
+  yhat_qel = rep(NA, nrow(nX))
 )
 P[stages_idx, ] <- tibble::tibble(
-  yhat_ehi = predict(fit_ehi, nX[stages_idx, ]),
-  yhat_eli = predict(fit_eli, nX[stages_idx, ])
+  yhat_qeh = predict(fit_qeh, nX[stages_idx, ]),
+  yhat_qel = predict(fit_qel, nX[stages_idx, ])
 )
 
 mnXYP <- tibble::tibble(
   meta,
-  Y[, c("excursion_high", "excursion_low")],
+  Y[, c("qeh", "qel")],
   P,
   nX
 )

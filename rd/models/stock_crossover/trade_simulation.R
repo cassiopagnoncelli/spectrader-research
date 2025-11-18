@@ -1,4 +1,4 @@
-if (TRUE) {
+if (TRUE && !exists("dfsr")) {
   devtools::load_all()
 
   source("rd/models/stock_crossover/1_etl.R")
@@ -15,16 +15,16 @@ if (TRUE) {
 #
 # Output: Dashboard.
 #
-cat(sprintf("Signal q:\n  ehi_tau: %.4f\n  eli_tau: %.4f\n", ehi_tau, eli_tau))
+cat(sprintf("Signal q:\n  qeh_tau: %.4f\n  qel_tau: %.4f\n", qeh_tau, qel_tau))
 
-ehi_cutoff <- .99
-eli_cutoff <- .995
+qeh_cutoff <- .5
+qel_cutoff <- .9999
 
 # Generate trading signals
 signals <- mnXYP[test_idx, ] %>%
   dplyr::filter(
-    yhat_ehi > quantile(yhat_ehi, ehi_cutoff),
-    yhat_eli > quantile(yhat_eli, eli_cutoff)
+    yhat_qeh > quantile(yhat_qeh, qeh_cutoff),
+    yhat_qel > quantile(yhat_qel, qel_cutoff)
   ) %>%
   filter_signals(within_days = 20) %>% # Discard nearby signals
   dplyr::arrange(date) %>%
@@ -38,7 +38,7 @@ if (nrow(signals) == 0) {
 
 # Exits for each position
 before_days <- 50 # Exit methods require long enough history for calculations.
-max_position_days <- 60
+max_position_days <- 45
 posl_raw <- position_cohorts(signals, before_days, max_position_days, mcnXY)
 posl <- lapply(seq_along(posl_raw), function(i) {
   exit_pipeline(
@@ -49,16 +49,16 @@ posl <- lapply(seq_along(posl_raw), function(i) {
       side = "long",
       enable_time_decay = TRUE,
       enable_vol_bursts = TRUE,
-      minS = 1.1,
-      minT = 0,
+      minS = 1.08,
+      minT = 15,
       alpha = .3
     ),
     # # Volatility Adjusted Trailing Stops
     exit_vats(
       sd_n = 15,
-      k = 2.2,
+      k = 2.5,
       minS = 1.05,
-      minT = 5
+      minT = 15
     ),
     # # First Passage Time
     # exit_fpt(
@@ -75,7 +75,7 @@ posl <- lapply(seq_along(posl_raw), function(i) {
       lower = NA,
       lower_t = NA,
       breakeven = 1.12,
-      breakeven_t = 15
+      breakeven_t = 35
     ),
     position = posl_raw[[i]]
   )

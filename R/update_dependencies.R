@@ -1,4 +1,4 @@
-install_dependencies <- function() {
+update_dependencies <- function() {
   # Shipped-in packages: fets, qboost, spectrader (built tarballs now live under each repo's builds directory)
   pkg_patterns <- c(
     fets = "../fets/builds/fets_*.tar.gz",

@@ -17,7 +17,7 @@ train_end <- as.Date("2023-05-31")
 val_end <- as.Date("2024-05-31")
 
 train_full_idx <- which(meta$date <= train_end)
-train_idx <- train_full_idx %>% sample(105000)
+train_idx <- train_full_idx %>% sample(145000)
 val_idx <- which(meta$date > train_end & meta$date <= val_end)
 test_idx <- which(meta$date > val_end)
 stages_idx <- c(train_idx, val_idx, test_idx)
