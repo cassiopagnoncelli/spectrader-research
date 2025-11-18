@@ -38,7 +38,7 @@ accuracy_uncaptured <- accuracy %>% filter(is.na(exit_method))
 
 # Top Strategies
 
-1. Minimise losses (train qel=.999), add exit at t>=40%.
+1. Minimise losses (train qel=.999), days >= 30, exits at t>=37%.
 
 # TODO list
 
@@ -46,7 +46,12 @@ accuracy_uncaptured <- accuracy %>% filter(is.na(exit_method))
 - [Report] Volatility Analysis in Options
 - [ETL] Download volatility (IV) data
 - [ETL] Add macro indicators (UNRATE, SP500, etc)
+- [ETL] Create new library qetl for handling data
+- [ETL] Add volume, bid-ask spreads, macro, etc
 - [Exit] Expected Shortfall maximisation on long/short capture.
 - [Exit] Rule set: functions of (t, S, Smax, Smin)
 - [Signal] xgboost, qr, rq.Pen, evt gpd, evt gevd.
 - [Report] Include spectrader simulation
+- [Models] Explore NNs: FT-Transformer, DeepGBM, NODE, TabNet, AutoInt
+- [Models] Champion Models: TabR, DCNv2 (Google AI), DNN-MoE, Neural
+  Additive Models (NAM, EBM, NODE-GAM).
