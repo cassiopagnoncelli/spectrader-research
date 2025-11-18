@@ -1,7 +1,7 @@
 Package: research
 Type: Package
 Title: Research framework
-Version: 2.3.2.9000
+Version: 2.4.0
 Author: Cassio Pagnoncelli <cassiopagnoncelli@gmail.com>
 Maintainer: Cassio Pagnoncelli <cassiopagnoncelli@gmail.com>
 Authors@R:
