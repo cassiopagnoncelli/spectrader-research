@@ -39,8 +39,6 @@ Imports:
     forcats,
     scales,
     reshape2
-Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.3
 Suggests: 
     testthat (>= 3.0.0),
     withr (>= 3.0.0),
@@ -58,4 +56,11 @@ Suggests:
     qs,
     shiny,
     skimr
+Remotes:
+    cassiopagnoncelli/qetl
+    cassiopagnoncelli/fets
+    cassiopagnoncelli/spectrader
+    cassiopagnoncelli/qboost
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
 Config/testthat/edition: 3

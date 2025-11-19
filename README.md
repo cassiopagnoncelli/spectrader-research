@@ -16,7 +16,8 @@ Run `update_packages()`.
 **Latest champion models**
 
 - [ ] TabPFN
-- [ ] TabR
+- [ ] TabNet
 
 Older models worth trying: FT-Transformer, NODE, AutoInt, DNN-MoE,
-DCNv2, DeepGBM, NODE, Neural Additive Models (NAM, EBM, NODE-GAM).
+DCNv2, DeepGBM, NODE, Neural Additive Models (NAM, EBM, NODE-GAM),
+ResNet.
