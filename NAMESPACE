@@ -1,43 +1,15 @@
-export(constants)
-exportPattern("^[[:alpha:]]+")
-
 importFrom("magrittr", `%>%`)
 
-# Libraries.
-import("progress")
-import("uuid")
-import("R6")
-
-import("DBI")
-import("RPostgreSQL")
-import("pool")
-
 # Data frames
-import("dplyr")
 import("tibble")
-
-importFrom("dplyr", `slice`)
-importFrom("dplyr", `row_number`)
-
-# Data manipulation
-import("RcppRoll")
-import("zoo")
-# import("xts")
-
-# Data wrangling
+import("dplyr")
 import("tidyr")
 import("stringr")
-# import("purrr")
+import("purrr")
 
 # Dates
 import("lubridate")
 
 # Charts: ggplot2, ggfortify, MASS
-import("ggplot2")
 importFrom("MASS", `truehist`)
-
-# Specifics
-import("TTR")
-import("rugarch")
-
-import("qboost")
+import("ggplot2")
