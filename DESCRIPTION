@@ -1,7 +1,7 @@
 Package: research
 Type: Package
 Title: Research framework
-Version: 2.4.0
+Version: 2.4.1
 Author: Cassio Pagnoncelli <cassiopagnoncelli@gmail.com>
 Maintainer: Cassio Pagnoncelli <cassiopagnoncelli@gmail.com>
 Authors@R:
@@ -57,9 +57,9 @@ Suggests:
     shiny,
     skimr
 Remotes:
-    cassiopagnoncelli/qetl
-    cassiopagnoncelli/fets
-    cassiopagnoncelli/spectrader
+    cassiopagnoncelli/qetl,
+    cassiopagnoncelli/fets,
+    cassiopagnoncelli/spectrader,
     cassiopagnoncelli/qboost
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
