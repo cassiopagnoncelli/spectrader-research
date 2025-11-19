@@ -85,7 +85,7 @@ posl <- lapply(seq_along(posl_raw), function(i) {
 dfsr <- position_cohort_returns(posl, signals, y_name = "excursion_high")
 
 # Spectrader simulation
-spectrader_export(dfsr, allocation = .01)
+spectrader_export(dfsr, allocation = .005)
 
 # Dashboard
-# shiny::runApp("rd/models/stock_crossover/dashboard.R")
+shiny::runApp("rd/models/stock_crossover/dashboard.R")
