@@ -4,7 +4,7 @@ Package for researching quant strategies using the spec tramework.
 
 ## Install packages
 
-Run `update_packages()`.
+See `dev` dir for `update_deps()`.
 
 ## Models to explore
 

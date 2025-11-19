@@ -2,8 +2,7 @@
 pkg_patterns <- c(
   qetl = "../qetl/builds/qetl_*.tar.gz",
   fets = "../fets/builds/fets_*.tar.gz",
-  qboost = "../qboost/builds/qboost_*.tar.gz",
-  spectrader = "../spectrader/builds/spectrader_*.tar.gz"
+  qboost = "../qboost/builds/qboost_*.tar.gz"
 )
 
 for (pkg in names(pkg_patterns)) {

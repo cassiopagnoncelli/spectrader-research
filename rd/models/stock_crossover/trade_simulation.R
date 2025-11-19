@@ -18,7 +18,7 @@ if (TRUE && !exists("dfsr")) {
 cat(sprintf("Signal q:\n  qeh_tau: %.4f\n  qel_tau: %.4f\n", qeh_tau, qel_tau))
 
 qeh_cutoff <- .5
-qel_cutoff <- .9997
+qel_cutoff <- .999
 
 # Generate trading signals
 signals <- mnXYP[test_idx, ] %>%
@@ -84,5 +84,8 @@ posl <- lapply(seq_along(posl_raw), function(i) {
 # Signals & Returns
 dfsr <- position_cohort_returns(posl, signals, y_name = "excursion_high")
 
+# Spectrader simulation
+spectrader_export(dfsr, allocation = .01)
+
 # Dashboard
-shiny::runApp("rd/models/stock_crossover/dashboard.R")
+# shiny::runApp("rd/models/stock_crossover/dashboard.R")
