@@ -42,13 +42,11 @@ accuracy_uncaptured <- accuracy %>% filter(is.na(exit_method))
 
 # TODO list
 
+- [Analysis] Capital Concurrency: correlation with returns, allocation
 - [Report] Realistic portfolio growth simulation with wallet concurrency
 - [Report] Volatility Analysis in Options
-- [ETL] Create new library qetl for handling data
 - [ETL] Download volatility (IV) data
-- [ETL] Add macro indicators (UNRATE, SP500, etc)
 - [ETL] Add volume, bid-ask spreads, macro, etc
 - [FE] Fit E-GARCH models for individual series
 - [Exit] Expected Shortfall maximisation on long/short capture.
 - [Exit] Rule set: functions of (t, S, Smax, Smin)
-- [Report] Include spectrader simulation
