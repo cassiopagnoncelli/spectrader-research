@@ -15,10 +15,10 @@ source("rd/models/stock_crossover/exploratory_analysis/entry_model.R")
 #
 start_time <- Sys.time()
 
-if (exists("train_ehi")) {
-  message("Entry models `ehi`` already trained. Skipping training step.")
+if (exists("train_excursion_high")) {
+  message("Entry models `excursion_high`` already trained. Skipping training step.")
 } else {
-  train_ehi <- train_stacked_model(
+  train_excursion_high <- train_stacked_model(
     train_idx,
     val_idx,
     test_idx,
@@ -31,10 +31,10 @@ if (exists("train_ehi")) {
   message("  excursion high")
 }
 
-if (exists("train_eli")) {
-  message("Entry models `eli`` already trained. Skipping training step.")
+if (exists("train_excursion_low")) {
+  message("Entry models `excursion_low`` already trained. Skipping training step.")
 } else {
-  train_eli <- train_stacked_model(
+  train_excursion_low <- train_stacked_model(
     train_idx,
     val_idx,
     test_idx,
@@ -125,8 +125,8 @@ H <- tibble::tibble(
 )
 
 H[train_idx, ] <- data.frame(
-  excursion_high_hat = train_ehi$predictions$train,
-  excursion_low_hat = train_eli$predictions$train,
+  excursion_high_hat = train_excursion_high$predictions$train,
+  excursion_low_hat = train_excursion_low$predictions$train,
   qeh_hat = train_qeh$predictions$train,
   qel_hat = train_qel$predictions$train,
   pas_hat = train_pas$predictions$train,
@@ -134,8 +134,8 @@ H[train_idx, ] <- data.frame(
 )
 
 H[val_idx, ] <- data.frame(
-  excursion_high_hat = train_ehi$predictions$val,
-  excursion_low_hat = train_eli$predictions$val,
+  excursion_high_hat = train_excursion_high$predictions$val,
+  excursion_low_hat = train_excursion_low$predictions$val,
   qeh_hat = train_qeh$predictions$val,
   qel_hat = train_qel$predictions$val,
   pas_hat = train_pas$predictions$val,
@@ -143,8 +143,8 @@ H[val_idx, ] <- data.frame(
 )
 
 H[test_idx, ] <- data.frame(
-  excursion_high_hat = train_ehi$predictions$test,
-  excursion_low_hat = train_eli$predictions$test,
+  excursion_high_hat = train_excursion_high$predictions$test,
+  excursion_low_hat = train_excursion_low$predictions$test,
   qeh_hat = train_qeh$predictions$test,
   qel_hat = train_qel$predictions$test,
   pas_hat = train_pas$predictions$test,
