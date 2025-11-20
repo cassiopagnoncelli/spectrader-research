@@ -15,154 +15,65 @@ source("rd/models/stock_crossover/exploratory_analysis/entry_model.R")
 #
 start_time <- Sys.time()
 
-if (exists("train_excursion_high")) {
-  message("Entry models `excursion_high`` already trained. Skipping training step.")
-} else {
-  train_excursion_high <- train_stacked_model(
-    train_idx,
-    val_idx,
-    test_idx,
-    X = zX,
-    y = Y$excursion_high,
-    aux = list(),
-    cache = NULL,
-    verbose = FALSE
-  )
-  message("  excursion high")
-}
+# Define model specifications: model_name -> Y column mapping.
+model_specs <- list(
+  excursion_high = "excursion_high",
+  excursion_low = "excursion_low",
+  qeh = "excursion_high",
+  qel = "excursion_low",
+  kurtosis = "kurtosis"
+)
 
-if (exists("train_excursion_low")) {
-  message("Entry models `excursion_low`` already trained. Skipping training step.")
-} else {
-  train_excursion_low <- train_stacked_model(
-    train_idx,
-    val_idx,
-    test_idx,
+# Train models with existence check.
+trained_models <- lapply(names(model_specs), function(model_name) {
+  var_name <- paste0("train_", model_name)
+  
+  if (exists(var_name)) {
+    message(sprintf("Entry models `%s` already trained. Skipping training step.", model_name))
+    return(get(var_name))
+  }
+  
+  model <- train_stacked_model(
+    train_idx, val_idx, test_idx,
     X = zX,
-    y = Y$excursion_low,
+    y = Y[[model_specs[[model_name]]]],
     aux = list(),
     cache = NULL,
     verbose = FALSE
   )
-  message("  excursion low")
-}
-
-if (exists("train_qeh")) {
-  message("Entry models `qeh`` already trained. Skipping training step.")
-} else {
-  train_qeh <- train_stacked_model(
-    train_idx,
-    val_idx,
-    test_idx,
-    X = zX,
-    y = Y$excursion_high,
-    aux = list(),
-    cache = NULL,
-    verbose = FALSE
-  )
-  message("  qeh")
-}
-
-if (exists("train_qel")) {
-  message("Entry models `qel`` already trained. Skipping training step.")
-} else {
-  train_qel <- train_stacked_model(
-    train_idx,
-    val_idx,
-    test_idx,
-    X = zX,
-    y = Y$excursion_low,
-    aux = list(),
-    cache = NULL,
-    verbose = FALSE
-  )
-  message("  qel")
-}
-
-if (exists("train_pas")) {
-  message("Entry models `pas`` already trained. Skipping training step.")
-} else {
-  train_pas <- train_stacked_model(
-    train_idx,
-    val_idx,
-    test_idx,
-    X = zX,
-    y = Y$pas,
-    aux = list(),
-    cache = NULL,
-    verbose = FALSE
-  )
-  message("  pas")
-}
-
-if (exists("train_kurtosis")) {
-  message("Entry models `kurtosis`` already trained. Skipping training step.")
-} else {
-  train_kurtosis <- train_stacked_model(
-    train_idx,
-    val_idx,
-    test_idx,
-    X = zX,
-    y = Y$kurtosis,
-    aux = list(),
-    cache = NULL,
-    verbose = FALSE
-  )
-  message("  kurtosis")
-}
+  
+  assign(var_name, model, envir = .GlobalEnv)
+  message(sprintf("  %s", model_name))
+  model
+})
+names(trained_models) <- names(model_specs)
 
 message(sprintf("Feature enrichment complete in %0.2f mins", 
                 as.numeric(Sys.time() - start_time, units = "mins")))
 
-# Build predictions tibble.
-H <- tibble::tibble(
-  excursion_high_hat = rep(NA, nrow(zX)),
-  excursion_low_hat = rep(NA, nrow(zX)),
-  qeh_hat = rep(NA, nrow(zX)),
-  qel_hat = rep(NA, nrow(zX)),
-  pas_hat = rep(NA, nrow(zX)),
-  kurtosis_hat = rep(NA, nrow(zX))
+# Build predictions tibble dynamically.
+H <- tibble::as_tibble(
+  setNames(
+    lapply(names(model_specs), function(name) rep(NA, nrow(zX))),
+    paste0(names(model_specs), "_hat")
+  )
 )
 
-H[train_idx, ] <- data.frame(
-  excursion_high_hat = train_excursion_high$predictions$train,
-  excursion_low_hat = train_excursion_low$predictions$train,
-  qeh_hat = train_qeh$predictions$train,
-  qel_hat = train_qel$predictions$train,
-  pas_hat = train_pas$predictions$train,
-  kurtosis_hat = train_kurtosis$predictions$train
-)
-
-H[val_idx, ] <- data.frame(
-  excursion_high_hat = train_excursion_high$predictions$val,
-  excursion_low_hat = train_excursion_low$predictions$val,
-  qeh_hat = train_qeh$predictions$val,
-  qel_hat = train_qel$predictions$val,
-  pas_hat = train_pas$predictions$val,
-  kurtosis_hat = train_kurtosis$predictions$val
-)
-
-H[test_idx, ] <- data.frame(
-  excursion_high_hat = train_excursion_high$predictions$test,
-  excursion_low_hat = train_excursion_low$predictions$test,
-  qeh_hat = train_qeh$predictions$test,
-  qel_hat = train_qel$predictions$test,
-  pas_hat = train_pas$predictions$test,
-  kurtosis_hat = train_kurtosis$predictions$test
-)
+for (split in c("train", "val", "test")) {
+  idx <- get(paste0(split, "_idx"))
+  H[idx, ] <- as.data.frame(lapply(trained_models, function(m) m$predictions[[split]]))
+}
 
 # Scale H to nH based on train set statistics.
 H_scaled <- scale(H[train_idx, ])
 H_center <- attr(H_scaled, "scaled:center")
 H_scales <- attr(H_scaled, "scaled:scale")
 
-nH <- tibble::tibble(
-  excursion_high_hat = rep(NA, nrow(zX)),
-  excursion_low_hat = rep(NA, nrow(zX)),
-  qeh_hat = rep(NA, nrow(zX)),
-  qel_hat = rep(NA, nrow(zX)),
-  pas_hat = rep(NA, nrow(zX)),
-  kurtosis_hat = rep(NA, nrow(zX))
+nH <- tibble::as_tibble(
+  setNames(
+    lapply(names(H), function(col) rep(NA, nrow(zX))),
+    names(H)
+  )
 )
 
 nH[c(train_idx, val_idx, test_idx), ] <- scale_new_data(
