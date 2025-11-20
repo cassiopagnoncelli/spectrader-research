@@ -42,7 +42,7 @@ accuracy_uncaptured <- accuracy %>% filter(is.na(exit_method))
 
 # TODO list
 
-- [Analysis] Capital Concurrency: correlation with returns, allocation
+- [Analysis] Capital Concurrency: distribution, correlation with returns, allocation
 - [Report] Realistic portfolio growth simulation with wallet concurrency
 - [Report] Volatility Analysis in Options
 - [ETL] Download volatility (IV) data
