@@ -1,6 +1,5 @@
 spectrader_export <- function(
   dfsr,
-  allocation = .05,
   output = "../spectrader/tmp/research_simulation.rds"
 ) {
   if (nrow(dfsr) == 0) {
@@ -12,12 +11,16 @@ spectrader_export <- function(
   trades <- dfsr %>%
     dplyr::mutate(
       entry_date = as.POSIXct(date, tz = "UTC"),
-      exit_date = as.POSIXct(fets::add_business_days(date, t), tz = "UTC"),
-      allocation = allocation
+      exit_date = as.POSIXct(fets::add_business_days(date, t), tz = "UTC")
     ) %>%
+    dplyr::group_by(entry_date) %>%
+    dplyr::mutate(
+      concurrency = dplyr::n()
+    ) %>%
+    dplyr::ungroup() %>%
     dplyr::select(
       dplyr::all_of(
-        c("symbol", "entry_date", "exit_date", "allocation")
+        c("symbol", "entry_date", "exit_date", "concurrency")
       )
     )
 
