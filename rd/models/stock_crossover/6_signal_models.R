@@ -15,8 +15,8 @@ if (FALSE) {
 #
 fets::fwd_goals()
 
-qeh_tau <- 0.6
-qel_tau <- 0.995
+qeh_tau <- 0.8
+qel_tau <- 0.997
 
 fit_qeh <- qboost::qboost(
   x = nX[train_idx, ],
