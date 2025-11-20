@@ -17,8 +17,8 @@ if (TRUE && !exists("dfsr")) {
 #
 cat(sprintf("Signal q:\n  qeh_tau: %.4f\n  qel_tau: %.4f\n", qeh_tau, qel_tau))
 
-qeh_cutoff <- .85
-qel_cutoff <- .999
+qeh_cutoff <- .94
+qel_cutoff <- .9997
 
 # Generate trading signals
 signals <- mnXYP[test_idx, ] %>%
@@ -38,7 +38,7 @@ if (nrow(signals) == 0) {
 
 # Exits for each position
 before_days <- 50 # Exit methods require long enough history for calculations.
-max_position_days <- 45
+max_position_days <- 35
 posl_raw <- position_cohorts(signals, before_days, max_position_days, mcnXY)
 posl <- lapply(seq_along(posl_raw), function(i) {
   exit_pipeline(

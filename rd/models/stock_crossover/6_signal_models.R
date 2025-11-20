@@ -13,31 +13,64 @@ if (FALSE) {
 #
 # Outpput: fwd predictions P and complessive dataset mnXYP.
 #
+start_time <- Sys.time()
+
 fets::fwd_goals()
 
-qeh_tau <- 0.8
+qeh_tau <- 0.96
 qel_tau <- 0.997
 
+fit_start_time <- Sys.time()
 fit_qeh <- qboost::qboost(
   x = nX[train_idx, ],
   y = Y$qeh[train_idx],
   tau = qeh_tau,
-  nrounds = 600,
-  nfolds = 6,
-  params = list(),
-  early_stopping_rounds = 50,
-  seed = 1,
+  nrounds = 4000,
+  nfolds = 3,
+  params = list(
+    num_leaves = 128,
+    max_depth = 8,
+    learning_rate = 0.07,
+    cat_smooth = 10
+  ),
+  early_stopping_rounds = 80,
+  seed = 1
+)
+message(
+  sprintf(
+    "  signal qeh (qboost tau = %0.2f) complete in %0.0f secs",
+    qeh_tau, as.numeric(Sys.time() - fit_start_time, units = "secs")
+  )
 )
 
+fit_start_time <- Sys.time()
 fit_qel <- qboost::qboost(
   x = nX[train_idx, ],
   y = Y$qel[train_idx],
   tau = qel_tau,
-  nrounds = 600,
-  nfolds = 6,
-  params = list(),
-  early_stopping_rounds = 50,
-  seed = 1,
+  nrounds = 5000,
+  nfolds = 3,
+  params = list(
+    num_leaves = 128,
+    max_depth = 14,
+    learning_rate = 0.07,
+    cat_smooth = 10
+  ),
+  early_stopping_rounds = 200,
+  seed = 1
+)
+message(
+  sprintf(
+    "  signal qel (qboost tau = %0.2f) complete in %0.0f secs",
+    qel_tau, as.numeric(Sys.time() - fit_start_time, units = "secs")
+  )
+)
+
+message(
+  sprintf(
+    "Signal models trained in %0.0f secs",
+    as.numeric(Sys.time() - start_time, units = "secs")
+  )
 )
 
 # Predictions

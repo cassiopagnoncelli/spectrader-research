@@ -50,7 +50,7 @@ dqr_fits <- train_dqr(
 
 message(
   sprintf(
-    "DQR exit models fitted in %0.2f mins",
-    as.numeric(Sys.time() - start_time, units = "mins")
+    "DQR exit models fitted in %0.0f secs",
+    as.numeric(Sys.time() - start_time, units = "secs")
   )
 )
