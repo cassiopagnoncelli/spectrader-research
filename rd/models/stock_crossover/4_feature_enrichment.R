@@ -19,11 +19,11 @@ start_time <- Sys.time()
 quantile_specs <- list(
   excursion_high = list(
     y_col = "excursion_high",
-    taus = c(q90 = 0.90, q999 = 0.999)
+    taus = c(q90 = 0.99, q999 = 0.999)
   ),
   excursion_low = list(
     y_col = "excursion_low",
-    taus = c(q993 = 0.993, q999 = 0.999)
+    taus = c(q993 = 0.98, q999 = 0.99)
   )
 )
 
