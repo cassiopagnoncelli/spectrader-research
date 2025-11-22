@@ -26,7 +26,7 @@ for (pkg in names(pkg_patterns)) {
   renv::remove(pkg)
 
   # Install clean
-  renv::install(pkg_path, prompt = FALSE)
+  remotes::install_local(pkg_path, prompt = FALSE)
 
   # Attach clean version
   library(pkg, character.only = TRUE)
