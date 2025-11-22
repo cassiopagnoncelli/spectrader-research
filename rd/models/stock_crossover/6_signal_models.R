@@ -17,8 +17,8 @@ start_time <- Sys.time()
 
 fets::fwd_goals()
 
-qeh_tau <- 0.97
-qel_tau <- 0.99
+qeh_tau <- 0.90
+qel_tau <- 0.98
 
 fit_start_time <- Sys.time()
 fit_qeh <- qboost::qboost(
