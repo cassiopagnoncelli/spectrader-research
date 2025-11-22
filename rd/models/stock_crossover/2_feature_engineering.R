@@ -1,5 +1,5 @@
 if (FALSE) {
-  # devtools::load_all()
+  devtools::load_all()
 
   source("rd/models/stock_crossover/1_etl.R")
 }
@@ -20,10 +20,13 @@ fets::add_macro(quotes, macro)
 quotes_fwd_fe <- fets::fe(quotes, inplace = TRUE)
 
 # Decomposition
-mXY <- quotes_fwd_fe$X %>% na.omit() %>% tibble::tibble()
+mXY <- quotes_fwd_fe$X %>%
+  na.omit() %>%
+  tibble::tibble()
 
 decomposed <- fets::decomposeXY(mXY, na.rm.X = TRUE, na.rm.Y = TRUE)
 meta <- decomposed$meta
-close <- decomposed$X$close
-X <- decomposed$X %>% dplyr::select(-close, -matches("^(smoothed_close)"))
+close <- decomposed$close
+volume <- decomposed$volume
 Y <- decomposed$Y
+X <- decomposed$X %>% dplyr::select(-matches("^(smoothed_close)"))

@@ -1,5 +1,5 @@
 if (FALSE) {
-  # devtools::load_all()
+  devtools::load_all()
 
   source("rd/models/stock_crossover/1_etl.R")
   source("rd/models/stock_crossover/2_feature_engineering.R")
@@ -38,17 +38,17 @@ qboost_models <- list()
 for (target_name in names(quantile_specs)) {
   spec <- quantile_specs[[target_name]]
   qboost_models[[target_name]] <- list()
-  
+
   for (tau_name in names(spec$taus)) {
     model_key <- paste0(target_name, "_", tau_name)
     var_name <- paste0("train_", model_key)
-    
+
     if (exists(var_name)) {
       message(sprintf("Qboost model `%s` already trained. Skipping training step.", model_key))
       qboost_models[[target_name]][[tau_name]] <- get(var_name)
     } else {
       message(sprintf("  Training qboost: %s (tau = %.3f)", model_key, spec$taus[tau_name]))
-      
+
       model <- qboost::qboost(
         x = zX[train_idx, ],
         y = Y[[spec$y_col]][train_idx],
@@ -64,14 +64,14 @@ for (target_name in names(quantile_specs)) {
         early_stopping_rounds = 80,
         seed = 1
       )
-      
+
       # Generate predictions for all splits
       model$predictions <- list(
         train = predict(model, zX[train_idx, ]),
         val = predict(model, zX[val_idx, ]),
         test = predict(model, zX[test_idx, ])
       )
-      
+
       assign(var_name, model, envir = .GlobalEnv)
       qboost_models[[target_name]][[tau_name]] <- model
     }
@@ -83,12 +83,12 @@ trained_models <- list()
 if (length(regular_model_specs) > 0) {
   trained_models <- lapply(names(regular_model_specs), function(model_name) {
     var_name <- paste0("train_", model_name)
-    
+
     if (exists(var_name)) {
       message(sprintf("Entry model `%s` already trained. Skipping training step.", model_name))
       return(get(var_name))
     }
-    
+
     model <- train_stacked_model(
       train_idx, val_idx, test_idx,
       X = zX,
@@ -97,7 +97,7 @@ if (length(regular_model_specs) > 0) {
       cache = NULL,
       verbose = FALSE
     )
-    
+
     assign(var_name, model, envir = .GlobalEnv)
     message(sprintf("  %s", model_name))
     model
@@ -107,7 +107,7 @@ if (length(regular_model_specs) > 0) {
   message("No regular models specified. Skipping regular model training.")
 }
 
-message(sprintf("Feature enrichment complete in %0.2f mins", 
+message(sprintf("Feature enrichment complete in %0.2f mins",
                 as.numeric(Sys.time() - start_time, units = "mins")))
 
 # Build predictions tibble dynamically.
@@ -138,7 +138,7 @@ for (target_name in names(quantile_specs)) {
   for (tau_name in names(quantile_specs[[target_name]]$taus)) {
     col_name <- paste0(target_name, "_", tau_name, "_hat")
     model <- qboost_models[[target_name]][[tau_name]]
-    
+
     H[train_idx, col_name] <- model$predictions$train
     H[val_idx, col_name] <- model$predictions$val
     H[test_idx, col_name] <- model$predictions$test
@@ -168,8 +168,8 @@ nH <- tibble::as_tibble(
   )
 )
 
-nH[c(train_idx, val_idx, test_idx), ] <- scale_new_data(
-  H[c(train_idx, val_idx, test_idx), ],
+nH[stages_idx, ] <- scale_new_data(
+  H[stages_idx, ],
   center = H_center,
   scale = H_scales
 )
