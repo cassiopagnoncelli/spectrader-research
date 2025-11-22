@@ -13,8 +13,11 @@ if (FALSE) {
 # Calculate forward features
 invisible(fets::fwd(quotes, lookahead = 20, inplace = TRUE))
 
-# Engineer features for time series
+# Engineer features based on current series solely
 quotes_fwd_fe <- fets::fe(quotes, inplace = TRUE)
+
+# Add macro indicators
+fets::add_macro(quotes_fwd_fe, macro)
 
 # Decomposition
 mXY <- quotes_fwd_fe$X %>% na.omit() %>% tibble::tibble()

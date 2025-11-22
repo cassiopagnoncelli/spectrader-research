@@ -18,7 +18,7 @@ mnX <- tibble::tibble(meta, nX)
 mcnXY <- tibble::tibble(meta, close, nX, Y)
 nXY <- tibble::tibble(nX, Y)
 
-rm(quotes, quotes_fwd_fe, decomposed, close, zX, mzX, mczXY, zXY)
+rm(quotes, quotes_fwd_fe, macro, decomposed, close, zX, mzX, mczXY, zXY)
 gc()
 
 # Lock variables
