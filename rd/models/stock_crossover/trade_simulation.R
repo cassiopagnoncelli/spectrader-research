@@ -17,8 +17,8 @@ if (TRUE && !exists("dfsr")) {
 #
 cat(sprintf("Signal q:\n  qeh_tau: %.4f\n  qel_tau: %.4f\n", qeh_tau, qel_tau))
 
-qeh_cutoff <- .99
-qel_cutoff <- .999
+qeh_cutoff <- qeh_tau
+qel_cutoff <- qel_tau
 
 # Generate trading signals
 signals <- mnXYP[test_idx, ] %>%
@@ -26,7 +26,7 @@ signals <- mnXYP[test_idx, ] %>%
     yhat_qeh > quantile(yhat_qeh, qeh_cutoff),
     yhat_qel > quantile(yhat_qel, qel_cutoff)
   ) %>%
-  filter_signals(within_days = 20) %>% # Discard nearby signals
+  filter_signals(within_days = 20, max_per_day = 1) %>%
   dplyr::arrange(date) %>%
   dplyr::select(symbol, date)
 
@@ -38,7 +38,7 @@ if (nrow(signals) == 0) {
 
 # Exits for each position
 before_days <- 50 # Exit methods require long enough history for calculations.
-max_position_days <- 45
+max_position_days <- 30
 posl_raw <- position_cohorts(signals, before_days, max_position_days, mcnXY)
 posl <- lapply(seq_along(posl_raw), function(i) {
   exit_pipeline(

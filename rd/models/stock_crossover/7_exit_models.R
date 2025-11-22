@@ -23,7 +23,7 @@ dqr_general_formula <- S ~ t + S_1 + S_2 + R_1 + R_2 + vix_2 + wh + vix
 dqr_general_formula
 
 # Fit exit dqr on train subset
-qeh_q <- mnXYP$yhat_qeh[train_idx] %>% quantile(.98)
+qeh_q <- mnXYP$yhat_qeh[train_idx] %>% quantile(qeh_tau)
 qeh_q
 
 dqr_signals_train <- mnXYP[train_idx, ] %>%
