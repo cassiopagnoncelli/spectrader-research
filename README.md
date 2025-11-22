@@ -10,14 +10,15 @@ See `dev` dir for `update_deps()`.
 
 **For extreme values**
 
-- [x] qr (linear), [x] rq.pen, [ ] evt gpd, [ ] evt gevd.
+- [x] qr (linear), [x] rq.pen, [x] evt gpd, [x] evt gevd.
 - [ ] CVaR
 
 **Latest champion models**
 
-- [ ] TabPFN
+- [ ] TabPFN 2.5
 - [ ] TabNet
+- [ ] FT-Transformer
+- [ ] NODE
+- [ ] ResNet
+- [ ] NAM / EBM / NODE-GAM
 
-Older models worth trying: FT-Transformer, NODE, AutoInt, DNN-MoE,
-DCNv2, DeepGBM, NODE, Neural Additive Models (NAM, EBM, NODE-GAM),
-ResNet.
