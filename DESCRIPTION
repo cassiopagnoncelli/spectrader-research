@@ -39,7 +39,9 @@ Imports:
     forcats,
     scales,
     reshape2,
-    shinydashboard
+    shiny,
+    shinydashboard,
+    RQuantLib
 Suggests: 
     testthat (>= 3.0.0),
     withr (>= 3.0.0),
@@ -48,14 +50,12 @@ Suggests:
     xgboost,
     lightgbm,
     ggfortify,
-    RQuantLib,
     gridExtra,
     DiagrammeR,
     quantreg,
     MASS,
     knitr,
     qs,
-    shiny,
     skimr
 Remotes:
     cassiopagnoncelli/qetl,
