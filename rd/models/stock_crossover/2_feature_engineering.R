@@ -19,6 +19,9 @@ fets::add_macro(quotes, macro)
 # Engineer features based on current series solely
 quotes_fwd_fe <- fets::fe(quotes, inplace = TRUE)
 
+# Clean up OHLV columns
+fets::drop_ohlv(quotes_fwd_fe)
+
 # Decomposition
 mXY <- quotes_fwd_fe$X %>%
   na.omit() %>%
