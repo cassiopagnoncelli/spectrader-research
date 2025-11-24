@@ -19,9 +19,6 @@ fets::add_macro(quotes, macro)
 # Engineer features based on current series solely
 quotes_fwd_fe <- fets::fe(quotes, inplace = TRUE)
 
-# Clean up OHLV columns
-fets::drop_ohlv(quotes_fwd_fe)
-
 # Decomposition
 mXY <- quotes_fwd_fe$X %>%
   na.omit() %>%
@@ -32,4 +29,6 @@ meta <- decomposed$meta
 close <- decomposed$close
 volume <- decomposed$volume
 Y <- decomposed$Y
-X <- decomposed$X %>% dplyr::select(-matches("^(smoothed_close)"))
+X <- decomposed$X %>%
+  dplyr::select(-all_of(c("open", "high", "low"))) %>%
+  dplyr::select(-matches("^(smoothed_close)"))
