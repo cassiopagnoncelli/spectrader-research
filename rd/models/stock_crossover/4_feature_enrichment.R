@@ -19,11 +19,11 @@ start_time <- Sys.time()
 quantile_specs <- list(
   excursion_high = list(
     y_col = "excursion_high",
-    taus = c(q980 = 0.98, q993 = 0.993, q999 = 0.999)
+    taus = c() # c(q980 = 0.98, q993 = 0.993, q999 = 0.999)
   ),
   excursion_low = list(
     y_col = "excursion_low",
-    taus = c(q980 = 0.98, q993 = 0.993, q999 = 0.999)
+    taus = c() # c(q980 = 0.98, q993 = 0.993, q999 = 0.999)
   )
 )
 
@@ -107,7 +107,7 @@ if (length(regular_model_specs) > 0) {
   message("No regular models specified. Skipping regular model training.")
 }
 
-message(sprintf("Feature enrichment complete in %0.2f mins",
+message(sprintf("Feature enrichment training complete in %0.2f mins",
                 as.numeric(Sys.time() - start_time, units = "mins")))
 
 # Build predictions tibble dynamically.
@@ -176,3 +176,5 @@ nH[stages_idx, ] <- scale_new_data(
 
 rm(H_scaled)
 gc()
+
+message("Feature enrichment complete")

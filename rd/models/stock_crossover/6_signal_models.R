@@ -13,6 +13,8 @@ if (FALSE) {
 #
 # Outpput: fwd predictions P and complessive dataset mnXYP.
 #
+message("Training signal models")
+
 start_time <- Sys.time()
 
 fets::fwd_goals()
@@ -25,7 +27,7 @@ fit_qeh <- qboost::qboost(
   x = nX[train_idx, ],
   y = Y$qeh[train_idx],
   tau = qeh_tau,
-  nrounds = 4000,
+  nrounds = 1500,
   nfolds = 3,
   params = list(
     num_leaves = 128,
@@ -33,7 +35,7 @@ fit_qeh <- qboost::qboost(
     learning_rate = 0.07,
     cat_smooth = 10
   ),
-  early_stopping_rounds = 80,
+  early_stopping_rounds = 65,
   seed = 1
 )
 message(

@@ -17,8 +17,8 @@ if (TRUE && !exists("dfsr")) {
 #
 cat(sprintf("Signal q:\n  qeh_tau: %.4f\n  qel_tau: %.4f\n", qeh_tau, qel_tau))
 
-qeh_cutoff <- .99
-qel_cutoff <- .999
+qeh_cutoff <- .98
+qel_cutoff <- .993
 
 # Generate trading signals
 signals <- mnXYP[test_idx, ] %>%

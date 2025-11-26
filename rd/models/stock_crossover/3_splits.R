@@ -17,7 +17,7 @@ train_end <- as.Date("2023-05-31")
 val_end <- as.Date("2024-05-31")
 
 train_full_idx <- which(meta$date <= train_end)
-train_idx <- train_full_idx %>% sample(100000)
+train_idx <- train_full_idx %>% sample(80000)
 val_idx <- which(meta$date > train_end & meta$date <= val_end)
 test_idx <- which(meta$date > val_end)
 stages_idx <- c(train_idx, val_idx, test_idx)
@@ -31,3 +31,5 @@ zX <- tibble::as_tibble(scale_new_data(X, center = zX_centers, scale = zX_scales
 mzX <- tibble::tibble(meta, zX)
 mczXY <- tibble::tibble(meta, close, zX, Y)
 zXY <- tibble::tibble(zX, Y)
+
+message("Dataset splits created")

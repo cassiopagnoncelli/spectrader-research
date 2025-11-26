@@ -37,3 +37,5 @@ unlock_etl_vars <- function() {
 }
 
 lock_etl_vars()
+
+message("Datasets created and variables locked")

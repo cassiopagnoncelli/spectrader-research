@@ -11,7 +11,7 @@ if (FALSE) {
 #
 
 # Calculate forward features
-fets::fwd(quotes, lookahead = 20, inplace = TRUE)
+fets::fwd(quotes, lookahead = 40, inplace = TRUE)
 
 # Add macro indicators
 fets::add_macro(quotes, macro)
