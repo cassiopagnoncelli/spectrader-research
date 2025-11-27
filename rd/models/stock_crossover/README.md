@@ -46,7 +46,6 @@ accuracy_uncaptured <- accuracy %>% filter(is.na(exit_method))
 - [Report] Realistic portfolio growth simulation with wallet concurrency
 - [Report] Volatility Analysis in Options
 - [ETL] Download volatility (IV) data
-- [ETL] Add volume, bid-ask spreads, macro, etc
-- [FE] Fit E-GARCH models for individual series
+- [ETL] Add bid-ask spreads
 - [Exit] Expected Shortfall maximisation on long/short capture.
 - [Exit] Rule set: functions of (t, S, Smax, Smin)
