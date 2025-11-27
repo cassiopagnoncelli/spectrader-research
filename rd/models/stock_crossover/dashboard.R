@@ -710,7 +710,7 @@ ui <- dashboardPage(
 )
 
 # Server Logic
-server <- function(input, output, session) {
+server <- function(input, output, session) { # nolint
   # Reactive values to store data
   rv <- reactiveValues(
     dfsr = NULL,
