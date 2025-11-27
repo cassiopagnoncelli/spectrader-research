@@ -107,8 +107,10 @@ if (length(regular_model_specs) > 0) {
   message("  no fwd yhat models specified, skipping training")
 }
 
-message(sprintf("  training complete in %0.2f mins",
-                as.numeric(Sys.time() - start_time, units = "mins")))
+message(sprintf(
+  "  training complete in %0.2f mins",
+  as.numeric(Sys.time() - start_time, units = "mins")
+))
 
 # Build predictions tibble dynamically.
 # Create columns for qboost models
@@ -162,20 +164,20 @@ if (ncol(H) > 0) {
   H_scaled <- scale(H[train_idx, ])
   H_center <- attr(H_scaled, "scaled:center")
   H_scales <- attr(H_scaled, "scaled:scale")
-  
+
   nH <- tibble::as_tibble(
     setNames(
       lapply(names(H), function(col) rep(NA, nrow(zX))),
       names(H)
     )
   )
-  
+
   nH[stages_idx, ] <- scale_new_data(
     H[stages_idx, ],
     center = H_center,
     scale = H_scales
   )
-  
+
   rm(H_scaled)
   gc()
 } else {

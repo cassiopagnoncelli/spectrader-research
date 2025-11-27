@@ -2,13 +2,13 @@ exit_accuracy <- function(dfsr, drift = 0, side = c("long", "short")) {
   if (length(side) > 1) {
     stop("Please specify either 'long' or 'short' for the side parameter.")
   }
-  
+
   result <- dfsr %>%
     dplyr::mutate(
       # Root Mean Square Error between predicted and actual return.
       rmse = sqrt((y - R - 1)^2)
     )
-  
+
   if (side == "long") {
     result <- result %>%
       dplyr::mutate(
@@ -28,7 +28,7 @@ exit_accuracy <- function(dfsr, drift = 0, side = c("long", "short")) {
         short_alpha = short_capture - drift
       )
   }
-  
+
   result
 }
 
@@ -36,7 +36,7 @@ exit_metrics <- function(accuracy, side = c("long", "short")) {
   if (length(side) > 1) {
     stop("Please specify either 'long' or 'short' for the side parameter.")
   }
-  
+
   result <- accuracy %>%
     dplyr::summarise(
       n = dplyr::n(),
@@ -44,7 +44,7 @@ exit_metrics <- function(accuracy, side = c("long", "short")) {
       t_mean = mean(t, na.rm = TRUE),
       t_sd = sd(t, na.rm = TRUE)
     )
-  
+
   if (side == "long") {
     result <- result %>%
       dplyr::mutate(
@@ -86,7 +86,7 @@ exit_metrics <- function(accuracy, side = c("long", "short")) {
         short_sharpe = sharpe_ratio(accuracy$R, na.rm = TRUE)
       )
   }
-  
+
   result
 }
 
@@ -102,20 +102,20 @@ max_drawdown <- function(returns, na.rm = TRUE) {
   if (na.rm) {
     returns <- returns[!is.na(returns)]
   }
-  
+
   if (length(returns) == 0) {
     return(NA_real_)
   }
-  
+
   # Calculate cumulative returns (portfolio value over time)
   cum_returns <- cumprod(1 + returns)
-  
+
   # Calculate running maximum
   running_max <- cummax(cum_returns)
-  
+
   # Calculate drawdown at each point
   drawdown <- (cum_returns - running_max) / running_max
-  
+
   # Return the maximum (most negative) drawdown
   min(drawdown, na.rm = TRUE)
 }
@@ -130,7 +130,7 @@ max_drawdown <- function(returns, na.rm = TRUE) {
 exit_methods_summary <- function(dfsr) {
   total <- nrow(dfsr)
   total_non_na <- sum(!is.na(dfsr$exit_method))
-  
+
   dfsr %>%
     dplyr::group_by(exit_method) %>%
     dplyr::summarise(

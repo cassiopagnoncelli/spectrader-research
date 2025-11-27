@@ -1,7 +1,6 @@
 spectrader_export <- function(
-  dfsr,
-  output = "../spectrader/tmp/research_simulation.rds"
-) {
+    dfsr,
+    output = "../spectrader/tmp/research_simulation.rds") {
   if (nrow(dfsr) == 0) {
     stop("No completed trades to prepare for Spectrader.")
   }

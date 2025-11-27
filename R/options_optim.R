@@ -9,12 +9,14 @@
 #' @param goal List specifying method ("sharpe", "log-portfolio-kelly", "log-portfolio") and parameters
 #' @return Numeric goal function value based on selected method
 american_optprice_optim_goal <- function(
-  data, K, tm, vol_0 = NA, vol_t = NA, verbose = FALSE,
-  goal = list(method = "kelly", q = .4, cap = .3)
-) {
-  if (verbose)
-    cat(sprintf("Evaluating goal function with K=%.2f, tm=%d, method=%s\n",
-                K, tm, goal$method))
+    data, K, tm, vol_0 = NA, vol_t = NA, verbose = FALSE,
+    goal = list(method = "kelly", q = .4, cap = .3)) {
+  if (verbose) {
+    cat(sprintf(
+      "Evaluating goal function with K=%.2f, tm=%d, method=%s\n",
+      K, tm, goal$method
+    ))
+  }
 
   if (goal$method == "sharpe") {
     american_optprice_returns(data, K, tm) %>%
@@ -47,10 +49,9 @@ american_optprice_optim_goal <- function(
 #' @param ... Additional arguments passed to american_optprice_optim_goal
 #' @return Data frame with K, tm, and result columns
 options_optim_surface_grid <- function(
-  data, K_values, tm_values, 
-  goal = list(method = "log-portfolio", wager = .05),
-  ...
-) {
+    data, K_values, tm_values,
+    goal = list(method = "log-portfolio", wager = .05),
+    ...) {
   param_grid <- expand.grid(K = K_values, tm = tm_values)
   param_grid$result <- mapply(
     function(K, tm) {
@@ -75,16 +76,18 @@ options_optim_surface_grid <- function(
 #' @param tm_values Number of maturity values
 #' @return Matrix of optimization results with tm rows and K columns
 options_optim_surface_matrix <- function(surface_grid, K_length, tm_values) {
-  if (sum(!is.finite(surface_grid$result)) > 0)
+  if (sum(!is.finite(surface_grid$result)) > 0) {
     stop("Invalid values detected in optimization results")
+  }
 
   result_matrix <- t(matrix(
     surface_grid$result,
     nrow = K_length,
     ncol = tm_values
   ))
-  if (all(is.na(result_matrix)))
+  if (all(is.na(result_matrix))) {
     stop("All z-axis values are invalid (NA/NaN/Inf)")
+  }
 
   result_matrix
 }

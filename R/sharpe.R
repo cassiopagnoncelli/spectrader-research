@@ -93,9 +93,9 @@ psr <- function(returns, sr_benchmark = 0, rf_annual = 0.045, scale = 252) {
   sr_hat <- mean(r) / sd(r) * sqrt(scale)
   g3 <- moments::skewness(r)
   g4 <- moments::kurtosis(r)
-  
+
   z <- (sr_hat - sr_benchmark) * sqrt(n - 1) /
-       sqrt(1 - g3 * sr_hat + ((g4 - 1) / 4) * sr_hat^2)
+    sqrt(1 - g3 * sr_hat + ((g4 - 1) / 4) * sr_hat^2)
   list(SR = sr_hat, PSR = pnorm(z), z = z)
 }
 
@@ -151,11 +151,11 @@ dsr <- function(returns, M, rf_annual = 0.045, scale = 252) {
   sr_hat <- mean(r) / sd(r) * sqrt(scale)
   g3 <- moments::skewness(r)
   g4 <- moments::kurtosis(r)
-  
+
   sr_sigma <- sqrt((1 - g3 * sr_hat + ((g4 - 1) / 4) * sr_hat^2) / (n - 1))
   sr_0 <- sqrt(2 * log(M)) - (log(log(M)) + log(4 * pi)) / (2 * sqrt(2 * log(M)))
   sr_0_sigma <- 1 / sqrt(2 * log(M))
-  
+
   z <- (sr_hat - sr_0) / sqrt(sr_sigma^2 + sr_0_sigma^2)
   list(SR = sr_hat, DSR = pnorm(z), z = z)
 }

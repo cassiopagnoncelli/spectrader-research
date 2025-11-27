@@ -9,7 +9,7 @@ exit_garch_fun <- function(data) {
   # ---- Model spec ----
   spec <- ugarchspec(
     variance.model = list(model = "eGARCH", garchOrder = c(1, 1)),
-    mean.model     = list(armaOrder = c(0, 0)),
+    mean.model = list(armaOrder = c(0, 0)),
     distribution.model = "std"
   )
 

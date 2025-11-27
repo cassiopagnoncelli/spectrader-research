@@ -6,16 +6,16 @@ set.seed(123)
 
 # --- PARAMETERS -------------------------------------------------------------
 n_trades_total <- 50000
-path_length    <- 100
-n_paths        <- n_trades_total / path_length
-mu             <- 0.0008      # drift (set 0 for Brownian)
-sigma          <- 0.02
-S0             <- 1
-n_vol          <- 20
-secretary_cut  <- 60
-segment_len    <- 100
-warmup         <- max(n_vol, secretary_cut) + 1
-n_steps        <- warmup + segment_len
+path_length <- 100
+n_paths <- n_trades_total / path_length
+mu <- 0.0008 # drift (set 0 for Brownian)
+sigma <- 0.02
+S0 <- 1
+n_vol <- 20
+secretary_cut <- 60
+segment_len <- 100
+warmup <- max(n_vol, secretary_cut) + 1
+n_steps <- warmup + segment_len
 
 # --- FUNCTION: simulate one VATSES trade ------------------------------------
 simulate_trade <- function() {
@@ -26,7 +26,7 @@ simulate_trade <- function() {
   df <- df %>%
     mutate(
       logret = c(NA, diff(log(S))),
-      vol  = rollapply(logret, n_vol, sd, fill = NA, align = "right"),
+      vol = rollapply(logret, n_vol, sd, fill = NA, align = "right"),
       Smax = cummax(S),
       stop = Smax * exp(-2.5 * vol),
       exit = S < stop & lag(S, default = first(S)) >= lag(stop, default = first(stop))
@@ -64,12 +64,16 @@ y_max <- 3 * tail(df_median$median_value, 1)
 
 # --- PLOT -------------------------------------------------------------------
 ggplot() +
-  geom_line(data = df_plot,
-            aes(x = t, y = value, group = rep(1:n_paths, each = path_length)),
-            color = "gray70", alpha = 0.25) +
-  geom_line(data = df_median,
-            aes(x = t, y = median_value),
-            color = "red", linewidth = 1.2) +
+  geom_line(
+    data = df_plot,
+    aes(x = t, y = value, group = rep(1:n_paths, each = path_length)),
+    color = "gray70", alpha = 0.25
+  ) +
+  geom_line(
+    data = df_median,
+    aes(x = t, y = median_value),
+    color = "red", linewidth = 1.2
+  ) +
   coord_cartesian(ylim = c(0, y_max)) +
   labs(
     title = "Volatility-Adjusted Trailing Stop - Monte Carlo Simulation",

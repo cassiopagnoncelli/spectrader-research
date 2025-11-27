@@ -26,9 +26,9 @@ prepare_overlap_data <- function(df_dates) {
   n <- nrow(df_dates)
   overlap_matrix <- base::outer(
     1:n, 1:n,
-    Vectorize(function(i, j)
+    Vectorize(function(i, j) {
       !(df_dates$exit[i] < df_dates$entry[j] || df_dates$exit[j] < df_dates$entry[i])
-    )
+    })
   )
   diag(overlap_matrix) <- FALSE
   df_dates$overlap_count <- base::rowSums(overlap_matrix)
@@ -45,8 +45,10 @@ prepare_overlap_data <- function(df_dates) {
   diag(overlap_days) <- 0
   df_dates$overlap_days_mean <- base::rowMeans(overlap_days)
 
-  list(df_dates = df_dates, df_overlap = df_overlap,
-       overlap_matrix = overlap_matrix, overlap_days = overlap_days)
+  list(
+    df_dates = df_dates, df_overlap = df_overlap,
+    overlap_matrix = overlap_matrix, overlap_days = overlap_days
+  )
 }
 
 #' @title Compute concurrency summary statistics

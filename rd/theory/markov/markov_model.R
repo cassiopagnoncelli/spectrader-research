@@ -43,14 +43,20 @@ colnames(trans_df) <- c("From", "To", "Probability")
 ggplot(trans_df, aes(x = To, y = From, fill = Probability)) +
   geom_tile(color = "white") +
   geom_text(aes(label = sprintf("%.3f", Probability)), color = "black", size = 5) +
-  scale_fill_gradient2(low = "white", high = "steelblue", mid = "lightblue",
-                       midpoint = 0.5, limit = c(0, 1)) +
-  labs(title = "Transition Probability Matrix",
-       x = "To State",
-       y = "From State") +
+  scale_fill_gradient2(
+    low = "white", high = "steelblue", mid = "lightblue",
+    midpoint = 0.5, limit = c(0, 1)
+  ) +
+  labs(
+    title = "Transition Probability Matrix",
+    x = "To State",
+    y = "From State"
+  ) +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        plot.title = element_text(hjust = 0.5, size = 14, face = "bold"))
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold")
+  )
 
 # Time proportion the system spends in each state
 steadyStates(mc_model)
@@ -76,17 +82,18 @@ period(mc_model)
 hittingProbabilities(mc_model)
 
 # State entropy & predictability
-steadyStates(mc_model) * log2(steadyStates(mc_model))  # Shannon entropy
+steadyStates(mc_model) * log2(steadyStates(mc_model)) # Shannon entropy
 
 # Condition probabilities
-mc_model^2  # 2-step transitions
+mc_model^2 # 2-step transitions
 mc_model^10 # 10-step transitions
 
 # Test if the model differs from a Random Walk
 transition_counts <- table(se[-length(se)], se[-1]) # Actual count of probs
 total_transitions <- sum(transition_counts) # Expected counts under random walk
 expected_random <- matrix(total_transitions / (n_states^2),
-                          nrow = n_states, ncol = n_states)
+  nrow = n_states, ncol = n_states
+)
 
 chi_sq <- sum((transition_counts - expected_random)^2 / expected_random)
 df <- (n_states - 1)^2

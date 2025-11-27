@@ -6,7 +6,7 @@ q <- fetl$send_query("
   JOIN companies c ON q.company_id = c.id
   WHERE c.symbol = 'TSLA'
     AND q.date between current_date - interval '1 year' and current_date
-") %>% tibble
+") %>% tibble()
 
 logrets <- log(q$close / lag(q$close))
 n <- 252
@@ -37,15 +37,15 @@ rets <- rets[!is.na(rets)]
 
 # --- Fit standard GARCH(1,1) ---
 spec <- ugarchspec(
-  mean.model = list(armaOrder = c(2,0)),
-  variance.model = list(model = "sGARCH", garchOrder = c(3,2)),
+  mean.model = list(armaOrder = c(2, 0)),
+  variance.model = list(model = "sGARCH", garchOrder = c(3, 2)),
   distribution.model = "norm"
 )
 
 fit <- ugarchfit(spec, data = rets)
 
 # --- Extract most recent conditional volatility ---
-sigma_last <- tail(sigma(fit), 1)        # last fitted daily σ
-vol_est <- sqrt(252) * as.numeric(sigma_last)  # annualised σ
+sigma_last <- tail(sigma(fit), 1) # last fitted daily σ
+vol_est <- sqrt(252) * as.numeric(sigma_last) # annualised σ
 
 vol_est

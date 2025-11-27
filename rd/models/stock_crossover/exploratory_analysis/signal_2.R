@@ -70,8 +70,12 @@ fit <- evgam(
 prob_above_u <- mean(y > u)
 
 gpd_quantile <- function(p_cond, u, scale, shape) {
-  if (p_cond <= 0) return(Inf)
-  if (p_cond >= 1) return(u)
+  if (p_cond <= 0) {
+    return(Inf)
+  }
+  if (p_cond >= 1) {
+    return(u)
+  }
   if (shape == 0) {
     return(u - scale * log(p_cond))
   } else {
@@ -86,7 +90,6 @@ predict_extreme <- function(x_new, quantiles = c(0.95, 0.99, 0.995, 0.999)) {
   colnames(result) <- paste0("q_", quantiles)
 
   for (i in 1:nrow(x_new)) {
-
     x_df <- as.data.frame(as.list(x_new[i, ]))
     names(x_df) <- x_names
 
@@ -98,7 +101,7 @@ predict_extreme <- function(x_new, quantiles = c(0.95, 0.99, 0.995, 0.999)) {
       p_raw <- quantiles[j]
       p_cond <- (1 - p_raw) / prob_above_u
       q_evt <- gpd_quantile(p_cond, u, scale_i, shape_i)
-      result[i, j] <- exp(q_evt)   # invert log
+      result[i, j] <- exp(q_evt) # invert log
     }
   }
 
@@ -111,22 +114,24 @@ predict_extreme <- function(x_new, quantiles = c(0.95, 0.99, 0.995, 0.999)) {
 x_mean <- as.data.frame(as.list(colMeans(x)))
 names(x_mean) <- x_names
 
-pred_mean <- predict(fit, newdata = x_mean, type="response")
+pred_mean <- predict(fit, newdata = x_mean, type = "response")
 scale_m <- pred_mean$scale
 shape_m <- pred_mean$shape
 
 Tvals <- c(2, 5, 10, 20, 50, 100)
 return_levels <- sapply(Tvals, function(T) {
-  p_raw <- 1 - 1/T
+  p_raw <- 1 - 1 / T
   p_cond <- (1 - p_raw) / prob_above_u
   q_evt <- gpd_quantile(p_cond, u, scale_m, shape_m)
   exp(q_evt)
 })
 
-par(mfrow = c(1,1))
-plot(Tvals, return_levels, type="b", log="x",
-     main="Return Level Plot (Nonlinear EVT)",
-     xlab="Return Period", ylab="Return Level", col="red", pch=19)
+par(mfrow = c(1, 1))
+plot(Tvals, return_levels,
+  type = "b", log = "x",
+  main = "Return Level Plot (Nonlinear EVT)",
+  xlab = "Return Period", ylab = "Return Level", col = "red", pch = 19
+)
 
 ## -----------------------------------------
 ## 8. Predict full test set

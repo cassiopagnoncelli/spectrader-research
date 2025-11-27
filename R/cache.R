@@ -25,29 +25,31 @@ load_cache <- function(ck) {
     cat(sprintf("Cache miss for %s\n", ck$key))
     return(NULL)
   }
-  if (ck$ext == "RData")
+  if (ck$ext == "RData") {
     load(ck$path, envir = .GlobalEnv)
-  else if (ck$ext == "rds")
+  } else if (ck$ext == "rds") {
     readRDS(ck$path)
-  else if (ck$ext %in% c("sql", "txt"))
+  } else if (ck$ext %in% c("sql", "txt")) {
     readLines(ck$path)
-  else if (ck$ext == "qs")
+  } else if (ck$ext == "qs") {
     qs::qread(ck$path)
-  else
+  } else {
     stop(sprintf("Unsupported cache format: %s", ck$ext))
+  }
 }
 
 save_cache <- function(ck, object) {
-  if (ck$ext == "rds")
+  if (ck$ext == "rds") {
     saveRDS(object, file = ck$path)
-  else if (ck$ext %in% c("sql", "txt"))
+  } else if (ck$ext %in% c("sql", "txt")) {
     writeLines(object, ck$path)
-  else if (ck$ext == "RData")
+  } else if (ck$ext == "RData") {
     save(object, file = ck$path)
-  else if (ck$ext == "qs")
+  } else if (ck$ext == "qs") {
     qs::qsave(object, ck$path)
-  else
+  } else {
     stop(sprintf("Unsupported cache format: %s", ck$ext))
+  }
 }
 
 fetch_cache <- function(ck, compute_fun) {

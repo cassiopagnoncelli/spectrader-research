@@ -6,13 +6,15 @@ x <- seq(0, 1, by = 0.01)
 
 # Transformation function
 # y <- 0.5 * (1 + cos(pi * x / 2))    # Half-cosine
-y <- exp(-sqrt(.07 * x))        # Laplace
+y <- exp(-sqrt(.07 * x)) # Laplace
 # y <- exp(-x^2 / 2)              # Gaussian
 
 # Quantile applied over time
 z <- sapply(y, function(yi) {
   qs <- q[q < yi]
-  if (length(qs) == 0) return(NA_real_)
+  if (length(qs) == 0) {
+    return(NA_real_)
+  }
   max(qs)
 })
 

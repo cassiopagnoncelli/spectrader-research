@@ -27,5 +27,5 @@ AmericanOptionImpliedVolatility(
   dividendYield = 0,
   riskFreeRate = 0.0409,
   maturity = 76 / 365,
-  volatility = 0.7          # initial guess
+  volatility = 0.7 # initial guess
 )

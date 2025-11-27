@@ -22,7 +22,7 @@ trend_report <- regime_quality_report(trend_fit, name = "Trend Model")
 cat("\nDisplaying Trend Model plots...\n")
 print(trend_report$plots$regimes)
 print(trend_report$plots$residuals)
-trend_report$plots$diagnostics  # This uses grid.arrange internally
+trend_report$plots$diagnostics # This uses grid.arrange internally
 print(trend_report$plots$durations)
 print(trend_report$plots$features)
 print(trend_report$plots$transition_heatmap)
@@ -42,7 +42,7 @@ vol_report <- regime_quality_report(vol_fit, name = "Volatility Model")
 cat("\nDisplaying Volatility Model plots...\n")
 print(vol_report$plots$regimes)
 print(vol_report$plots$residuals)
-vol_report$plots$diagnostics  # This uses grid.arrange internally
+vol_report$plots$diagnostics # This uses grid.arrange internally
 print(vol_report$plots$durations)
 print(vol_report$plots$features)
 print(vol_report$plots$transition_heatmap)
@@ -83,8 +83,10 @@ cat("# MODEL COMPARISON\n")
 cat("#######################################################################\n")
 
 comparison <- data.frame(
-  Metric = c("R-squared", "Adjusted R²", "MAE", "RMSE", "AIC", "BIC", 
-             "Ljung-Box p-value", "N Observations", "N Regimes"),
+  Metric = c(
+    "R-squared", "Adjusted R²", "MAE", "RMSE", "AIC", "BIC",
+    "Ljung-Box p-value", "N Observations", "N Regimes"
+  ),
   Trend_Model = c(
     trend_report$quality_metrics$r_squared,
     trend_report$quality_metrics$adj_r_squared,
@@ -150,9 +152,9 @@ print(plot_feature_space(vol_fit))
 # saveRDS(combined_analysis, "tmp/theory/combined_analysis.rds")
 
 # Save plots as PNG
-# ggsave("tmp/theory/trend_regimes.png", trend_report$plots$regimes, 
+# ggsave("tmp/theory/trend_regimes.png", trend_report$plots$regimes,
 #        width = 12, height = 6, dpi = 300)
-# ggsave("tmp/theory/vol_regimes.png", vol_report$plots$regimes, 
+# ggsave("tmp/theory/vol_regimes.png", vol_report$plots$regimes,
 #        width = 12, height = 6, dpi = 300)
 # ggsave("tmp/theory/combined_regimes.png", plot_combined_regimes(trend_fit, vol_fit),
 #        width = 8, height = 6, dpi = 300)

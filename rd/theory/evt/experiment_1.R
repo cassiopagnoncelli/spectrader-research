@@ -12,11 +12,13 @@ suppressPackageStartupMessages({
 df_train <- copy(X[train_indices])
 setDT(df_train)
 
-df_train[, y          := ys$excursion_high[train_indices]]
+df_train[, y := ys$excursion_high[train_indices]]
 df_train[, y_kurtosis := ys$kurtosis[train_indices]]
 df_train[, y_skewness := ys$skewness[train_indices]]
 
-df_train <- df_train |> as.data.frame() |> tidyr::drop_na(y)
+df_train <- df_train |>
+  as.data.frame() |>
+  tidyr::drop_na(y)
 
 # ------------------------------------------------------------
 # 1. Threshold and exceedances
@@ -36,7 +38,7 @@ drop_cols <- c("y", "y_kurtosis", "y_skewness", "excess")
 pred_cols <- setdiff(num_cols, drop_cols)
 
 df_model <- df_ex[, c("excess", pred_cols), drop = FALSE]
-df_model <- tidyr::drop_na(df_model)   # <- removes all rows with any NA
+df_model <- tidyr::drop_na(df_model) # <- removes all rows with any NA
 
 X_mat <- as.matrix(df_model[, pred_cols, drop = FALSE])
 y_excess <- df_model$excess
@@ -70,7 +72,7 @@ cv_shape <- cv.glmnet(
 
 shape_vars <- colnames(X_mat)[coef(cv_shape, s = "lambda.1se")@i[-1]]
 shape_vars <- unique(shape_vars)
-shape_vars <- head(shape_vars, 3)  # keep shape side very small
+shape_vars <- head(shape_vars, 3) # keep shape side very small
 
 # final predictor set
 evt_vars <- unique(c(scale_vars, shape_vars))
@@ -97,10 +99,10 @@ summary(fit_vgam)
 # ------------------------------------------------------------
 pred_evt <- predict(fit_vgam, type = "response")
 sigma_hat <- pred_evt[, 1]
-xi_hat    <- pred_evt[, 2]
+xi_hat <- pred_evt[, 2]
 
 df_evt$sigma_hat <- sigma_hat
-df_evt$xi_hat    <- xi_hat
+df_evt$xi_hat <- xi_hat
 
 # ------------------------------------------------------------
 # 6. EVT helpers: tail prob, quantile
@@ -108,7 +110,7 @@ df_evt$xi_hat    <- xi_hat
 gpd_tail_prob <- function(y_star, u, sigma, xi) {
   z <- 1 + xi * (y_star - u) / sigma
   z <- pmax(z, 1e-12)
-  z ^ (-1 / xi)
+  z^(-1 / xi)
 }
 
 gpd_quantile <- function(alpha, u, sigma, xi) {
@@ -118,7 +120,7 @@ gpd_quantile <- function(alpha, u, sigma, xi) {
 # ------------------------------------------------------------
 # 7. PIT and QQ diagnostics
 # ------------------------------------------------------------
-df_evt$pit <- (1 + df_evt$xi_hat * df_evt$excess / df_evt$sigma_hat) ^
+df_evt$pit <- (1 + df_evt$xi_hat * df_evt$excess / df_evt$sigma_hat)^
   (-1 / df_evt$xi_hat)
 
 ggplot(df_evt, aes(pit)) +
@@ -147,7 +149,7 @@ df_evt$q95 <- gpd_quantile(0.95, u, df_evt$sigma_hat, df_evt$xi_hat)
 df_evt$q99 <- gpd_quantile(0.99, u, df_evt$sigma_hat, df_evt$xi_hat)
 
 df_evt$E_excess <- df_evt$sigma_hat / (1 - df_evt$xi_hat)
-df_evt$E_y      <- u + df_evt$E_excess
+df_evt$E_y <- u + df_evt$E_excess
 
-df_evt$evt_score   <- df_evt$p_y_gt_1_3 * df_evt$q99 * df_evt$E_y
+df_evt$evt_score <- df_evt$p_y_gt_1_3 * df_evt$q99 * df_evt$E_y
 df_evt$evt_score_z <- as.numeric(scale(df_evt$evt_score))

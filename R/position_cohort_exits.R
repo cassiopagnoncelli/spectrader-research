@@ -9,11 +9,11 @@
 #' @export
 exit_pipeline <- function(..., position) {
   funs <- list(...)
-  
+
   if (length(funs) == 0) {
     stop("At least one exit function must be provided")
   }
-  
+
   position$exit <- rep(FALSE, nrow(position))
   purrr::reduce(funs, function(data, fun) fun(data, history = TRUE), .init = position) %>%
     dplyr::filter(t >= 0) %>%
@@ -35,13 +35,14 @@ exit_pipeline <- function(..., position) {
 #' @return A function that takes data and optional history parameter
 #' @export
 exit_dqr <- function(
-  dqr_fits, max_position_days, side, enable_vol_bursts = TRUE, enable_time_decay = TRUE, minS = NA, minT = NA, ...
-) {
-  if (!is.list(dqr_fits) || length(dqr_fits) == 0)
+    dqr_fits, max_position_days, side, enable_vol_bursts = TRUE, enable_time_decay = TRUE, minS = NA, minT = NA, ...) {
+  if (!is.list(dqr_fits) || length(dqr_fits) == 0) {
     stop("dqr_fits must be a list of fitted quantile regression models.")
-  
-  if (side != "long" && side != "short")
+  }
+
+  if (side != "long" && side != "short") {
     stop("side must be either 'long' or 'short'.")
+  }
 
   function(data, history = FALSE) {
     if (!all(c("t", "S", "r", "exit") %in% colnames(data))) {
@@ -73,8 +74,9 @@ exit_dqr <- function(
 #' @return A function that takes data and optional history parameter
 #' @export
 exit_vats <- function(sd_short = 6, sd_n = 20, k = 2.5, side = "long", minS = 1, minT = 3) {
-  if (side != "long" && side != "short")
+  if (side != "long" && side != "short") {
     stop("side must be either 'long' or 'short'.")
+  }
 
   if (side == "short") {
     stop("exit_vats currently only supports 'long' side.")
@@ -117,8 +119,9 @@ exit_vats <- function(sd_short = 6, sd_n = 20, k = 2.5, side = "long", minS = 1,
 #' @return A function that takes data and optional history parameter
 #' @export
 exit_fpt <- function(interest_rate = 0.0425, maturity = 15 / 365, side = "long", minS = 1, minT = 3) {
-  if (side != "long" && side != "short")
+  if (side != "long" && side != "short") {
     stop("side must be either 'long' or 'short'.")
+  }
 
   function(data, history = FALSE) {
     if (!all(c("t", "S", "r", "exit") %in% colnames(data))) {
@@ -146,9 +149,8 @@ exit_fpt <- function(interest_rate = 0.0425, maturity = 15 / 365, side = "long",
 }
 
 exit_ruleset <- function(
-  side = c("long", "short"), upper = NA, upper_t = NA, lower = NA, lower_t = NA,
-  breakeven = NA, breakeven_t = NA, ...
-) {
+    side = c("long", "short"), upper = NA, upper_t = NA, lower = NA, lower_t = NA,
+    breakeven = NA, breakeven_t = NA, ...) {
   side <- match.arg(side)
 
   function(data, history = FALSE) {

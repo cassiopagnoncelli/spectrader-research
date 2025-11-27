@@ -13,7 +13,7 @@ suppressPackageStartupMessages({
 
 df_train <- as.data.table(X[train_indices])
 
-df_train[, y          := ys$excursion_high[train_indices]]
+df_train[, y := ys$excursion_high[train_indices]]
 df_train[, y_kurtosis := ys$kurtosis[train_indices]]
 df_train[, y_skewness := ys$skewness[train_indices]]
 
@@ -33,7 +33,7 @@ df_ex$excess <- df_ex$y - u
 # 2. Clean predictor matrix (numeric, no NAs, no zero-var)
 ############################################################
 
-num_cols  <- names(df_ex)[sapply(df_ex, is.numeric)]
+num_cols <- names(df_ex)[sapply(df_ex, is.numeric)]
 drop_cols <- c("y", "y_kurtosis", "y_skewness", "excess")
 pred_cols <- setdiff(num_cols, drop_cols)
 
@@ -54,7 +54,7 @@ df_evt <- df_evt[, c("excess", pred_cols), drop = FALSE]
 # 3. Variable selection via glmnet
 ############################################################
 
-X_mat    <- as.matrix(df_evt[, pred_cols, drop = FALSE])
+X_mat <- as.matrix(df_evt[, pred_cols, drop = FALSE])
 y_excess <- df_evt$excess
 
 set.seed(123)
@@ -66,7 +66,7 @@ cv_fit <- cv.glmnet(
 )
 
 coef_vec <- coef(cv_fit, s = "lambda.min")
-idx      <- which(coef_vec != 0)[-1]  # drop intercept
+idx <- which(coef_vec != 0)[-1] # drop intercept
 
 if (length(idx) == 0) {
   sel_vars <- pred_cols[1:min(5, length(pred_cols))]
@@ -92,16 +92,16 @@ print(summary(fit_evt))
 
 pred_evt <- predict(fit_evt, type = "response")
 sigma_hat <- pred_evt[, 1]
-xi_hat    <- pred_evt[, 2]
+xi_hat <- pred_evt[, 2]
 
 df_evt$sigma_hat <- sigma_hat
-df_evt$xi_hat    <- xi_hat
+df_evt$xi_hat <- xi_hat
 
 ############################################################
 # 5. PIT and QQ diagnostics
 ############################################################
 
-df_evt$pit <- (1 + df_evt$xi_hat * df_evt$excess / df_evt$sigma_hat) ^ (-1 / df_evt$xi_hat)
+df_evt$pit <- (1 + df_evt$xi_hat * df_evt$excess / df_evt$sigma_hat)^(-1 / df_evt$xi_hat)
 
 ggplot(df_evt, aes(pit)) +
   geom_histogram(bins = 40) +
@@ -131,7 +131,7 @@ ggplot(df_evt, aes(x = theoretical, y = excess)) +
 gpd_tail_prob <- function(y_star, u, sigma, xi) {
   z <- 1 + xi * (y_star - u) / sigma
   z <- pmax(z, 1e-12)
-  z ^ (-1 / xi)
+  z^(-1 / xi)
 }
 
 gpd_quantile <- function(alpha, u, sigma, xi) {
@@ -139,13 +139,13 @@ gpd_quantile <- function(alpha, u, sigma, xi) {
 }
 
 df_evt$p_y_gt_1_3 <- gpd_tail_prob(1.3, u, df_evt$sigma_hat, df_evt$xi_hat)
-df_evt$q95        <- gpd_quantile(0.95, u, df_evt$sigma_hat, df_evt$xi_hat)
-df_evt$q99        <- gpd_quantile(0.99, u, df_evt$sigma_hat, df_evt$xi_hat)
+df_evt$q95 <- gpd_quantile(0.95, u, df_evt$sigma_hat, df_evt$xi_hat)
+df_evt$q99 <- gpd_quantile(0.99, u, df_evt$sigma_hat, df_evt$xi_hat)
 
 df_evt$E_excess <- df_evt$sigma_hat / pmax(1 - df_evt$xi_hat, 1e-9)
-df_evt$E_y      <- u + df_evt$E_excess
+df_evt$E_y <- u + df_evt$E_excess
 
-df_evt$evt_score   <- df_evt$p_y_gt_1_3 * df_evt$q99 * df_evt$E_y
+df_evt$evt_score <- df_evt$p_y_gt_1_3 * df_evt$q99 * df_evt$E_y
 df_evt$evt_score_z <- as.numeric(scale(df_evt$evt_score))
 
 df_evt

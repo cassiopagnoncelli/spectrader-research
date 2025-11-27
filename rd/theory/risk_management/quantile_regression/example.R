@@ -33,23 +33,29 @@ pinball_loss <- mean((tau - (actual < pred)) * (actual - pred))
 # Coverage (empirical quantile frequency)
 coverage <- mean(actual <= pred)
 
-cat("Diagnostics for τ =", tau, "\n",
-    "Pseudo-R²:   ", round(R2_pseudo, 4), "\n",
-    "Pinball loss:", round(pinball_loss, 6), "\n",
-    "Coverage:    ", round(coverage, 4), "\n")
+cat(
+  "Diagnostics for τ =", tau, "\n",
+  "Pseudo-R²:   ", round(R2_pseudo, 4), "\n",
+  "Pinball loss:", round(pinball_loss, 6), "\n",
+  "Coverage:    ", round(coverage, 4), "\n"
+)
 
 # --- merge fitted values into frame ------------------------------------------
 train_df <- train_df %>%
-  mutate(qhat = pred,
-         exit_flag = S >= qhat,
-         residual = S - qhat)
+  mutate(
+    qhat = pred,
+    exit_flag = S >= qhat,
+    residual = S - qhat
+  )
 
 # --- main path plot ----------------------------------------------------------
 ggplot(train_df, aes(x = t, y = S)) +
   geom_line(aes(color = factor(position_id)), linewidth = 0.7, alpha = 0.6) +
   geom_line(aes(y = qhat), color = "black", linewidth = 0.9, linetype = "dashed") +
-  geom_point(data = subset(train_df, exit_flag),
-             color = "magenta", size = 1.8, alpha = 0.8) +
+  geom_point(
+    data = subset(train_df, exit_flag),
+    color = "magenta", size = 1.8, alpha = 0.8
+  ) +
   labs(
     title = paste0("Quantile Regression Upper Envelope (τ = ", tau, ")"),
     subtitle = "Dashed = fitted 92nd-quantile; magenta dots = exit triggers",

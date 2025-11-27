@@ -12,22 +12,30 @@ suppressPackageStartupMessages({
 # ------------------------------------------------------------------------------
 
 build_base_df <- function(indices) {
-  if (is.null(indices) || length(indices) == 0) return(NULL)
+  if (is.null(indices) || length(indices) == 0) {
+    return(NULL)
+  }
   df <- copy(X[indices])
   setDT(df)
   df[, y := ys$excursion_high[indices]]
-  df <- df |> as.data.frame() |> tidyr::drop_na(y)
+  df <- df |>
+    as.data.frame() |>
+    tidyr::drop_na(y)
   df
 }
 
 build_evt_df <- function(df_raw, threshold, feature_names) {
-  if (is.null(df_raw)) return(NULL)
+  if (is.null(df_raw)) {
+    return(NULL)
+  }
   df_evt <- df_raw |>
     dplyr::filter(y > threshold) |>
     dplyr::mutate(excess = y - threshold) |>
     dplyr::select(dplyr::all_of(c("excess", feature_names))) |>
     tidyr::drop_na()
-  if (!nrow(df_evt)) return(NULL)
+  if (!nrow(df_evt)) {
+    return(NULL)
+  }
   df_evt
 }
 
@@ -36,7 +44,9 @@ safe_evt_quantile <- function(alpha, threshold, sigma, xi) {
   xi <- as.numeric(xi)
   valid <- is.finite(sigma) & is.finite(xi) & sigma > 0
   out <- rep(NA_real_, length(sigma))
-  if (!any(valid)) return(out)
+  if (!any(valid)) {
+    return(out)
+  }
 
   sigma_v <- sigma[valid]
   xi_v <- xi[valid]
@@ -81,7 +91,9 @@ summarize_return_levels <- function(return_matrix, probs) {
 }
 
 plot_pit_histogram <- function(pit_values, title_text, subtitle_text = NULL, bins = 40L) {
-  if (!length(pit_values)) return(invisible(NULL))
+  if (!length(pit_values)) {
+    return(invisible(NULL))
+  }
   ggplot(tibble(pit = pit_values), aes(x = pit)) +
     geom_histogram(bins = bins, fill = "#3182bd", color = "white", alpha = 0.85) +
     geom_hline(yintercept = length(pit_values) / bins, linetype = "dashed", color = "#e6550d") +

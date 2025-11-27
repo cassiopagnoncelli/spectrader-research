@@ -20,10 +20,10 @@ suppressPackageStartupMessages({
 # train_indices is a vector of indices
 # ys contains your targets
 
-df_train <- X[train_indices]   # <-- DO NOT TOUCH X
-setDT(df_train)                # <-- make df_train a data.table
+df_train <- X[train_indices] # <-- DO NOT TOUCH X
+setDT(df_train) # <-- make df_train a data.table
 
-df_train[, y          := ys$excursion_high[train_indices]]
+df_train[, y := ys$excursion_high[train_indices]]
 df_train[, y_kurtosis := ys$kurtosis[train_indices]]
 df_train[, y_skewness := ys$skewness[train_indices]]
 
@@ -48,7 +48,7 @@ basic_predictors <- setdiff(
     "y", "excess",
     "smoothed_close", "smoothed_close_1", "smoothed_close_2",
     "rsi_2"
-    )
+  )
 )[1:30]
 basic_predictors <- c(
   "vol", "vol_1", "vol_2", "vix",

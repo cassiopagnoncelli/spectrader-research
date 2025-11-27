@@ -23,13 +23,15 @@ aligned <- align(btc, ndaq, m1, m2)
 colnames(aligned) <- c("btc", "ndaq", "m1", "m2")
 
 normalised <- aligned %>%
-  as_tibble(rownames = 'date') %>%
+  as_tibble(rownames = "date") %>%
   mutate(date = as.Date(date)) %>%
   filter(year(date) >= 2015) %>%
-  mutate(btc = log(btc / first(btc), base = 100),
-         ndaq = log(ndaq / first(ndaq), base = exp(1)),
-         m1 = log(m1 / first(m1), base = 5),
-         m2 = log(m2 / first(m2), base = 1.8))
+  mutate(
+    btc = log(btc / first(btc), base = 100),
+    ndaq = log(ndaq / first(ndaq), base = exp(1)),
+    m1 = log(m1 / first(m1), base = 5),
+    m2 = log(m2 / first(m2), base = 1.8)
+  )
 
 
 
@@ -48,8 +50,10 @@ coint_data <- normalised %>%
 coint_data <- na.omit(coint_data)
 
 cat("\nData dimensions:", dim(coint_data), "\n")
-cat("Sample period: from", as.character(min(normalised$date, na.rm = TRUE)),
-    "to", as.character(max(normalised$date, na.rm = TRUE)), "\n")
+cat(
+  "Sample period: from", as.character(min(normalised$date, na.rm = TRUE)),
+  "to", as.character(max(normalised$date, na.rm = TRUE)), "\n"
+)
 
 # ============================================================================
 # 1. UNIT ROOT TESTS (ADF) - Test for stationarity of individual series
@@ -62,7 +66,7 @@ cat("H1: Series is stationary\n\n")
 series_names <- c("BTC", "NASDAQ", "M1", "M2")
 adf_results <- list()
 
-for(i in 1:ncol(coint_data)) {
+for (i in 1:ncol(coint_data)) {
   series_name <- series_names[i]
   series_data <- coint_data[, i]
 
@@ -76,11 +80,13 @@ for(i in 1:ncol(coint_data)) {
 
   cat(sprintf("%s ADF Test:\n", series_name))
   cat(sprintf("  Test statistic: %.4f\n", test_stat))
-  cat(sprintf("  Critical values: 1%% = %.4f, 5%% = %.4f, 10%% = %.4f\n",
-              crit_vals[1], crit_vals[2], crit_vals[3]))
+  cat(sprintf(
+    "  Critical values: 1%% = %.4f, 5%% = %.4f, 10%% = %.4f\n",
+    crit_vals[1], crit_vals[2], crit_vals[3]
+  ))
 
   # Interpretation
-  if(test_stat < crit_vals[2]) {
+  if (test_stat < crit_vals[2]) {
     cat("  Result: REJECT H0 - Series appears stationary at 5% level\n")
   } else {
     cat("  Result: FAIL TO REJECT H0 - Series appears non-stationary\n")

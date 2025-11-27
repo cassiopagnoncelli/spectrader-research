@@ -12,13 +12,21 @@ before <- function(...) {
 }
 
 tick <- function() {
-  if (Positions$count(OPEN) >= 3) { return() }
+  if (Positions$count(OPEN) >= 3) {
+    return()
+  }
   if (aapl_signal[I]) {
     pos_count <- Positions$count(OPEN)
     max_pos_size <- .internal$lifo$wallet$balance() / ask("AAPL")
-    if (pos_count == 0) { pos_size <- floor(max_pos_size * 0.3) }
-    if (pos_count == 1) { pos_size <- floor(max_pos_size * 0.45) }
-    if (pos_count == 2) { pos_size <- floor(max_pos_size * 0.8) }
+    if (pos_count == 0) {
+      pos_size <- floor(max_pos_size * 0.3)
+    }
+    if (pos_count == 1) {
+      pos_size <- floor(max_pos_size * 0.45)
+    }
+    if (pos_count == 2) {
+      pos_size <- floor(max_pos_size * 0.8)
+    }
     buy(pos_size, ticker = "AAPL")
   }
 }

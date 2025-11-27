@@ -16,7 +16,7 @@ option_fun <- function(maturity, strike) {
 
 # Grid.
 maturities <- seq(1, 90, by = 1)
-strikes    <- seq(70, 130, by = 1)
+strikes <- seq(70, 130, by = 1)
 option_prices <- outer(maturities, strikes, Vectorize(option_fun))
 
 # Plot.
@@ -36,7 +36,7 @@ plot_ly(
       yaxis = list(title = "Maturity (days)", tickvals = seq(0, 90, 15)),
       zaxis = list(title = "Option Price", range = c(0, max(option_prices))),
       aspectmode = "manual",
-      aspectratio = list(x = 1, y = 1, z = 0.5),   # 👈 balance proportions
+      aspectratio = list(x = 1, y = 1, z = 0.5), # 👈 balance proportions
       camera = list(eye = list(x = 1.5, y = 1.5, z = 0.8)) # 👁️ better viewing angle
     )
   )

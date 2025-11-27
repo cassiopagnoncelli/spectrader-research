@@ -45,8 +45,9 @@ entry_profiler_matrix <- function(series,
 }
 
 entry_profiler_posm <- function(posl_raw, lookback = NA) {
-  if (length(posl_raw) == 0)
+  if (length(posl_raw) == 0) {
     stop("No position objects provided")
+  }
 
   times <- posl_raw[[1]]$t
   mat <- t(sapply(seq_along(posl_raw), \(i) posl_raw[[i]]$S)) - 1

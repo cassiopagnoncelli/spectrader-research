@@ -10,27 +10,27 @@ set.seed(123)
 # ================================================================
 # === PARAMETERS =================================================
 # ================================================================
-p_win    <- 0.38      # probability of winning a bet
-pay_win  <- 1.12      # +95% on stake if win
-pay_lose <- -0.52     # -22% on stake if lose
-n_steps  <- 400      # number of bets per path
-n_paths  <- 2000      # number of Monte Carlo paths to simulate
+p_win <- 0.38 # probability of winning a bet
+pay_win <- 1.12 # +95% on stake if win
+pay_lose <- -0.52 # -22% on stake if lose
+n_steps <- 400 # number of bets per path
+n_paths <- 2000 # number of Monte Carlo paths to simulate
 initial_bankroll <- 1.0
 
-use_kelly  <- TRUE    # TRUE: use Kelly. FALSE: only use f_override (if provided) or raw Kelly w/out multiplier
-kelly_mult <- 1.0     # 1.0 = full Kelly, 0.5 = half Kelly, etc.
-f_override <- NULL    # e.g. 0.02 to force 2% bet fraction, even if Kelly differs
+use_kelly <- TRUE # TRUE: use Kelly. FALSE: only use f_override (if provided) or raw Kelly w/out multiplier
+kelly_mult <- 1.0 # 1.0 = full Kelly, 0.5 = half Kelly, etc.
+f_override <- NULL # e.g. 0.02 to force 2% bet fraction, even if Kelly differs
 # ================================================================
 
 
 # --- Kelly fraction solver -------------------------------------------
 kelly_fraction <- function(p_win, pay_win, pay_lose) {
-  p  <- p_win
-  q  <- 1 - p
-  bw <- pay_win          # > 0
-  bl <- pay_lose         # < 0
+  p <- p_win
+  q <- 1 - p
+  bw <- pay_win # > 0
+  bl <- pay_lose # < 0
 
-  f_star <- - (p * bw + q * bl) / (bw * bl)
+  f_star <- -(p * bw + q * bl) / (bw * bl)
 
   # Feasible f (bankroll never negative after a single bet)
   f_min <- -1 / pay_win + 1e-9
@@ -58,8 +58,7 @@ simulate_single_path <- function(n_steps, p_win, pay_win, pay_lose, f_bet, initi
 # --- Monte Carlo runner ----------------------------------------------
 simulate_paths <- function(
     n_steps, n_paths, p_win, pay_win, pay_lose,
-    initial_bankroll, use_kelly, kelly_mult, f_override
-) {
+    initial_bankroll, use_kelly, kelly_mult, f_override) {
   # Decide staking fraction f_bet
   if (is.null(f_override)) {
     f_opt <- kelly_fraction(p_win, pay_win, pay_lose)
@@ -148,11 +147,11 @@ simulate_paths <- function(
     )
 
   list(
-    summary      = summary_stats,
-    plot         = p,
-    paths_mat    = paths_mat,
+    summary = summary_stats,
+    plot = p,
+    paths_mat = paths_mat,
     median_path_df = median_df,
-    long_paths   = paths_long
+    long_paths = paths_long
   )
 }
 

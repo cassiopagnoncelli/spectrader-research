@@ -34,14 +34,17 @@ posl <- position_cohorts(
 
 ds <- bind_rows(posl) %>%
   # select(t, S, sd_ratio, h_ratio, h_short) %>%
-  mutate(S_1 = dplyr::lag(S),
-         sd_ratio_1 = dplyr::lag(sd_ratio),
-         h_ratio_1 = dplyr::lag(h_ratio)) %>%
+  mutate(
+    S_1 = dplyr::lag(S),
+    sd_ratio_1 = dplyr::lag(sd_ratio),
+    h_ratio_1 = dplyr::lag(h_ratio)
+  ) %>%
   na.omit()
 
 # 99th quantile — identifies statistical upper limit for S given features
 rqfit <- rq(S ~ sd_ratio + h_ratio + h_short + h_long + sd_short + sd_long + S_1 + sd_ratio_1 + h_ratio_1,
-            tau = 0.92, data = ds)
+  tau = 0.92, data = ds
+)
 summary(rqfit)
 
 # Predict boundary
@@ -60,13 +63,15 @@ ggplot(ds, aes(x = t)) +
 
 # Experiment
 if (T) {
-  sampled <- sample(seq_along(posl), 10) %>% sort
+  sampled <- sample(seq_along(posl), 10) %>% sort()
   for (i in sampled) {
     ds <- posl[[i]] %>%
       # select(t, S, sd_ratio, h_ratio, h_short) %>%
-      mutate(S_1 = dplyr::lag(S),
-             sd_ratio_1 = dplyr::lag(sd_ratio),
-             h_ratio_1 = dplyr::lag(h_ratio)) %>%
+      mutate(
+        S_1 = dplyr::lag(S),
+        sd_ratio_1 = dplyr::lag(sd_ratio),
+        h_ratio_1 = dplyr::lag(h_ratio)
+      ) %>%
       na.omit()
 
     # Predict boundary

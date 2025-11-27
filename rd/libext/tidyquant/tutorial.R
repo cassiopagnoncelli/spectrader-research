@@ -27,4 +27,3 @@ nvidia <- tq_get("NVDA", get = "stock.prices") %>%
     col_rename = "monthly.returns"
   ) %>%
   tail()
-

@@ -2,12 +2,12 @@ options(scipen = 999, digits = 10)
 options(pillar.sigfig = 5)
 
 tbl <- tibble(
-    S0 = 100,
-    X = 70,
-    sigma = 1,
-    r = 0.05,
-    days = c(4, 10, 22, 63)
-  ) %>%
+  S0 = 100,
+  X = 70,
+  sigma = 1,
+  r = 0.05,
+  days = c(4, 10, 22, 63)
+) %>%
   mutate(
     Tt = days / 252,
     d1 = (log(S0 / X) + (r + 0.5 * sigma^2) * Tt) / (sigma * sqrt(Tt)),

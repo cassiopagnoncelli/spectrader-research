@@ -66,7 +66,7 @@ train_dqr <- function(signals, quotes, taus, formulas, max_position_days = 60, v
       dplyr::filter(t > 0) %>%
       dplyr::mutate(position_id = i, t_norm = t / max(t))
   })
-  
+
   # Check if we have any data after filtering
   if (nrow(data_raw) == 0) {
     stop(
@@ -75,14 +75,14 @@ train_dqr <- function(signals, quotes, taus, formulas, max_position_days = 60, v
       call. = FALSE
     )
   }
-  
+
   # Remove unnecessary columns
   data_filtered <- data_raw %>%
     dplyr::select(-c(symbol, date, close, fets::fwd_goals()))
-  
+
   # Remove rows with missing values
   data <- na.omit(data_filtered)
-  
+
   # Final validation
   if (nrow(data) == 0) {
     n_before <- nrow(data_filtered)
@@ -93,7 +93,7 @@ train_dqr <- function(signals, quotes, taus, formulas, max_position_days = 60, v
       call. = FALSE
     )
   }
-  
+
   # Log the data preparation results
   if (verbose) {
     message(
@@ -167,8 +167,9 @@ exit_dqr_coverage <- function(actual, predicted) {
 exit_dqr_q <- function(t_norm, taus, method = "laplace") {
   sapply(exit_dqr_dc(t_norm, method = method), function(yi) {
     qs <- taus[taus < yi]
-    if (length(qs) == 0)
+    if (length(qs) == 0) {
       return(NA_real_)
+    }
 
     val <- max(qs)
     label <- paste0("q", sprintf("%.0f", val * 100))
@@ -208,8 +209,9 @@ exit_dqr_dc <- function(t_norm, method = "laplace", alpha = .15) {
 #' @param dqr_fits Named list of fitted models with names matching 'qXX' (e.g., q92, q82)
 #' @return Numeric vector of quantile values in descending order
 exit_dqr_extract_quantiles <- function(dqr_fits) {
-  if (!all(grepl("^q[0-9]{2}$", names(dqr_fits))))
+  if (!all(grepl("^q[0-9]{2}$", names(dqr_fits)))) {
     stop("All dqr_fits elements must match pattern 'qXX' where XX are 2 digits")
+  }
 
   qnames <- rev(sort(names(dqr_fits)))
   as.numeric(sub("q", "", qnames)) / 100
@@ -237,10 +239,12 @@ right_energy <- function(x) {
 #' @param ... Additional arguments passed to exit_dqr_dc
 #' @return Tibble with quantile probability columns (q92, q82, etc.) and t_norm as rownames
 exit_dqr_weighted_probs <- function(t_norm, vol_norm, taus, method = "laplace", ...) {
-  if (!all(taus == rev(sort(taus))))
+  if (!all(taus == rev(sort(taus)))) {
     stop("taus must be in descending order")
-  if (is.null(t_norm) && is.null(vol_norm))
+  }
+  if (is.null(t_norm) && is.null(vol_norm)) {
     stop("At least one of t_norm or vol_norm must be provided")
+  }
 
   sds <- rep(abs(mean(diff(c(1, taus)))), length(taus))^2
 
@@ -294,7 +298,9 @@ exit_dqr_weighted_probs <- function(t_norm, vol_norm, taus, method = "laplace", 
   }
 
   # Convert to data frame with proper column names
-  result <- final_matrix %>% t() %>% as.data.frame()
+  result <- final_matrix %>%
+    t() %>%
+    as.data.frame()
   colnames(result) <- col_names
 
   # Convert to tibble (row names not needed since they won't be preserved)
@@ -317,17 +323,16 @@ exit_dqr_weighted_probs <- function(t_norm, vol_norm, taus, method = "laplace", 
 #' exit_dqr_eval(position_data, 60, "long", my_dqr_fits)
 #' }
 exit_dqr_eval <- function(
-  data,
-  max_position_days,
-  side,
-  dqr_fits,
-  enable_vol_bursts = TRUE,
-  enable_time_decay = TRUE,
-  minS = NA,
-  minT = NA,
-  history = FALSE,
-  ...
-) {
+    data,
+    max_position_days,
+    side,
+    dqr_fits,
+    enable_vol_bursts = TRUE,
+    enable_time_decay = TRUE,
+    minS = NA,
+    minT = NA,
+    history = FALSE,
+    ...) {
   qnames <- rev(sort(names(dqr_fits)))
   qhat_cols <- paste0("qhat_", qnames)
   exit_cols <- paste0("exit_", qnames)
@@ -365,10 +370,11 @@ exit_dqr_eval <- function(
 
   # Create exit signals for each quantile
   for (i in seq_along(qnames)) {
-    if (side == "long")
+    if (side == "long") {
       result[[exit_cols[i]]] <- result$S >= result[[qhat_cols[i]]]
-    else if (side == "short")
+    } else if (side == "short") {
       result[[exit_cols[i]]] <- result$S <= result[[qhat_cols[i]]]
+    }
   }
 
   if (side == "long") {

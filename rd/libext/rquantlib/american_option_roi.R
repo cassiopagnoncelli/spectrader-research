@@ -24,7 +24,7 @@ option_roi <- function(T, S, K = 90) {
 
 # Grid.
 maturities <- seq(1, 90, by = 1)
-prices     <- seq(70, 140, by = 1)
+prices <- seq(70, 140, by = 1)
 roi <- outer(maturities, prices, Vectorize(option_roi))
 
 # Plot.
@@ -47,7 +47,7 @@ plot_ly(
       yaxis = list(title = "Maturity in days (T/365)", tickvals = seq(0, 90, 15)),
       zaxis = list(title = "Option ROI", range = zrange),
       aspectmode = "manual",
-      aspectratio = list(x = 1, y = 1, z = 0.5),   # 👈 balance proportions
+      aspectratio = list(x = 1, y = 1, z = 0.5), # 👈 balance proportions
       camera = list(eye = list(x = 1.5, y = 1.5, z = 0.8)) # 👁️ better viewing angle
     )
   )

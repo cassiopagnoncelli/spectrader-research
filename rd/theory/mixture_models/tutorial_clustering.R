@@ -9,7 +9,7 @@ library(scales)
 library(patchwork)
 
 # Use two numeric features for visualization
-X <- iris[, 1:2]  # Sepal.Length and Sepal.Width
+X <- iris[, 1:2] # Sepal.Length and Sepal.Width
 
 # --- Without normalization ---
 mod_raw <- Mclust(X, G = 3)

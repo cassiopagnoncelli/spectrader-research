@@ -8,9 +8,9 @@ plot_concurrency_over_time <- function(df_dates, plot = TRUE) {
   df_overlap <- d$df_overlap
 
   p <- ggplot2::ggplot(
-      df_overlap,
-      ggplot2::aes(x = date, y = active_trades, fill = active_trades)
-    ) +
+    df_overlap,
+    ggplot2::aes(x = date, y = active_trades, fill = active_trades)
+  ) +
     ggplot2::geom_col(width = 0.9) +
     ggplot2::scale_fill_gradientn(
       colours = c("#4CAF50", "#FFD54F", "#E53935"),
@@ -19,12 +19,16 @@ plot_concurrency_over_time <- function(df_dates, plot = TRUE) {
       name = "Active Trades"
     ) +
     ggplot2::expand_limits(y = 0) +
-    ggplot2::labs(title = "Concurrent Trades Over Time",
-                  x = "Date", y = "Number of Active Trades") +
-    ggplot2::theme_minimal() + ggplot2::theme(legend.position = "top")
+    ggplot2::labs(
+      title = "Concurrent Trades Over Time",
+      x = "Date", y = "Number of Active Trades"
+    ) +
+    ggplot2::theme_minimal() +
+    ggplot2::theme(legend.position = "top")
 
-  if (plot)
+  if (plot) {
     base::print(p)
+  }
 
   list(data = df_overlap, plot = p)
 }
@@ -47,16 +51,21 @@ plot_concurrency_overlap_matrix <- function(df_dates, plot = TRUE) {
       colours = c("#FFFDE7", "#FFEB3B", "#F57F17", "#E53935"),
       values = grad_vals, limits = c(0, vmax), name = "Overlap (days)"
     ) +
-    ggplot2::labs(title = "Trade-to-Trade Overlap Matrix",
-                  x = "Trade i", y = "Trade j") +
+    ggplot2::labs(
+      title = "Trade-to-Trade Overlap Matrix",
+      x = "Trade i", y = "Trade j"
+    ) +
     ggplot2::theme_minimal(base_size = 12) +
-    ggplot2::theme(panel.grid = ggplot2::element_blank(),
-                   axis.text = ggplot2::element_text(size = 9),
-                   legend.position = "top") +
+    ggplot2::theme(
+      panel.grid = ggplot2::element_blank(),
+      axis.text = ggplot2::element_text(size = 9),
+      legend.position = "top"
+    ) +
     ggplot2::coord_fixed()
 
-  if (plot)
+  if (plot) {
     base::print(p)
+  }
 
   list(data = overlap_days, plot = p)
 }
@@ -68,13 +77,13 @@ plot_concurrency_overlap_matrix <- function(df_dates, plot = TRUE) {
 #' @return List with data and ggplot.
 plot_concurrency_distribution <- function(df_dates, plot = TRUE) {
   d <- prepare_overlap_data(df_dates)$df_overlap
-  
+
   # Calculate statistics
   mean_val <- base::mean(d$active_trades, na.rm = TRUE)
   sd_val <- stats::sd(d$active_trades, na.rm = TRUE)
   median_val <- stats::median(d$active_trades, na.rm = TRUE)
   mode_val <- as.numeric(names(sort(table(d$active_trades), decreasing = TRUE)[1]))
-  
+
   # Create histogram with density overlay
   p <- ggplot2::ggplot(d, ggplot2::aes(x = active_trades)) +
     # Histogram
@@ -162,8 +171,9 @@ plot_concurrency_distribution <- function(df_dates, plot = TRUE) {
       vjust = -0.5
     )
 
-  if (plot)
+  if (plot) {
     base::print(p)
+  }
 
   list(
     data = d,
@@ -203,8 +213,9 @@ plot_concurrency_waterfall <- function(df_dates, plot = TRUE) {
     ggplot2::theme_minimal() +
     ggplot2::theme(legend.position = "none")
 
-  if (plot)
+  if (plot) {
     base::print(p)
+  }
 
   list(data = df_gantt, plot = p)
 }
@@ -233,16 +244,21 @@ plot_concurrency_punchcard <- function(df_dates, plot = TRUE) {
       limits = c(1, base::max(df_punch$mean_active)),
       name = "Active Trades"
     ) +
-    ggplot2::labs(title = "Weekly Trade Concurrency (Punchcard View)",
-                  x = "Week", y = NULL) +
+    ggplot2::labs(
+      title = "Weekly Trade Concurrency (Punchcard View)",
+      x = "Week", y = NULL
+    ) +
     ggplot2::theme_minimal(base_size = 12) +
-    ggplot2::theme(axis.text.y = ggplot2::element_text(size = 10),
-                   axis.text.x = ggplot2::element_text(angle = 0, hjust = 0.5),
-                   panel.grid = ggplot2::element_blank(),
-                   legend.position = "top")
+    ggplot2::theme(
+      axis.text.y = ggplot2::element_text(size = 10),
+      axis.text.x = ggplot2::element_text(angle = 0, hjust = 0.5),
+      panel.grid = ggplot2::element_blank(),
+      legend.position = "top"
+    )
 
-  if (plot)
+  if (plot) {
     base::print(p)
+  }
 
   list(data = df_punch, plot = p)
 }

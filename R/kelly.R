@@ -57,8 +57,12 @@ kelly_fraction <- function(rets) {
   q <- 1 - p
   win <- rets[rets > 0]
   loss <- rets[rets < 0]
-  if (length(win) == 0) return(0)
-  if (length(loss) == 0) return(1)
+  if (length(win) == 0) {
+    return(0)
+  }
+  if (length(loss) == 0) {
+    return(1)
+  }
   b <- mean(win) / abs(mean(loss))
   f <- (b * p - q) / b
   max(0, min(1, f))
@@ -155,12 +159,14 @@ kelly_fraction <- function(rets) {
 #' # Compare with classical Kelly
 #' classical <- kelly_fraction(returns)
 #' quantile_median <- kelly_quantile(returns, tau = 0.5)
-#' cat(sprintf("Classical: %.3f, Quantile (median): %.3f\n", 
-#'             classical, quantile_median))
+#' cat(sprintf(
+#'   "Classical: %.3f, Quantile (median): %.3f\n",
+#'   classical, quantile_median
+#' ))
 #'
 #' # Example with fat-tailed returns
 #' set.seed(42)
-#' fat_tailed <- rt(100, df = 3) * 0.02  # Student's t with 3 df
+#' fat_tailed <- rt(100, df = 3) * 0.02 # Student's t with 3 df
 #' kelly_quantile(fat_tailed, tau = 0.5)
 #'
 #' @seealso
@@ -171,33 +177,37 @@ kelly_quantile <- local({
   # Internal helper function for single tau value
   .kelly_quantile_single <- function(returns, tau, cap) {
     stopifnot(is.numeric(tau), tau >= 0, tau <= 1)
-    
-    wins  <- returns[returns > 0]
-    loss  <- returns[returns <= 0]
-    p     <- length(wins) / length(returns)
-    q     <- 1 - p
-    
+
+    wins <- returns[returns > 0]
+    loss <- returns[returns <= 0]
+    p <- length(wins) / length(returns)
+    q <- 1 - p
+
     # Handle edge cases
-    if (length(wins) == 0) return(0)
-    if (length(loss) == 0) return(min(1, cap))
-    
+    if (length(wins) == 0) {
+      return(0)
+    }
+    if (length(loss) == 0) {
+      return(min(1, cap))
+    }
+
     r_w <- quantile(wins, probs = tau, na.rm = TRUE, names = FALSE)
     r_l <- quantile(loss, probs = 1 - tau, na.rm = TRUE, names = FALSE)
-    
+
     f_tau <- (p * r_w - q * abs(r_l)) / r_w
-    f_tau <- max(0, min(f_tau, 1))  # clamp to [0, 1]
-    
+    f_tau <- max(0, min(f_tau, 1)) # clamp to [0, 1]
+
     min(f_tau, cap)
   }
-  
+
   # Vectorized wrapper
   .kelly_quantile_vectorized <- Vectorize(.kelly_quantile_single, vectorize.args = "tau")
-  
+
   # Main function
   function(returns, tau = 0.5, cap = 0.5) {
     stopifnot(is.numeric(returns), length(returns) > 1)
     returns <- returns[is.finite(returns)]
-    
+
     result <- .kelly_quantile_vectorized(returns, tau, cap)
     return(as.numeric(result))
   }
@@ -243,7 +253,8 @@ plot_kelly_trades <- function(returns, kelly_p = NULL, log.transform = FALSE) {
     ggplot2::geom_hline(yintercept = 1, linetype = "dotted", color = "gray50") +
     ggplot2::labs(
       title = "Kelly Portfolio Growth",
-      subtitle = sprintf("%s, %d trades, f* = %.3f",
+      subtitle = sprintf(
+        "%s, %d trades, f* = %.3f",
         ifelse(log.transform, "log10(P_n)", "P_n"),
         nrow(df),
         kelly_p

@@ -92,11 +92,13 @@ W1 <- "W1"
 #' @title Timeframes: monthly
 MN1 <- "MN1"
 #' @title Timeframes: quarterly
-if (!exists("Q"))
+if (!exists("Q")) {
   Q <- "Q"
+}
 #' @title Timeframes: yearly
-if (!exists("Y"))
+if (!exists("Y")) {
   Y <- "Y"
+}
 #' @title Timeframes
 TIMEFRAMES <-
   c("M1", "M5", "M15", "M30", "H1", "H4", "D1", "W1", "MN1", "Q", "Y")

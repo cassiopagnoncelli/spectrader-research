@@ -10,7 +10,7 @@ filter_signals <- function(df_signals, within_days = 30, max_per_day = NA) {
     dplyr::filter(keep) %>%
     dplyr::select(-keep) %>%
     dplyr::ungroup()
-  
+
   # Filter exceeding max_per_day trades on the same day
   if (!is.na(max_per_day)) {
     df_filtered <- df_filtered %>%
@@ -18,6 +18,6 @@ filter_signals <- function(df_signals, within_days = 30, max_per_day = NA) {
       dplyr::slice_head(n = max_per_day) %>%
       dplyr::ungroup()
   }
-  
+
   df_filtered
 }

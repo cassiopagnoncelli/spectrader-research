@@ -1,5 +1,4 @@
 fit_tail_qr_enet <- function(nXY, Y, train_idx, tau = 0.99, alpha = 0.35) {
-
   # 1. Extract
   xx <- as.matrix(nXY[train_idx, , drop = FALSE])
   yy <- as.numeric(Y[train_idx, ]$excursion_high)
@@ -28,7 +27,7 @@ fit_tail_qr_enet <- function(nXY, Y, train_idx, tau = 0.99, alpha = 0.35) {
   fit <- glmnet::glmnet(
     x = xx,
     y = yy,
-    alpha = alpha,       # <---- KEY: allows multiple predictors
+    alpha = alpha, # <---- KEY: allows multiple predictors
     lambda = lambda_seq,
     standardize = FALSE,
     intercept = TRUE
@@ -41,7 +40,7 @@ fit_tail_qr_enet <- function(nXY, Y, train_idx, tau = 0.99, alpha = 0.35) {
 
   best_idx <- which.min(losses)
   lambda_star <- lambda_seq[best_idx]
-  coef_star   <- coef(fit)[, best_idx]
+  coef_star <- coef(fit)[, best_idx]
 
   list(
     fit          = fit,

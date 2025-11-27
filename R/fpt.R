@@ -14,8 +14,9 @@
 #' @export
 exit_fpt_boundary <- function(mu, sigma, r, K, t, side = c("long", "short")) {
   side <- match.arg(side)
-  if (abs(t) >= 1)
+  if (abs(t) >= 1) {
     stop("t must be in (0, 1)")
+  }
 
   # small time penalty for finite horizon
   lambda <- 0.5 * (1 - t) * r
@@ -27,7 +28,7 @@ exit_fpt_boundary <- function(mu, sigma, r, K, t, side = c("long", "short")) {
     beta <- 0.5 - mu / sigma^2 + root_term
     K * beta / (beta - 1)
   } else {
-    beta <- 0.5 - mu / sigma^2 - root_term  # negative root
+    beta <- 0.5 - mu / sigma^2 - root_term # negative root
     K * beta / (beta - 1)
   }
 }

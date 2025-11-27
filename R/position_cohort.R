@@ -53,7 +53,7 @@ position_cohorts <- function(symbol_dates,
     data <- data[range, ] %>% dplyr::arrange(date)
 
     date_locf <- function(prev, curr) ifelse(is.na(curr), prev + 1, curr)
-    data$date <- Reduce(date_locf, data$date, accumulate = TRUE) %>% as.Date
+    data$date <- Reduce(date_locf, data$date, accumulate = TRUE) %>% as.Date()
 
     data %>%
       dplyr::arrange(date) %>%
@@ -90,8 +90,9 @@ position_cohorts <- function(symbol_dates,
 #' @param y_name Character name of the y column to extract maximum from (default: "y")
 #' @return Tibble with columns: trade, t, exit_method, R, r, y
 position_cohort_metrics <- function(pos_data, trade, y_name = "y") {
-  if (!tibble::is_tibble(pos_data) && !is.data.frame(pos_data))
+  if (!tibble::is_tibble(pos_data) && !is.data.frame(pos_data)) {
     stop("Input must be a tibble or data frame.")
+  }
 
   idx <- dplyr::coalesce(which(na.omit(pos_data$exit))[1], dplyr::last(na.omit(pos_data$t)))
   if (is.na(idx)) {
@@ -107,14 +108,14 @@ position_cohort_metrics <- function(pos_data, trade, y_name = "y") {
   }
   # Find all exit_{em} columns
   exit_cols <- grep("^exit_", names(pos_data), value = TRUE)
-  
+
   # Determine which exit method triggered first
   exit_method <- NA_character_
   if (length(exit_cols) > 0) {
     # For each row, find the first exit column that is TRUE
     first_exit_row <- NA_integer_
     first_exit_col <- NA_character_
-    
+
     for (row_idx in seq_len(nrow(pos_data))) {
       for (col_name in exit_cols) {
         if (!is.na(pos_data[[col_name]][row_idx]) && pos_data[[col_name]][row_idx]) {
@@ -125,13 +126,13 @@ position_cohort_metrics <- function(pos_data, trade, y_name = "y") {
       }
       if (!is.na(first_exit_col)) break
     }
-    
+
     # Extract {em} from exit_{em}
     if (!is.na(first_exit_col)) {
       exit_method <- sub("^exit_", "", first_exit_col)
     }
   }
-  
+
   tibble::tibble(trade, t = idx - 1, exit_method, R, r, y)
 }
 
@@ -200,14 +201,14 @@ position_cohort_captures <- function(posl) {
         function(pos_data) {
           # Find all exit_{em} columns
           exit_cols <- grep("^exit_", names(pos_data), value = TRUE)
-          
+
           # Determine which exit method triggered first
           exit_method <- NA_character_
           if (length(exit_cols) > 0) {
             # For each row, find the first exit column that is TRUE
             first_exit_row <- NA_integer_
             first_exit_col <- NA_character_
-            
+
             for (row_idx in seq_len(nrow(pos_data))) {
               for (col_name in exit_cols) {
                 if (!is.na(pos_data[[col_name]][row_idx]) && pos_data[[col_name]][row_idx]) {
@@ -218,13 +219,13 @@ position_cohort_captures <- function(posl) {
               }
               if (!is.na(first_exit_col)) break
             }
-            
+
             # Extract {em} from exit_{em}
             if (!is.na(first_exit_col)) {
               exit_method <- sub("^exit_", "", first_exit_col)
             }
           }
-          
+
           exit_method
         },
         character(1)

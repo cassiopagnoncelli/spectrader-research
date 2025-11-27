@@ -29,11 +29,11 @@ sm_level_1 <- list(
   hyperparams = list(
     objective = "regression",
     metric = "rmse",
-    learning_rate = 0.2,              # conservative: <.1, aggressive: >.1
-    max_depth = 3,                    # default: 5
-    min_data_in_leaf = 3,             # default: 20
-    bagging_fraction = 1,             # default: 1
-    feature_fraction = 1              # default: 1
+    learning_rate = 0.2, # conservative: <.1, aggressive: >.1
+    max_depth = 3, # default: 5
+    min_data_in_leaf = 3, # default: 20
+    bagging_fraction = 1, # default: 1
+    feature_fraction = 1 # default: 1
   ),
   control = list(
     nrounds = 200,
@@ -45,9 +45,9 @@ sm_level_2 <- list(
   hyperparams = list(
     objective = "regression",
     metric = "rmse",
-    learning_rate = 0.2,              # conservative: <.1, aggressive: >.1
-    max_depth = 3,                    # default: 5
-    min_data_in_leaf = 2,             # default: 20
+    learning_rate = 0.2, # conservative: <.1, aggressive: >.1
+    max_depth = 3, # default: 5
+    min_data_in_leaf = 2, # default: 20
     bagging_fraction = 0.8,
     feature_fraction = 0.8
   ),
@@ -61,13 +61,13 @@ prepare_lgb_params <- function(params) {
   # Ensure LightGBM parameters are coherent with the chosen caps
   updated <- params
   if (!is.null(updated$max_depth) &&
-      is.null(updated$num_leaves) &&
-      updated$max_depth > 0) {
+    is.null(updated$num_leaves) &&
+    updated$max_depth > 0) {
     updated$num_leaves <- max(2, 2^updated$max_depth)
   }
   if (!is.null(updated$bagging_fraction) &&
-      updated$bagging_fraction < 1 &&
-      is.null(updated$bagging_freq)) {
+    updated$bagging_fraction < 1 &&
+    is.null(updated$bagging_freq)) {
     updated$bagging_freq <- 1
   }
   if (is.null(updated$metric)) {
@@ -77,8 +77,7 @@ prepare_lgb_params <- function(params) {
 }
 
 perform_train_stacked_model <- function(
-  train_indices, val_indices, test_indices, X, y, aux, verbose = TRUE
-) {
+    train_indices, val_indices, test_indices, X, y, aux, verbose = TRUE) {
   # LEVEL 1: Train LightGBM models for each auxiliary target
   n_aux <- length(aux)
 
@@ -133,8 +132,10 @@ perform_train_stacked_model <- function(
     X_stacked <- cbind(X, pred_matrix)
 
     if (verbose) {
-      cat(sprintf("Stacked features: %d (original) + %d (predictions) = %d total\n",
-                  ncol(X), n_aux, ncol(X_stacked)))
+      cat(sprintf(
+        "Stacked features: %d (original) + %d (predictions) = %d total\n",
+        ncol(X), n_aux, ncol(X_stacked)
+      ))
     }
   }
 

@@ -28,11 +28,11 @@ after <- function() {
 tick <- function() {
   # Find trades that should be entered: entry_date has passed and no order_id yet
   trade_ids <- which(
-    !is.na(trades$entry_date) & 
-      is.na(trades$order_id) & 
+    !is.na(trades$entry_date) &
+      is.na(trades$order_id) &
       Date() >= trades$entry_date
   )
-  
+
   if (length(trade_ids) > 0) {
     for (trade_id in trade_ids) {
       ticker_id <- select_ticker_name(trades$symbol[trade_id])
