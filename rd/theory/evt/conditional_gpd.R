@@ -79,7 +79,11 @@ for (i in seq_along(param_stability_u)) {
     tryCatch(
       {
         d <- as.data.frame(cbind(y = y_e, x_e))
-        f <- evgam(list(as.formula(paste("y ~", x_names[1])), as.formula(paste("~", x_names[1]))), data = d, family = "gpd")
+        f <- evgam(
+          list(as.formula(paste("y ~", x_names[1])), as.formula(paste("~", x_names[1]))),
+          data = d,
+          family = "gpd"
+        )
         scale_est[i] <- exp(coef(f)[[1]][1])
         shape_est[i] <- coef(f)[[2]][1]
       },

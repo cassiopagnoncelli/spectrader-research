@@ -282,7 +282,10 @@ ui <- dashboardPage(
             title = "Exit Methods Summary",
             status = "primary",
             solidHeader = TRUE,
-            p("Summary statistics for different exit methods. Uncaptured positions have no exit method (NA), while captured positions exited via specific strategies.")
+            p(
+              "Summary statistics for different exit methods. Uncaptured positions have no exit method (NA), ",
+              "while captured positions exited via specific strategies."
+            )
           )
         ),
         fluidRow(
@@ -432,7 +435,10 @@ ui <- dashboardPage(
                 )
               )
             ),
-            p("Scatter plot showing captured (green X) and uncaptured (red diamonds) positions with exit time t on x-axis and final value S on y-axis.")
+            p(
+              "Scatter plot showing captured (green X) and uncaptured (red diamonds) positions ",
+              "with exit time t on x-axis and final value S on y-axis."
+            )
           )
         ),
         fluidRow(
@@ -564,19 +570,30 @@ ui <- dashboardPage(
             solidHeader = TRUE,
             p(
               style = "background-color: #f0f0f0; padding: 10px; border-radius: 5px; margin-bottom: 15px;",
-              strong("Note: "), "American Option Pricing is non-deterministic when volatilities (vol_0, vol_t) are not explicitly set. ",
-              "The model will estimate volatilities from the data, which can produce slightly different results on each calculation."
+              strong("Note: "),
+              "American Option Pricing is non-deterministic when volatilities (vol_0, vol_t) ",
+              "are not explicitly set. The model will estimate volatilities from the data, which ",
+              "can produce slightly different results on each calculation."
             ),
             fluidRow(
               column(
                 width = 6,
                 h4("Parameters"),
-                numericInput("options_kelly_K", "Strike Multiplier (K):", value = 1.25, min = 0.1, max = 2.0, step = 0.05),
+                numericInput(
+                  "options_kelly_K", "Strike Multiplier (K):",
+                  value = 1.25, min = 0.1, max = 2.0, step = 0.05
+                ),
                 numericInput("options_kelly_tm", "Days to Maturity (tm):", value = 21, min = 1, max = 100, step = 1),
                 numericInput("options_kelly_tau", "quantile τ:", value = 0.3, min = 0.01, max = 0.99, step = 0.01),
                 numericInput("options_kelly_cap", "Kelly cap:", value = 0.4, min = 0.01, max = 1.0, step = 0.01),
-                numericInput("options_kelly_vol_0", "Entry Volatility (σ₀):", value = NA, min = 0.05, max = 3.0, step = 0.05),
-                numericInput("options_kelly_vol_t", "Exit Volatility (σₜ):", value = NA, min = 0.05, max = 3.0, step = 0.05)
+                numericInput(
+                  "options_kelly_vol_0", "Entry Volatility (σ₀):",
+                  value = NA, min = 0.05, max = 3.0, step = 0.05
+                ),
+                numericInput(
+                  "options_kelly_vol_t", "Exit Volatility (σₜ):",
+                  value = NA, min = 0.05, max = 3.0, step = 0.05
+                )
               ),
               column(
                 width = 6,
@@ -630,7 +647,10 @@ ui <- dashboardPage(
             title = "DQR Model Analysis",
             status = "primary",
             solidHeader = TRUE,
-            p("Decaying Quantile Regression models for risk management. Each model represents a fitted quantile regression for different risk thresholds."),
+            p(
+              "Decaying Quantile Regression models for risk management. ",
+              "Each model represents a fitted quantile regression for different risk thresholds."
+            ),
             selectInput("dqr_model_select", "Select Model:", choices = NULL)
           )
         ),
@@ -1455,7 +1475,11 @@ server <- function(input, output, session) {
           yaxis = list(visible = FALSE),
           annotations = list(
             list(
-              text = "Please ensure 'posl_raw' exists in the global environment.\nRun the trade simulation script to generate this data.",
+              text = paste(
+                "Please ensure 'posl_raw' exists in the global environment.",
+                "Run the trade simulation script to generate this data.",
+                sep = "\n"
+              ),
               xref = "paper",
               yref = "paper",
               x = 0.5,
@@ -1543,7 +1567,10 @@ server <- function(input, output, session) {
     # Create card for uncaptured
     row <- summary_data[1, ]
     div(
-      style = "background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin-bottom: 15px;",
+      style = paste(
+        "background-color: #f9f9f9; border: 1px solid #ddd;",
+        "border-radius: 8px; padding: 20px; margin-bottom: 15px;"
+      ),
       h4(style = "margin-top: 0; color: #d9534f;", "Uncaptured (NA)"),
       fluidRow(
         column(
@@ -1552,8 +1579,14 @@ server <- function(input, output, session) {
           tags$table(
             style = "width: 100%; font-size: 16px;",
             tags$tr(tags$td(strong("Count:")), tags$td(style = "text-align: right;", sprintf("%d", row$n))),
-            tags$tr(tags$td(strong("Overall Prob:")), tags$td(style = "text-align: right;", sprintf("%.2f%%", row$overall_probability * 100))),
-            tags$tr(tags$td(strong("Capture Prob:")), tags$td(style = "text-align: right;", sprintf("%.2f%%", row$capture_probability * 100)))
+            tags$tr(
+              tags$td(strong("Overall Prob:")),
+              tags$td(style = "text-align: right;", sprintf("%.2f%%", row$overall_probability * 100))
+            ),
+            tags$tr(
+              tags$td(strong("Capture Prob:")),
+              tags$td(style = "text-align: right;", sprintf("%.2f%%", row$capture_probability * 100))
+            )
           )
         ),
         column(
@@ -1572,8 +1605,14 @@ server <- function(input, output, session) {
           tags$table(
             style = "width: 100%; font-size: 16px;",
             tags$tr(tags$td(strong("Expected:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$expected))),
-            tags$tr(tags$td(strong("Expected|Capture:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$expected_given_capture))),
-            tags$tr(tags$td(strong("Min/Max:")), tags$td(style = "text-align: right;", sprintf("%.3f / %.3f", row$min_R, row$max_R)))
+            tags$tr(
+              tags$td(strong("Expected|Capture:")),
+              tags$td(style = "text-align: right;", sprintf("%.4f", row$expected_given_capture))
+            ),
+            tags$tr(
+              tags$td(strong("Min/Max:")),
+              tags$td(style = "text-align: right;", sprintf("%.3f / %.3f", row$min_R, row$max_R))
+            )
           )
         )
       )
@@ -1601,7 +1640,10 @@ server <- function(input, output, session) {
       text_color <- if (row$mean_R > 0) "#155724" else "#721c24"
 
       div(
-        style = sprintf("background-color: %s; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin-bottom: 15px;", card_color),
+        style = sprintf(
+          "background-color: %s; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin-bottom: 15px;",
+          card_color
+        ),
         h4(style = sprintf("margin-top: 0; color: %s;", text_color), as.character(row$exit_method)),
         fluidRow(
           column(
@@ -1610,8 +1652,14 @@ server <- function(input, output, session) {
             tags$table(
               style = "width: 100%; font-size: 16px;",
               tags$tr(tags$td(strong("Count:")), tags$td(style = "text-align: right;", sprintf("%d", row$n))),
-              tags$tr(tags$td(strong("Overall Prob:")), tags$td(style = "text-align: right;", sprintf("%.2f%%", row$overall_probability * 100))),
-              tags$tr(tags$td(strong("Capture Prob:")), tags$td(style = "text-align: right;", sprintf("%.2f%%", row$capture_probability * 100)))
+              tags$tr(
+                tags$td(strong("Overall Prob:")),
+                tags$td(style = "text-align: right;", sprintf("%.2f%%", row$overall_probability * 100))
+              ),
+              tags$tr(
+                tags$td(strong("Capture Prob:")),
+                tags$td(style = "text-align: right;", sprintf("%.2f%%", row$capture_probability * 100))
+              )
             )
           ),
           column(
@@ -1620,7 +1668,10 @@ server <- function(input, output, session) {
             tags$table(
               style = "width: 100%; font-size: 16px;",
               tags$tr(tags$td(strong("Mean R:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$mean_R))),
-              tags$tr(tags$td(strong("Median R:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$median_R))),
+              tags$tr(
+                tags$td(strong("Median R:")),
+                tags$td(style = "text-align: right;", sprintf("%.4f", row$median_R))
+              ),
               tags$tr(tags$td(strong("SD:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$sd_R))),
               tags$tr(tags$td(strong("SE:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$se_R)))
             )
@@ -1630,8 +1681,14 @@ server <- function(input, output, session) {
             h5("Expected Values"),
             tags$table(
               style = "width: 100%; font-size: 16px;",
-              tags$tr(tags$td(strong("Expected:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$expected))),
-              tags$tr(tags$td(strong("Expected|Capt:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$expected_given_capture))),
+              tags$tr(
+                tags$td(strong("Expected:")),
+                tags$td(style = "text-align: right;", sprintf("%.4f", row$expected))
+              ),
+              tags$tr(
+                tags$td(strong("Expected|Capt:")),
+                tags$td(style = "text-align: right;", sprintf("%.4f", row$expected_given_capture))
+              ),
               tags$tr(tags$td(strong("IQR:")), tags$td(style = "text-align: right;", sprintf("%.4f", row$iqr_R)))
             )
           ),
@@ -1990,7 +2047,8 @@ server <- function(input, output, session) {
         HTML(sprintf(
           "<div style='padding: 20px;'>
           <h4>Diagnostics</h4>
-          <div style='background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px; padding: 15px; margin-top: 10px;'>
+          <div style='background-color: #f8d7da; border: 1px solid #f5c6cb;
+            border-radius: 4px; padding: 15px; margin-top: 10px;'>
             <p style='color: #721c24; margin: 0;'><strong>⚠ Error:</strong> %s</p>
           </div>
           <div style='margin-top: 15px; padding: 10px; background-color: #f0f0f0; border-radius: 4px;'>

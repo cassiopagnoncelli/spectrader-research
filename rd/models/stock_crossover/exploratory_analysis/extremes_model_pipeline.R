@@ -158,7 +158,10 @@ score_evt_dataset <- function(df_raw,
 # Main pipeline ----------------------------------------------------------------
 # ------------------------------------------------------------------------------
 
-evt_formula_string <- "excess ~ ae_volatility_vel_0 + close_signal_ratio_1 + signal_fast_ratio + smoothed_close + smoothed_close_vel_1"
+evt_formula_string <- paste(
+  "excess ~ ae_volatility_vel_0 + close_signal_ratio_1 + signal_fast_ratio",
+  "+ smoothed_close + smoothed_close_vel_1"
+)
 evt_formula <- stats::as.formula(evt_formula_string)
 evt_features <- setdiff(all.vars(evt_formula), "excess")
 evt_threshold_quantile <- 0.97

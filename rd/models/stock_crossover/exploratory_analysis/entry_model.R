@@ -188,7 +188,8 @@ perform_train_stacked_model <- function(
   mae_val <- mean(abs(pred_val - y_val), na.rm = TRUE)
   mae_test <- mean(abs(pred_test - y_test), na.rm = TRUE)
 
-  r2_train <- 1 - sum((pred_train - y_train)^2, na.rm = TRUE) / sum((y_train - mean(y_train, na.rm = TRUE))^2, na.rm = TRUE)
+  r2_train <- 1 - sum((pred_train - y_train)^2, na.rm = TRUE) /
+    sum((y_train - mean(y_train, na.rm = TRUE))^2, na.rm = TRUE)
   r2_val <- 1 - sum((pred_val - y_val)^2, na.rm = TRUE) / sum((y_val - mean(y_val, na.rm = TRUE))^2, na.rm = TRUE)
   r2_test <- 1 - sum((pred_test - y_test)^2, na.rm = TRUE) / sum((y_test - mean(y_test, na.rm = TRUE))^2, na.rm = TRUE)
 
