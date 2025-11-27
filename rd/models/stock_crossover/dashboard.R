@@ -947,7 +947,7 @@ server <- function(input, output, session) { # nolint
   # Overview plots
   output$overview_distribution <- renderPlot({
     req(rv$dfsr)
-    dtools::plot_distribution(na.omit(rv$dfsr$R), title = "Returns Distribution")
+    dtools::plot_distribution(na.omit(rv$dfsr$R), groups = c(0), bins = NULL, title = "Returns Distribution")
   })
 
   output$overview_kelly <- renderPlot({
@@ -1029,7 +1029,7 @@ server <- function(input, output, session) { # nolint
   # Returns Distribution
   output$returns_distribution <- renderPlot({
     req(rv$dfsr)
-    dtools::plot_distribution(na.omit(rv$dfsr$R), bins = input$bins, title = "Returns Distribution")
+    dtools::plot_distribution(na.omit(rv$dfsr$R), groups = c(0), bins = NULL, title = "Returns Distribution")
   })
 
   output$returns_stats <- renderUI({

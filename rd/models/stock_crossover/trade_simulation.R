@@ -38,7 +38,7 @@ if (nrow(signals) == 0) {
 
 # Exits for each position
 before_days <- 50 # Exit methods require long enough history for calculations.
-max_position_days <- 30
+max_position_days <- 20
 posl_raw <- position_cohorts(signals, before_days, max_position_days, mcnXY)
 posl <- lapply(seq_along(posl_raw), function(i) {
   exit_pipeline(
@@ -51,7 +51,7 @@ posl <- lapply(seq_along(posl_raw), function(i) {
       enable_vol_bursts = TRUE,
       minS = 1.08,
       minT = 4,
-      alpha = .05
+      alpha = .45
     ),
     # # Volatility Adjusted Trailing Stops
     exit_vats(
