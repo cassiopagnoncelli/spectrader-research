@@ -15,25 +15,20 @@ if (FALSE) {
 # Output: models fits.
 #
 
-# --
 # Decaying Quantile Regression (DQR) for exit signals.
 
 # General DQR formula for exit models
-dqr_general_formula <- S ~ t + S_1 + S_2 +    # Time and price paths
+dqr_general_formula <- S ~ S_1 + S_2 +
   # Cumulative returns
   cr_3 + cr_7 + cr_15 + cr_15_pdf +
   # Entropy
-  H + H_vel_0 + H_accel_0 + H_slow + H_vel_0 + H_accel_0 +
+  H_accel_0 +
   # Hurst coefficient
-  wh + wh_vel_0 + wh_accel_0 + wh_pdf +
+  wh + wh_vel_0 + wh_accel_0 +
   # Autoencoder
   ae_recon_error + ae_volatility + ae_recon_error_pdf + ae_volatility_pdf +
   # EGARCH volatilities
-  egarch11_omega + egarch11_alpha + egarch11_gamma + egarch11_beta +
-  egarch11_persistence + egarch11_vol + egarch11_vol_fc5 + egarch11_vol_fc10 + egarch11_vol_fc20 +
-  # Volume EGARCH volatilities
-  volume_egarch11_persistence + volume_egarch11_vol + volume_egarch11_vol_fc5 +
-  volume_egarch11_vol_fc10 + volume_egarch11_vol_fc20 +
+  egarch11_gamma + volume_egarch11_persistence +
   # Volatility
   vol +
   # Market
