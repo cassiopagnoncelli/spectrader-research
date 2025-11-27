@@ -38,7 +38,7 @@ plot_concurrency_over_time <- function(df_dates, plot = TRUE) {
 #' @param df_dates Input data frame.
 #' @param plot Logical; if TRUE prints plot.
 #' @return List with matrix and ggplot.
-plot_concurrency_overlap_matrix <- function(df_dates, plot = TRUE) {
+plot_concurrency_matrix <- function(df_dates, plot = TRUE) {
   d <- prepare_overlap_data(df_dates)
   overlap_days <- d$overlap_days
   vmax <- base::max(overlap_days, na.rm = TRUE)

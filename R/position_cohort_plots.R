@@ -572,7 +572,8 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
     for (i in seq_along(hist_captured_S$counts)) {
       fig <- fig %>% plotly::add_trace(
         x = c(0, 0, hist_captured_S$counts[i], hist_captured_S$counts[i]),
-        y = c(hist_captured_S$breaks[i], hist_captured_S$breaks[i + 1], hist_captured_S$breaks[i + 1], hist_captured_S$breaks[i]),
+        y = c(hist_captured_S$breaks[i], hist_captured_S$breaks[i + 1],
+              hist_captured_S$breaks[i + 1], hist_captured_S$breaks[i]),
         type = "scatter",
         mode = "lines",
         fill = "toself",
@@ -612,7 +613,8 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
     for (i in seq_along(hist_uncaptured_S$counts)) {
       fig <- fig %>% plotly::add_trace(
         x = c(0, 0, hist_uncaptured_S$counts[i], hist_uncaptured_S$counts[i]),
-        y = c(hist_uncaptured_S$breaks[i], hist_uncaptured_S$breaks[i + 1], hist_uncaptured_S$breaks[i + 1], hist_uncaptured_S$breaks[i]),
+        y = c(hist_uncaptured_S$breaks[i], hist_uncaptured_S$breaks[i + 1],
+              hist_uncaptured_S$breaks[i + 1], hist_uncaptured_S$breaks[i]),
         type = "scatter",
         mode = "lines",
         fill = "toself",
@@ -641,7 +643,9 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
       name = "Density Uncaptured"
     )
 
-    x_right_max <- max(x_right_max, max(hist_uncaptured_S$counts, dens_uncaptured_S$y * dens_uncaptured_scale, na.rm = TRUE))
+    x_right_max <- max(x_right_max,
+                       max(hist_uncaptured_S$counts,
+                           dens_uncaptured_S$y * dens_uncaptured_scale, na.rm = TRUE))
   }
 
   # Create shapes for reference lines
