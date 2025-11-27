@@ -35,7 +35,8 @@ exit_pipeline <- function(..., position) {
 #' @return A function that takes data and optional history parameter
 #' @export
 exit_dqr <- function(
-    dqr_fits, max_position_days, side, enable_vol_bursts = TRUE, enable_time_decay = TRUE, minS = NA, minT = NA, ...) {
+  dqr_fits, max_position_days, side, enable_vol_bursts = TRUE, enable_time_decay = TRUE, minS = NA, minT = NA, ...
+) {
   if (!is.list(dqr_fits) || length(dqr_fits) == 0) {
     stop("dqr_fits must be a list of fitted quantile regression models.")
   }
@@ -148,6 +149,60 @@ exit_fpt <- function(interest_rate = 0.0425, maturity = 15 / 365, side = "long",
   }
 }
 
+#' Rule-Based Exit Strategy
+#'
+#' Creates an exit function based on configurable price thresholds including
+#' upper and lower bounds, and breakeven protection rules that activate at
+#' specified time points during the position lifecycle.
+#'
+#' @param side Position type: "long" or "short" (default: "long")
+#' @param upper Upper price threshold for exit (relative to entry price)
+#' @param upper_t Time point (in days) at which the upper threshold becomes active
+#' @param lower Lower price threshold for exit (relative to entry price)
+#' @param lower_t Time point (in days) at which the lower threshold becomes active
+#' @param breakeven Breakeven threshold - price level that must be exceeded before
+#'   breakeven protection activates
+#' @param breakeven_t Time point (in days) at which breakeven protection becomes active
+#' @param ... Additional arguments (currently unused)
+#'
+#' @details
+#' The function creates time-dependent exit rules:
+#' \itemize{
+#'   \item \strong{Upper threshold}: Exits when price exceeds \code{upper} after time \code{upper_t}
+#'   \item \strong{Lower threshold}: Exits when price falls below \code{lower} after time \code{lower_t}
+#'   \item \strong{Breakeven protection}:
+#'     \itemize{
+#'       \item For long positions: If cumulative max exceeds \code{breakeven} after time
+#'         \code{breakeven_t}, exits when price falls to 0.98-1.05 range
+#'       \item For short positions: If cumulative min falls below \code{breakeven} after time
+#'         \code{breakeven_t}, exits when price rises to 0.95-1.02 range
+#'     }
+#' }
+#'
+#' All price thresholds are specified relative to the entry price (normalized to 1).
+#' Time thresholds are specified in days from position entry (t = 0).
+#'
+#' @return A function that takes data with columns (t, S, r, exit) and an optional
+#'   history parameter, returning the data with updated exit signals
+#'
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Exit strategy with upper/lower bounds and breakeven protection
+#' exit_fn <- exit_ruleset(
+#'   side = "long",
+#'   upper = 1.5,      # Exit if price reaches 150% of entry
+#'   upper_t = 5,      # Activate upper bound after 5 days
+#'   lower = 0.9,      # Exit if price falls to 90% of entry
+#'   lower_t = 2,      # Activate lower bound after 2 days
+#'   breakeven = 1.2,  # Enable breakeven protection if price exceeds 120%
+#'   breakeven_t = 3   # Activate breakeven protection after 3 days
+#' )
+#'
+#' # Apply to position data
+#' position_with_exits <- exit_fn(position_data, history = FALSE)
+#' }
 exit_ruleset <- function(
     side = c("long", "short"), upper = NA, upper_t = NA, lower = NA, lower_t = NA,
     breakeven = NA, breakeven_t = NA, ...) {
