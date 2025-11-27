@@ -35,7 +35,14 @@ exit_pipeline <- function(..., position) {
 #' @return A function that takes data and optional history parameter
 #' @export
 exit_dqr <- function(
-  dqr_fits, max_position_days, side, enable_vol_bursts = TRUE, enable_time_decay = TRUE, minS = NA, minT = NA, ...
+  dqr_fits,
+  max_position_days,
+  side,
+  enable_vol_bursts = TRUE,
+  enable_time_decay = TRUE,
+  minS = NA,
+  minT = NA,
+  ...
 ) {
   if (!is.list(dqr_fits) || length(dqr_fits) == 0) {
     stop("dqr_fits must be a list of fitted quantile regression models.")
@@ -192,12 +199,12 @@ exit_fpt <- function(interest_rate = 0.0425, maturity = 15 / 365, side = "long",
 #' # Exit strategy with upper/lower bounds and breakeven protection
 #' exit_fn <- exit_ruleset(
 #'   side = "long",
-#'   upper = 1.5,      # Exit if price reaches 150% of entry
-#'   upper_t = 5,      # Activate upper bound after 5 days
-#'   lower = 0.9,      # Exit if price falls to 90% of entry
-#'   lower_t = 2,      # Activate lower bound after 2 days
-#'   breakeven = 1.2,  # Enable breakeven protection if price exceeds 120%
-#'   breakeven_t = 3   # Activate breakeven protection after 3 days
+#'   upper = 1.5, # Exit if price reaches 150% of entry
+#'   upper_t = 5, # Activate upper bound after 5 days
+#'   lower = 0.9, # Exit if price falls to 90% of entry
+#'   lower_t = 2, # Activate lower bound after 2 days
+#'   breakeven = 1.2, # Enable breakeven protection if price exceeds 120%
+#'   breakeven_t = 3 # Activate breakeven protection after 3 days
 #' )
 #'
 #' # Apply to position data
