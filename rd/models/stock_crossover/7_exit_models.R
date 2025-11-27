@@ -19,7 +19,8 @@ if (FALSE) {
 # Decaying Quantile Regression (DQR) for exit signals.
 
 # General DQR formula for exit models
-dqr_general_formula <- S ~ t + S_1 + S_2 + R_1 + R_2 + vix_2 + wh + vix
+dqr_general_formula <- S ~ t + S_1 + S_2 + cr_3 + cr_7 + cr_15 + cr_15_pdf +
+  H_slow + wh + wh_pdf + vix + vvix + ae_recon_error
 dqr_general_formula
 
 # Fit exit dqr on train subset
@@ -38,7 +39,7 @@ start_time <- Sys.time()
 dqr_fits <- train_dqr(
   dqr_signals_train,
   quotes = mcnXY[train_idx, ],
-  taus = c(.92, .86, .82, .75),
+  taus = c(.92, .82, .75),
   formulas = list(
     dqr_general_formula,
     dqr_general_formula,

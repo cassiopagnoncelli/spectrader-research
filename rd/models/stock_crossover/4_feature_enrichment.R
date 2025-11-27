@@ -19,11 +19,11 @@ start_time <- Sys.time()
 quantile_specs <- list(
   excursion_high = list(
     y_col = "excursion_high",
-    taus = c() # c(q980 = 0.98, q993 = 0.993, q999 = 0.999)
+    taus = c(q980 = 0.98, q993 = 0.993, q999 = 0.999)
   ),
   excursion_low = list(
     y_col = "excursion_low",
-    taus = c() # c(q980 = 0.98, q993 = 0.993, q999 = 0.999)
+    taus = c(q980 = 0.98, q993 = 0.993, q999 = 0.999)
   )
 )
 
@@ -157,24 +157,31 @@ if (length(trained_models) > 0) {
 }
 
 # Scale H to nH based on train set statistics.
-H_scaled <- scale(H[train_idx, ])
-H_center <- attr(H_scaled, "scaled:center")
-H_scales <- attr(H_scaled, "scaled:scale")
-
-nH <- tibble::as_tibble(
-  setNames(
-    lapply(names(H), function(col) rep(NA, nrow(zX))),
-    names(H)
+# Only perform scaling if there are columns to scale
+if (ncol(H) > 0) {
+  H_scaled <- scale(H[train_idx, ])
+  H_center <- attr(H_scaled, "scaled:center")
+  H_scales <- attr(H_scaled, "scaled:scale")
+  
+  nH <- tibble::as_tibble(
+    setNames(
+      lapply(names(H), function(col) rep(NA, nrow(zX))),
+      names(H)
+    )
   )
-)
-
-nH[stages_idx, ] <- scale_new_data(
-  H[stages_idx, ],
-  center = H_center,
-  scale = H_scales
-)
-
-rm(H_scaled)
-gc()
+  
+  nH[stages_idx, ] <- scale_new_data(
+    H[stages_idx, ],
+    center = H_center,
+    scale = H_scales
+  )
+  
+  rm(H_scaled)
+  gc()
+} else {
+  # If no columns to scale, create an empty tibble with correct number of rows
+  nH <- tibble::tibble(.rows = nrow(zX))
+  message("No features to enrich - H has 0 columns")
+}
 
 message("Feature enrichment complete")

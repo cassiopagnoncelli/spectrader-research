@@ -3,7 +3,7 @@ pkg_patterns <- c(
   qetl = "../qetl/builds/qetl_*.tar.gz",
   fets = "../fets/builds/fets_*.tar.gz",
   qboost = "../qboost/builds/qboost_*.tar.gz",
-  findpdf = "../findpdf/builds/findpdf_*.tar.gz"
+  dtools = "../dtools/builds/dtools_*.tar.gz"
 )
 
 for (pkg in names(pkg_patterns)) {

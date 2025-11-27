@@ -42,17 +42,48 @@ train_dqr <- function(signals, quotes, taus, formulas, max_position_days = 60) {
   )
 
   # Amalgamate all positions into a single data frame
-  data <- purrr::map_dfr(seq_along(posl), \(i) {
+  data_raw <- purrr::map_dfr(seq_along(posl), \(i) {
     posl[[i]] %>%
       dplyr::filter(t > 0) %>%
-      dplyr::mutate(position_id = i, t_norm = t / max(t)) %>%
-      dplyr::select(-c(symbol, date, close, fets::fwd_goals())) %>%
-      na.omit()
+      dplyr::mutate(position_id = i, t_norm = t / max(t))
   })
+  
+  # Check if we have any data after filtering
+  if (nrow(data_raw) == 0) {
+    stop(
+      "No data remaining after filtering position cohorts (t > 0). ",
+      "Check that position_cohorts() generated valid data with t > 0.",
+      call. = FALSE
+    )
+  }
+  
+  # Remove unnecessary columns
+  data_filtered <- data_raw %>%
+    dplyr::select(-c(symbol, date, close, fets::fwd_goals()))
+  
+  # Remove rows with missing values
+  data <- na.omit(data_filtered)
+  
+  # Final validation
+  if (nrow(data) == 0) {
+    n_before <- nrow(data_filtered)
+    stop(
+      "All ", n_before, " rows removed by na.omit(). ",
+      "Check for missing values in your features. ",
+      "Columns in data: ", paste(names(data_filtered), collapse = ", "),
+      call. = FALSE
+    )
+  }
+  
+  # Log the data preparation results
+  message(
+    "Training data prepared: ", nrow(data), " observations ",
+    "from ", length(posl), " positions"
+  )
 
   models <- purrr::map2(
     formulas, taus,
-    \(formula, tau) quantreg::rq(formula, tau = tau, data = data)
+    \(formula, tau) qboost::qboost(formula, tau = tau, data = data)
   )
   names(models) <- paste0("q", sprintf("%02.0f", taus * 100))
   models

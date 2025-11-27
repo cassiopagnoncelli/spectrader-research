@@ -17,8 +17,8 @@ if (TRUE && !exists("dfsr")) {
 #
 cat(sprintf("Signal q:\n  qeh_tau: %.4f\n  qel_tau: %.4f\n", qeh_tau, qel_tau))
 
-qeh_cutoff <- .98
-qel_cutoff <- .993
+qeh_cutoff <- .5
+qel_cutoff <- .997
 
 # Generate trading signals
 signals <- mnXYP[test_idx, ] %>%
@@ -38,7 +38,7 @@ if (nrow(signals) == 0) {
 
 # Exits for each position
 before_days <- 50 # Exit methods require long enough history for calculations.
-max_position_days <- 35
+max_position_days <- 30
 posl_raw <- position_cohorts(signals, before_days, max_position_days, mcnXY)
 posl <- lapply(seq_along(posl_raw), function(i) {
   exit_pipeline(
@@ -50,8 +50,8 @@ posl <- lapply(seq_along(posl_raw), function(i) {
       enable_time_decay = TRUE,
       enable_vol_bursts = TRUE,
       minS = 1.08,
-      minT = 16,
-      alpha = .3
+      minT = 4,
+      alpha = .05
     ),
     # # Volatility Adjusted Trailing Stops
     exit_vats(
@@ -61,12 +61,12 @@ posl <- lapply(seq_along(posl_raw), function(i) {
       minT = 16
     ),
     # # First Passage Time
-    # exit_fpt(
-    #   maturity = max_position_days / 365,
-    #   side = "long",
-    #   minS = 1.01,
-    #   minT = 15
-    # ),
+    exit_fpt(
+      maturity = max_position_days / 365,
+      side = "long",
+      minS = 1.01,
+      minT = 15
+    ),
     # # Fixed rule sets
     exit_ruleset(
       side = "long",
