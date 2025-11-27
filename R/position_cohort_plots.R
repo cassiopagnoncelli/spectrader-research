@@ -596,7 +596,7 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
     )
     annotations[[length(annotations) + 1]] <- list(
       x = 1.2, y = mean_uncaptured,
-      text = sprintf("%.3f, σ=%.3f", mean_uncaptured, sd_uncaptured),
+      text = sprintf("%.3f, \u03C3=%.3f", mean_uncaptured, sd_uncaptured),
       showarrow = FALSE,
       font = list(color = "#de8383", size = 10),
       yshift = 10,
@@ -612,7 +612,7 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
     )
     annotations[[length(annotations) + 1]] <- list(
       x = 1.2, y = mean_captured,
-      text = sprintf("%.3f, σ=%.3f", mean_captured, sd_captured),
+      text = sprintf("%.3f, \u03C3=%.3f", mean_captured, sd_captured),
       showarrow = FALSE,
       font = list(color = "#508e50", size = 10),
       yshift = 10,
@@ -629,7 +629,7 @@ plot_position_cohort_captures <- function(posl, plot = TRUE, ylim = NULL) {
     )
     annotations[[length(annotations) + 1]] <- list(
       x = mean_t_captured, y = 0,
-      text = sprintf("μ=%.2f, σ=%.2f", mean_t_captured, sd_t_captured),
+      text = sprintf("\u03BC=%.2f, \u03C3=%.2f", mean_t_captured, sd_t_captured),
       showarrow = FALSE,
       font = list(color = "black", size = 10),
       yshift = -15,

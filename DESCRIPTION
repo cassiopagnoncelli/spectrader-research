@@ -28,26 +28,32 @@ Imports:
     RQuantLib,
     scales,
     shiny,
-    shinydashboard
+    shinydashboard,
+    MASS,
+    plotly,
+    zoo,
+    moments,
+    data.table,
+    digest,
+    RcppRoll
 Suggests: 
     testthat (>= 3.0.0),
     withr (>= 3.0.0),
     cyclocomp,
-    forecast,
     xgboost,
     lightgbm,
     ggfortify,
     gridExtra,
     DiagrammeR,
     quantreg,
-    MASS,
     knitr,
     qs,
     skimr,
-    moments,
     forcats,
     reshape2,
-    TTR
+    TTR,
+    fets,
+    qboost
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Config/testthat/edition: 3

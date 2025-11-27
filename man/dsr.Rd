@@ -38,7 +38,7 @@ DSR = \Phi \left(
 }
 
 where:
-PlkuCYz0PrwxUR92FBOhpbd5bZTz2PLK-\deqn{
+BuJi4pAEX1SuClpvS284U48VJJX8t0LK-\deqn{
 SR₀ = \sqrt{2 \ln M} - \frac{\ln \ln M + \ln 4\pi}{2 \sqrt{2 \ln M}}
 }
 }
