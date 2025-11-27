@@ -104,7 +104,7 @@ if (length(regular_model_specs) > 0) {
   })
   names(trained_models) <- names(regular_model_specs)
 } else {
-  message("  no fwd yhat models specified, skipping training")
+  message("  no fwd yhat regular (non-tail) models specified, skipping training")
 }
 
 message(sprintf(
