@@ -2,3 +2,16 @@
 ^renv\.lock$
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^\.gitignore$
+^\.lintr$
+^\.Renviron$
+^\.Rhistory$
+^\.Rprofile$
+^\.DS_Store$
+^\.\.Rcheck$
+^\.git$
+^builds$
+^Makefile$
+^TODO\.md$
+^rd$
+^AGENTS\.md$
