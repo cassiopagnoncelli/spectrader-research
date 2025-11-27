@@ -29,9 +29,28 @@ NULL
 # q82 <- S ~ S_1 + t + h_short + h_ratio + cr_long
 # q32 <- S ~ S_1 + t + h_long + cr_long + vix
 #
-train_dqr <- function(signals, quotes, taus, formulas, max_position_days = 60) {
-  if (length(taus) != length(formulas))
+train_dqr <- function(signals, quotes, taus, formulas, max_position_days = 60, verbose = TRUE, cache = TRUE) {
+  if (length(taus) != length(formulas)) {
     stop("taus and formulas must have the same length")
+  }
+
+  if (cache) {
+    cache_model <- cache_key(
+      params = list(
+        taus = taus,
+        formulas = formulas,
+        max_position_days = max_position_days
+      ),
+      ext = "rds",
+      fun = "dqr_train"
+    )
+    if (file.exists(cache_model$path)) {
+      if (verbose) {
+        message("Loading cached DQR models")
+      }
+      return(load_cache(cache_model))
+    }
+  }
 
   # Positions cohorts enriched for decaying quantile regression features
   posl <- position_cohorts(
@@ -76,16 +95,25 @@ train_dqr <- function(signals, quotes, taus, formulas, max_position_days = 60) {
   }
   
   # Log the data preparation results
-  message(
-    "  training data prepared: ", nrow(data), " observations ",
-    "from ", length(posl), " positions"
-  )
+  if (verbose) {
+    message(
+      "  training data prepared: ", nrow(data), " observations ",
+      "from ", length(posl), " positions"
+    )
+  }
 
   models <- purrr::map2(
     formulas, taus,
     \(formula, tau) qboost::qboost(formula, tau = tau, data = data)
   )
   names(models) <- paste0("q", sprintf("%02.0f", taus * 100))
+
+  # Persist to cache
+  if (cache) {
+    message("Saving DQR models to cache")
+    save_cache(cache_model, models)
+  }
+
   models
 }
 
