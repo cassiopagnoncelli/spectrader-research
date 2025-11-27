@@ -256,7 +256,7 @@ prob_exceed <- function(x_new, y0) {
 sample_test_idx <- sample(test_idx, 50000)
 res <- prob_exceed(nX[sample_test_idx, ], log(1.4))
 res[is.nan(res)] <- 0
-res %>% analyse_distribution
+res %>% dtools::analyse
 
 yhat_gpd <- rep(NA, length(Y$excursion_high))
 yhat_gpd[sample_test_idx] <- res

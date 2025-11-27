@@ -928,7 +928,7 @@ server <- function(input, output, session) {
   # Overview plots
   output$overview_distribution <- renderPlot({
     req(rv$dfsr)
-    plot_distribution(na.omit(rv$dfsr$R), title = "Returns Distribution")
+    dtools::plot_distribution(na.omit(rv$dfsr$R), title = "Returns Distribution")
   })
   
   output$overview_kelly <- renderPlot({
@@ -1010,7 +1010,7 @@ server <- function(input, output, session) {
   # Returns Distribution
   output$returns_distribution <- renderPlot({
     req(rv$dfsr)
-    plot_distribution(na.omit(rv$dfsr$R), bins = input$bins, title = "Returns Distribution")
+    dtools::plot_distribution(na.omit(rv$dfsr$R), bins = input$bins, title = "Returns Distribution")
   })
   
   output$returns_stats <- renderUI({
@@ -1093,7 +1093,7 @@ server <- function(input, output, session) {
     req(rv$accuracy)
     
     accuracy_captured <- rv$accuracy %>% filter(!is.na(exit_method))
-    dist <- analyse_distribution(accuracy_captured$R, groups = c(0))
+    dist <- dtools::analyse(accuracy_captured$R, groups = c(0))
     
     HTML(sprintf(
       "<h5>Distribution</h5>
@@ -1156,7 +1156,7 @@ server <- function(input, output, session) {
     req(rv$accuracy)
     
     accuracy_uncaptured <- rv$accuracy %>% filter(is.na(exit_method))
-    dist <- analyse_distribution(accuracy_uncaptured$R, groups = c(0))
+    dist <- dtools::analyse(accuracy_uncaptured$R, groups = c(0))
     
     HTML(sprintf(
       "<h5>Distribution</h5>
@@ -1217,7 +1217,7 @@ server <- function(input, output, session) {
   output$accuracy_all_dist <- renderUI({
     req(rv$accuracy)
     
-    dist <- analyse_distribution(rv$accuracy$R, groups = c(0))
+    dist <- dtools::analyse(rv$accuracy$R, groups = c(0))
     
     HTML(sprintf(
       "<h5>Distribution</h5>
@@ -1256,7 +1256,7 @@ server <- function(input, output, session) {
   output$breakdown_overall <- renderUI({
     req(breakdown_data())
     
-    dist <- analyse_distribution(breakdown_data()$R, groups = c(0))
+    dist <- dtools::analyse(breakdown_data()$R, groups = c(0))
     
     HTML(sprintf(
       "<table class='table table-bordered' style='font-size: 18px;'>
@@ -1278,7 +1278,7 @@ server <- function(input, output, session) {
   output$breakdown_g1 <- renderUI({
     req(breakdown_data())
     
-    dist <- analyse_distribution(breakdown_data()$R, groups = c(0))
+    dist <- dtools::analyse(breakdown_data()$R, groups = c(0))
     
     # Check if g1 exists in group_results
     if (!is.null(dist$group_results) && nrow(dist$group_results) > 0) {
@@ -1317,7 +1317,7 @@ server <- function(input, output, session) {
   output$breakdown_g2 <- renderUI({
     req(breakdown_data())
     
-    dist <- analyse_distribution(breakdown_data()$R, groups = c(0))
+    dist <- dtools::analyse(breakdown_data()$R, groups = c(0))
     
     # Check if g2 exists in group_results
     if (!is.null(dist$group_results) && nrow(dist$group_results) > 0) {
