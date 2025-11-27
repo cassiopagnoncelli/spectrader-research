@@ -12,13 +12,3 @@ See `dev` dir for `update_deps()`.
 
 - [x] qr (linear), [x] rq.pen, [x] evt gpd, [x] evt gevd.
 - [ ] CVaR
-
-**Latest champion models**
-
-- [ ] TabPFN 2.5
-- [ ] TabNet
-- [ ] FT-Transformer
-- [ ] NODE
-- [ ] ResNet
-- [ ] NAM / EBM / NODE-GAM
-
