@@ -1422,7 +1422,7 @@ server <- function(input, output, session) { # nolint
   # Concurrency Plot 2: Overlap Matrix
   output$concurrency_overlap_matrix <- renderPlot({
     req(df_dates())
-    plot_concurrency_overlap_matrix(df_dates(), plot = FALSE)$plot
+    plot_concurrency_matrix(df_dates(), plot = FALSE)$plot
   })
 
   # Concurrency Plot 3: Distribution
