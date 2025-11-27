@@ -11,9 +11,9 @@ kelly_fraction(rets)
 automatically removed before calculation.}
 }
 \value{
-Numeric value between 0 and 1 representing the optimal Kelly fraction.
-Returns 0 if there are no winning trades, and 1 if there are no losing trades.
-The result is bounded between 0 and 1 to prevent negative or excessive leverage.
+Numeric value between \code{0} and \code{1} representing the optimal Kelly fraction.
+Returns \code{0} if there are no winning trades, and \code{1} if there are no losing trades.
+The result is bounded between \code{0} and \code{1} to prevent negative or excessive leverage.
 }
 \description{
 Computes the classical Kelly Criterion fraction (f*) for a series of returns, which
@@ -37,9 +37,9 @@ The classical Kelly formula calculates:
 
 Edge cases:
 \itemize{
-\item If all trades are losses, returns 0 (no position)
-\item If all trades are wins, returns 1 (full position)
-\item Result is clamped to \link{0, 1} to prevent over-leveraging
+\item If all trades are losses, returns \code{0} (no position)
+\item If all trades are wins, returns \code{1} (full position)
+\item Result is clamped to \code{[0, 1]} to prevent over-leveraging
 }
 }
 \examples{

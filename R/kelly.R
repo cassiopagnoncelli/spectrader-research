@@ -9,9 +9,9 @@
 #' @param rets Numeric vector of returns. Non-finite values (NA, NaN, Inf) are
 #'   automatically removed before calculation.
 #'
-#' @return Numeric value between 0 and 1 representing the optimal Kelly fraction.
-#'   Returns 0 if there are no winning trades, and 1 if there are no losing trades.
-#'   The result is bounded between 0 and 1 to prevent negative or excessive leverage.
+#' @return Numeric value between \code{0} and \code{1} representing the optimal Kelly fraction.
+#'   Returns \code{0} if there are no winning trades, and \code{1} if there are no losing trades.
+#'   The result is bounded between \code{0} and \code{1} to prevent negative or excessive leverage.
 #'
 #' @details
 #' This function implements the classical Kelly Criterion, a formula used to determine
@@ -28,9 +28,9 @@
 #'
 #' Edge cases:
 #' \itemize{
-#'   \item If all trades are losses, returns 0 (no position)
-#'   \item If all trades are wins, returns 1 (full position)
-#'   \item Result is clamped to [0, 1] to prevent over-leveraging
+#'   \item If all trades are losses, returns \code{0} (no position)
+#'   \item If all trades are wins, returns \code{1} (full position)
+#'   \item Result is clamped to \code{[0, 1]} to prevent over-leveraging
 #' }
 #'
 #' @references
@@ -87,9 +87,9 @@ kelly_fraction <- function(rets) {
 #' @param cap Numeric value between 0 and 1 representing the maximum Kelly fraction
 #'   allowed. Default is 0.5. This caps the position size to reduce risk exposure.
 #'
-#' @return Numeric value or vector (matching length of tau) between 0 and 1 representing
-#'   the quantile-based Kelly fraction(s). Returns 0 if there are no winning trades
-#'   or no losing trades (degenerate case). Results are clamped between 0 and 1 to
+#' @return Numeric value or vector (matching length of tau) between \code{0} and \code{1} representing
+#'   the quantile-based Kelly fraction(s). Returns \code{0} if there are no winning trades
+#'   or no losing trades (degenerate case). Results are clamped between \code{0} and \code{1} to
 #'   prevent negative or excessive leverage.
 #'
 #' @details
@@ -107,7 +107,7 @@ kelly_fraction <- function(rets) {
 #'       \item r_l: (1-tau)-quantile of losing returns (complementary quantile)
 #'     }
 #'   \item Calculates: f_tau = (p * r_w - q * |r_l|) / r_w
-#'   \item Clamps result to [0, 1]
+#'   \item Clamps result to \code{[0, 1]}
 #' }
 #'
 #' The quantile parameter tau controls the risk profile:
@@ -135,8 +135,8 @@ kelly_fraction <- function(rets) {
 #'
 #' @section Edge Cases:
 #' \itemize{
-#'   \item If all returns are positive (no losses), returns 0 (conservative default)
-#'   \item If all returns are non-positive (no wins), returns 0 (no position)
+#'   \item If all returns are positive (no losses), returns \code{0} (conservative default)
+#'   \item If all returns are non-positive (no wins), returns \code{0} (no position)
 #'   \item The function validates that returns is numeric with length > 1
 #' }
 #'

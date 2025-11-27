@@ -20,9 +20,9 @@ When a vector is provided, the function returns a vector of Kelly fractions.}
 allowed. Default is 0.5. This caps the position size to reduce risk exposure.}
 }
 \value{
-Numeric value or vector (matching length of tau) between 0 and 1 representing
-the quantile-based Kelly fraction(s). Returns 0 if there are no winning trades
-or no losing trades (degenerate case). Results are clamped between 0 and 1 to
+Numeric value or vector (matching length of tau) between \code{0} and \code{1} representing
+the quantile-based Kelly fraction(s). Returns \code{0} if there are no winning trades
+or no losing trades (degenerate case). Results are clamped between \code{0} and \code{1} to
 prevent negative or excessive leverage.
 }
 \description{
@@ -48,7 +48,7 @@ The function performs the following steps:
 \item r_l: (1-tau)-quantile of losing returns (complementary quantile)
 }
 \item Calculates: f_tau = (p * r_w - q * |r_l|) / r_w
-\item Clamps result to \link{0, 1}
+\item Clamps result to \code{[0, 1]}
 }
 
 The quantile parameter tau controls the risk profile:
@@ -79,8 +79,8 @@ this method uses medians, which are inherently more robust than means.
 \section{Edge Cases}{
 
 \itemize{
-\item If all returns are positive (no losses), returns 0 (conservative default)
-\item If all returns are non-positive (no wins), returns 0 (no position)
+\item If all returns are positive (no losses), returns \code{0} (conservative default)
+\item If all returns are non-positive (no wins), returns \code{0} (no position)
 \item The function validates that returns is numeric with length > 1
 }
 }

@@ -92,10 +92,12 @@ W1 <- "W1"
 #' @title Timeframes: monthly
 MN1 <- "MN1"
 #' @title Timeframes: quarterly
+#' @name Q
 if (!exists("Q")) {
   Q <- "Q"
 }
 #' @title Timeframes: yearly
+#' @name Y
 if (!exists("Y")) {
   Y <- "Y"
 }
