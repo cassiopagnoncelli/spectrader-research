@@ -61,13 +61,13 @@ prepare_lgb_params <- function(params) {
   # Ensure LightGBM parameters are coherent with the chosen caps
   updated <- params
   if (!is.null(updated$max_depth) &&
-    is.null(updated$num_leaves) &&
-    updated$max_depth > 0) {
+        is.null(updated$num_leaves) &&
+        updated$max_depth > 0) {
     updated$num_leaves <- max(2, 2^updated$max_depth)
   }
   if (!is.null(updated$bagging_fraction) &&
-    updated$bagging_fraction < 1 &&
-    is.null(updated$bagging_freq)) {
+        updated$bagging_fraction < 1 &&
+        is.null(updated$bagging_freq)) {
     updated$bagging_freq <- 1
   }
   if (is.null(updated$metric)) {

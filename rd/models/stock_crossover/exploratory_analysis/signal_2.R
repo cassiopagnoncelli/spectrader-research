@@ -89,7 +89,7 @@ predict_extreme <- function(x_new, quantiles = c(0.95, 0.99, 0.995, 0.999)) {
   result <- matrix(NA, nrow = nrow(x_new), ncol = length(quantiles))
   colnames(result) <- paste0("q_", quantiles)
 
-  for (i in 1:nrow(x_new)) {
+  for (i in seq_len(nrow(x_new))) {
     x_df <- as.data.frame(as.list(x_new[i, ]))
     names(x_df) <- x_names
 

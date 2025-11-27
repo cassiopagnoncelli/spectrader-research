@@ -28,7 +28,7 @@ ui <- dashboardPage(
       menuItem("Options Returns", tabName = "options_returns", icon = icon("dollar-sign")),
       hr(),
       menuItem("Signal Model", tabName = "models", icon = icon("chart-bar")),
-      menuItem("DQR models", tabName = "dqr_models", icon = icon("chart-line")),
+      menuItem("DQR Model", tabName = "dqr_models", icon = icon("chart-line")),
       hr(),
       menuItem("Settings", tabName = "settings", icon = icon("cog"))
     )
@@ -621,13 +621,13 @@ ui <- dashboardPage(
         )
       ),
 
-      # DQR Models Tab
+      # DQR Model Tab
       tabItem(
         tabName = "dqr_models",
         fluidRow(
           box(
             width = 12,
-            title = "DQR Models Analysis",
+            title = "DQR Model Analysis",
             status = "primary",
             solidHeader = TRUE,
             p("Decaying Quantile Regression models for risk management. Each model represents a fitted quantile regression for different risk thresholds."),
@@ -1593,7 +1593,7 @@ server <- function(input, output, session) {
     }
 
     # Create cards for each exit method
-    cards <- lapply(1:nrow(summary_data), function(i) {
+    cards <- lapply(seq_len(nrow(summary_data)), function(i) {
       row <- summary_data[i, ]
 
       # Color based on mean return
@@ -1873,7 +1873,7 @@ server <- function(input, output, session) {
       )
   })
 
-  # DQR Models - Update dropdown choices when dqr_fits is loaded
+  # DQR Model - Update dropdown choices when dqr_fits is loaded
   observe({
     if (!is.null(rv$dqr_fits) && is.list(rv$dqr_fits) && length(rv$dqr_fits) > 0) {
       model_names <- names(rv$dqr_fits)
@@ -1889,18 +1889,18 @@ server <- function(input, output, session) {
     }
   })
 
-  # DQR Models - Render model title
+  # DQR Model - Render model title
   output$dqr_model_title <- renderText({
     req(input$dqr_model_select)
     input$dqr_model_select
   })
 
-  # DQR Models - Render model summary
+  # DQR Model - Render model summary
   output$dqr_model_summary <- renderPrint({
     req(rv$dqr_fits, input$dqr_model_select)
 
     if (!is.list(rv$dqr_fits) || length(rv$dqr_fits) == 0) {
-      cat("No DQR models found in dqr_fits")
+      cat("No DQR Model found in dqr_fits")
       return(invisible(NULL))
     }
 
@@ -1920,12 +1920,12 @@ server <- function(input, output, session) {
     summary(rv$dqr_fits[[selected_idx[1]]])
   })
 
-  # DQR Models - Render diagnostics
+  # DQR Model - Render diagnostics
   output$dqr_model_diagnostics <- renderUI({
     req(rv$dqr_fits, input$dqr_model_select)
 
     if (!is.list(rv$dqr_fits) || length(rv$dqr_fits) == 0) {
-      return(HTML("<p style='text-align: center; padding: 20px;'>No DQR models found</p>"))
+      return(HTML("<p style='text-align: center; padding: 20px;'>No DQR Model found</p>"))
     }
 
     model_names <- names(rv$dqr_fits)
@@ -1943,14 +1943,23 @@ server <- function(input, output, session) {
     # Try to compute diagnostics with detailed error handling
     tryCatch(
       {
-        # Get actual, predicted, and tau as per user specifications
-        actual <- model$y
-        predicted <- predict(model)
-        tau <- exit_dqr_extract_quantiles(rv$dqr_fits)[selected_idx[1]]
+        # Use in-sample targets/predictions stored in the qboost fit to avoid needing newdata
+        actual <- if (!is.null(model$training)) model$training$y else NULL
+        predicted <- if (!is.null(model$training)) model$training$fitted else NULL
+
+        if (is.null(actual) && !is.null(model$y)) {
+          actual <- model$y
+        }
+
+        tau <- if (!is.null(model$tau)) {
+          model$tau
+        } else {
+          exit_dqr_extract_quantiles(rv$dqr_fits)[selected_idx[1]]
+        }
 
         # Validate data
         if (is.null(actual) || is.null(predicted)) {
-          stop("Model does not contain y component or predict() returned NULL")
+          stop("Model does not contain training targets/fitted values for diagnostics")
         }
 
         if (length(actual) != length(predicted)) {
@@ -1999,7 +2008,7 @@ server <- function(input, output, session) {
     )
   })
 
-  # DQR Models - Render main path plot
+  # DQR Model - Render main path plot
   output$dqr_main_path_plot <- renderPlot({
     req(rv$dqr_fits, input$dqr_model_select)
 
@@ -2066,7 +2075,7 @@ server <- function(input, output, session) {
     )
   })
 
-  # DQR Models - Render calibration plot
+  # DQR Model - Render calibration plot
   output$dqr_calibration_plot <- renderPlot({
     req(rv$dqr_fits, input$dqr_model_select)
 

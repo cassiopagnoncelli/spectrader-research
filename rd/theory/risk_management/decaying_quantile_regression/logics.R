@@ -1,4 +1,4 @@
-# DQR models quantiles
+# DQR Model quantiles
 q <- c(.92, .86, .82, .32)
 
 # Time (scaled)

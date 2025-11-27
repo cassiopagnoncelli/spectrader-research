@@ -1,6 +1,10 @@
 cutoff <- .001
 
-lm(y ~ y_skewness + y_kurtosis, df_test_yhats %>% filter(y > 1.4)) %>%
+lm(
+  y ~ y_skewness + y_kurtosis,
+  df_test_yhats %>%
+    filter(y > 1.4)
+) %>%
   {
     print(summary(.))
   }

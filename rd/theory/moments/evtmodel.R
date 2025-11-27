@@ -69,7 +69,7 @@ coef_vec <- coef(cv_fit, s = "lambda.min")
 idx <- which(coef_vec != 0)[-1] # drop intercept
 
 if (length(idx) == 0) {
-  sel_vars <- pred_cols[1:min(5, length(pred_cols))]
+  sel_vars <- pred_cols[seq_len(min(5, length(pred_cols)))]
 } else {
   sel_vars <- pred_cols[idx]
 }

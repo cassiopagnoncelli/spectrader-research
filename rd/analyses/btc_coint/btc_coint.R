@@ -66,7 +66,7 @@ cat("H1: Series is stationary\n\n")
 series_names <- c("BTC", "NASDAQ", "M1", "M2")
 adf_results <- list()
 
-for (i in 1:ncol(coint_data)) {
+for (i in seq_len(ncol(coint_data))) {
   series_name <- series_names[i]
   series_data <- coint_data[, i]
 

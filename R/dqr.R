@@ -46,7 +46,7 @@ train_dqr <- function(signals, quotes, taus, formulas, max_position_days = 60, v
     )
     if (file.exists(cache_model$path)) {
       if (verbose) {
-        message("Loading cached DQR models")
+        message("Loading cached DQR Model")
       }
       return(load_cache(cache_model))
     }
@@ -110,7 +110,7 @@ train_dqr <- function(signals, quotes, taus, formulas, max_position_days = 60, v
 
   # Persist to cache
   if (cache) {
-    message("Saving DQR models to cache")
+    message("Saving DQR Model to cache")
     save_cache(cache_model, models)
   }
 
@@ -204,7 +204,7 @@ exit_dqr_dc <- function(t_norm, method = "laplace", alpha = .15) {
   }
 }
 
-#' Extract quantile values from fitted DQR models
+#' Extract quantile values from fitted DQR Model
 #'
 #' @param dqr_fits Named list of fitted models with names matching 'qXX' (e.g., q92, q82)
 #' @return Numeric vector of quantile values in descending order
@@ -307,7 +307,7 @@ exit_dqr_weighted_probs <- function(t_norm, vol_norm, taus, method = "laplace", 
   tibble::as_tibble(result)
 }
 
-#' Evaluate DQR models and generate exit signals
+#' Evaluate DQR Model and generate exit signals
 #'
 #' Decaying curve is leveled at extreme quantiles progressively lowering the quantiles
 #' as time goes by with occasional bursts when vix levels are high.
