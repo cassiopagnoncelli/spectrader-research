@@ -13,7 +13,7 @@ if (FALSE) {
 #
 # Outpput: fwd predictions P and complessive dataset mnXYP.
 #
-message("Training signal models")
+message("  training signal models")
 
 start_time <- Sys.time()
 

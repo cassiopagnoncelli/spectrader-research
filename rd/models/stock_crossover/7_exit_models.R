@@ -19,8 +19,26 @@ if (FALSE) {
 # Decaying Quantile Regression (DQR) for exit signals.
 
 # General DQR formula for exit models
-dqr_general_formula <- S ~ t + S_1 + S_2 + cr_3 + cr_7 + cr_15 + cr_15_pdf +
-  H_slow + wh + wh_pdf + vix + vvix + ae_recon_error
+dqr_general_formula <- S ~ t + S_1 + S_2 +    # Time and price paths
+  # Cumulative returns
+  cr_3 + cr_7 + cr_15 + cr_15_pdf +
+  # Entropy
+  H + H_vel_0 + H_accel_0 + H_slow + H_vel_0 + H_accel_0 +
+  # Hurst coefficient
+  wh + wh_vel_0 + wh_accel_0 + wh_pdf +
+  # Autoencoder
+  ae_recon_error + ae_volatility + ae_recon_error_pdf + ae_volatility_pdf +
+  # EGARCH volatilities
+  egarch11_omega + egarch11_alpha + egarch11_gamma + egarch11_beta +
+  egarch11_persistence + egarch11_vol + egarch11_vol_fc5 + egarch11_vol_fc10 + egarch11_vol_fc20 +
+  # Volume EGARCH volatilities
+  volume_egarch11_persistence + volume_egarch11_vol + volume_egarch11_vol_fc5 +
+  volume_egarch11_vol_fc10 + volume_egarch11_vol_fc20 +
+  # Volatility
+  vol +
+  # Market
+  vix + vvix
+
 dqr_general_formula
 
 # Fit exit dqr on train subset
@@ -39,14 +57,13 @@ start_time <- Sys.time()
 dqr_fits <- train_dqr(
   dqr_signals_train,
   quotes = mcnXY[train_idx, ],
-  taus = c(.92, .82, .75),
+  taus = c(.92, .82, .32),
   formulas = list(
-    dqr_general_formula,
     dqr_general_formula,
     dqr_general_formula,
     dqr_general_formula
   ),
-  max_position_days = 20
+  max_position_days = 30
 )
 
 message(

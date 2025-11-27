@@ -51,7 +51,7 @@ train_dqr <- function(signals, quotes, taus, formulas, max_position_days = 60) {
   # Check if we have any data after filtering
   if (nrow(data_raw) == 0) {
     stop(
-      "No data remaining after filtering position cohorts (t > 0). ",
+      "  no data remaining after filtering position cohorts (t > 0). ",
       "Check that position_cohorts() generated valid data with t > 0.",
       call. = FALSE
     )
@@ -77,7 +77,7 @@ train_dqr <- function(signals, quotes, taus, formulas, max_position_days = 60) {
   
   # Log the data preparation results
   message(
-    "Training data prepared: ", nrow(data), " observations ",
+    "  training data prepared: ", nrow(data), " observations ",
     "from ", length(posl), " positions"
   )
 

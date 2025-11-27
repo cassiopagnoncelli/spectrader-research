@@ -44,10 +44,10 @@ for (target_name in names(quantile_specs)) {
     var_name <- paste0("train_", model_key)
 
     if (exists(var_name)) {
-      message(sprintf("Qboost model `%s` already trained. Skipping training step.", model_key))
+      message(sprintf("  fwd forecasts model `%s` already trained, skipping training step", model_key))
       qboost_models[[target_name]][[tau_name]] <- get(var_name)
     } else {
-      message(sprintf("  Training qboost: %s (tau = %.3f)", model_key, spec$taus[tau_name]))
+      message(sprintf("  training fwd goals: %s (tau = %.3f)", model_key, spec$taus[tau_name]))
 
       model <- qboost::qboost(
         x = zX[train_idx, ],
@@ -85,7 +85,7 @@ if (length(regular_model_specs) > 0) {
     var_name <- paste0("train_", model_name)
 
     if (exists(var_name)) {
-      message(sprintf("Entry model `%s` already trained. Skipping training step.", model_name))
+      message(sprintf("  fwd forecast qboost `%s` already trained, skipping training step", model_name))
       return(get(var_name))
     }
 
@@ -104,10 +104,10 @@ if (length(regular_model_specs) > 0) {
   })
   names(trained_models) <- names(regular_model_specs)
 } else {
-  message("No regular models specified. Skipping regular model training.")
+  message("  no fwd yhat models specified, skipping training")
 }
 
-message(sprintf("Feature enrichment training complete in %0.2f mins",
+message(sprintf("  training complete in %0.2f mins",
                 as.numeric(Sys.time() - start_time, units = "mins")))
 
 # Build predictions tibble dynamically.
@@ -181,7 +181,7 @@ if (ncol(H) > 0) {
 } else {
   # If no columns to scale, create an empty tibble with correct number of rows
   nH <- tibble::tibble(.rows = nrow(zX))
-  message("No features to enrich - H has 0 columns")
+  message("  no features to enrich - H has 0 columns")
 }
 
 message("Feature enrichment complete")

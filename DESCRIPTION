@@ -14,34 +14,21 @@ LazyData: true
 Depends:
     R (>= 4.4.0)
 Imports: 
-    DBI,
-    dplyr,
-    forecast (>= 8.22.0),
     jsonlite (>= 1.8.8),
     magrittr (>= 2.0.3),
-    pool,
-    progress,
-    R6,
-    RPostgreSQL,
-    uuid,
-    xts,
-    zoo,
     ggplot2,
     tibble,
+    dplyr,
     tidyr,
-    RcppRoll,
     stringr,
     purrr,
     lubridate,
     rugarch,
-    TTR,
-    moments,
-    forcats,
+    forecast (>= 8.22.0),
+    RQuantLib,
     scales,
-    reshape2,
     shiny,
-    shinydashboard,
-    RQuantLib
+    shinydashboard
 Suggests: 
     testthat (>= 3.0.0),
     withr (>= 3.0.0),
@@ -56,7 +43,11 @@ Suggests:
     MASS,
     knitr,
     qs,
-    skimr
+    skimr,
+    moments,
+    forcats,
+    reshape2,
+    TTR
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Config/testthat/edition: 3
