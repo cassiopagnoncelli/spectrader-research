@@ -15,8 +15,9 @@
 \maketitle
 
 \begin{abstract}
-  This paper sets out a framework for non-linear quantile regression with an ex
-This paper sets out a framework for non-linear quantile regression with an explicit treatment of the tails. We review the econometric underpinnings of conditional quantiles, describe a tree-based boosting approach for estimating them, and present a tail module that marries a quantile grid to an EVT bridge. The emphasis is on calibration, stability, and validation standards appropriate for applied econometric work.
+  A robust econometric model for estimating conditional surface with explicit tail treatment.
+  The model combines a grid of quantile estimates that individually contribute to a stacked, monotonic surface fit of
+  Generalised Pareto, adressing quantile crossing, high variance, and extrapolation power.
 \end{abstract}
 
 \section{Foundational Landscape}
@@ -101,65 +102,82 @@ Pool Adjacent Violators Algorithm (PAVA), which iteratively merges neighbouring 
 at the same time making no assumptions regarding the distribution beyond the ordering constraint.
 Effectively this is a projection onto the monotone cone, having the model obeying order, not shape.
 
+Finally, QBM is a computationally efficient method for estimating conditional quantiles serving as the backbone for the
+more complex quantile tail model ahead.
+
 \section{Quantile Tail Model}
-Quantile tails demand structure that a single fit cannot provide. The qtail construction answers this by coupling a bank of non-linear quantile estimates from QBM with an extreme-value overlay, so that the bulk and the tail remain coherent.
 
-The starting point is a grid of quantile levels. Higher resolution near the tail of interest captures curvature and local shape. Each level is fit with QBM, which supplies non-linear conditional quantiles without hand-crafted features.
+Quantile tail (qtail) is a composite model that integrates a grid of non-linear quantile estimates from QBM with an
+extreme-value-theory (EVT) tail extension, addressing the dual challenges of quantile crossing, high variance, and
+extrapolation power beyond observed data.
 
-These raw curves often cross in finite samples. To enforce logical ordering, qtail projects the grid onto the monotone cone via a row-wise least-squares projection,
-\[
-  \min_{Q_{i1}\le\cdots\le Q_{iK}} \sum_{k=1}^{K} \bigl(Q_{ik}-\hat{q}_{\tau_k}(x_i)\bigr)^2,
-\]
-which smooths idiosyncratic variation and reduces variance where data are sparse.
+The construction couples a bank of non-linear quantile estimates from QBM with an extreme-value overlay, so that the
+bulk and the tail remain coherent.
 
-After monotonicity, qtail can stack the grid with shrinkage weights. This pooling borrows strength across adjacent levels and tempers the instability that arises when extreme quantiles are fit in isolation.
+The starting point is a grid of quantile levels $\tau = \{\tau_1, \tau_2, \ldots, \tau_K\}$, each corresponding to
+a QBM fit, supplying non-linear quantile surfaces across the feature space.
 
-The tail extension begins at a chosen threshold quantile inside the grid. Exceedances beyond that threshold are modeled with a Generalized Pareto tail, delivering shape and scale parameters that describe the marginal tail beyond the fitted boundary.
+These raw curves often cross in finite samples.
+To enforce logical ordering, qtail projects the grid onto the monotone cone projection, which smooths idiosyncratic
+variation and reduces variance where data is sparse.
+
+Combining multiple quantile estimates provides a more balanced estimate into a single robust forecast at each level.
+After monotonicity, qtail can stack the grid, namely a level 2 regressor, with shrinking weights to adjust for
+explosive extreme tail behaviour.
+
+The tail extension begins at a chosen threshold quantile inside the grid, $\tau^*$.
+Exceedances beyond this threshold are modeled with a Generalized Pareto Distribution (GPD) tail, delivering shape and
+scale parameters that describe the marginal tail beyond the fitted boundary.
+Formally, exceedances over the threshold quantile $\hat{q}_{\tau^*}(x)$ are defined as
+$e_i = y_i - \hat{q}_{\tau^*}(x_i)$, for $\text{for } y_i > \hat{q}_{\tau^*}(x_i)$.
+These exceedances are then used to fit a GPD, estimating the tail shape $\hat{\xi}$ and scale $\hat{\beta}$ parameters
+via maximum likelihood.
 
 Extrapolation to a more extreme level $p$ is then obtained by adding a modeled exceedance to the threshold quantile,
+
 \[
-  \hat{q}_{p} = \hat{q}_{\tau^*} + \frac{\hat{\beta}}{\hat{\xi}}\!\left[\left(\frac{1-p}{1-\tau^*}\right)^{-\hat{\xi}} - 1\right],
+  \hat{q}_{p} = \hat{q}_{\tau^*} +
+  \frac{\hat{\beta}}{\hat{\xi}}
+  \left(
+    \left(\frac{1-p}{1-\tau^*}\right)^{-\hat{\xi}} - 1
+  \right),
+  \qquad \hat{\xi} \ne 0
 \]
-with the exponential limit as $\hat{\xi}\to 0$. This links the tree-based bulk fit to an EVT-consistent tail in a single surface.
 
-Alignment between the grid and the EVT layer is deliberate: the threshold coincides with a fitted quantile from QBM, avoiding discontinuities at the splice point. This keeps CVaR and other tail functionals consistent with the underlying quantile surface.
+with the exponential limit as $\hat{\xi}\to 0$. This links the tree-based bulk fit to an EVT-consistent tail in a
+single surface.
 
-Diagnostics gate the EVT step. Adequate exceedance count, stable tail index estimates, and acceptable calibration at the threshold are prerequisites. If these fail, qtail defaults to the stacked monotone grid without extrapolation.
+Adequate exceedance count, stable tail index estimates, and acceptable calibration at the threshold are top priorities.
+If these fail, qtail defaults to the stacked monotone grid without extrapolation yielding baseline predictions.
 
-Uncertainty should be propagated from both components. Reporting tail risk without accounting for variance in the grid and in the GPD fit overstates confidence; interval estimates should reflect both sources.
+Empirical checks are recommend for stability across nearby thresholds, particularly checking for tail index
+consistency, calibration, and sufficient exceedance count.
+Thresholds set too low bias the tail shape; thresholds set too high starve the EVT fit.
 
-Threshold choice balances bias and variance. Thresholds set too low bias the tail shape; thresholds set too high starve the EVT fit. Empirical checks on stability across nearby thresholds are recommended.
+Qtail combines a logically ordered grid with an EVT-based extension into an unified tail surface.
+The gain over a single quantile fit is stability and extrapolation power at and beyond quantile threshold.
 
-Monotonicity is more than housekeeping. By shrinking adjacent levels, it dampens noise amplification in the far tail and makes PIT and calibration curves more stable across levels.
+\section{Implementation}
 
-Stacking is likewise functional. Shrinkage toward equal weights curbs over-reliance on any single quantile level and mitigates the high variance inherent in tail targets.
+An R package implementing QBM and Quantile Tail is available at
+\texttt{https://www.github.com/cassiopagnoncelli/qboost}
+and under package name \texttt{qboost} on CRAN.
 
-The EVT bridge provides structure where QBM alone is extrapolating. By importing asymptotic shape information, it offers a disciplined extension beyond observed support—when the data justify it.
+\section*{Discussion}
 
-Coherence across risk measures is a central advantage. With a calibrated tail, CVaR and stressed shortfall align with the quantile surface rather than being bolted on separately.
+Quantile Tail displays a robust, creative framework for estimating conditional quantiles with tweakable tail model.
 
-From a computational standpoint, the projection and stacking steps are lightweight relative to fitting the grid, so the marginal cost of enforcing monotonicity and pooling is small.
+Tail extremes are heavily influenced by heteroskedasticity, entropy, and assymetry in the data.
+Introspectively, these can weight differently across quantiles, which QBM captures due to its non-parametric nature in
+picking splits based on informational gain.
 
-In dependent data, declustering exceedances before fitting the GPD avoids inflated tail estimates due to serial correlation. This keeps the EVT layer compatible with econometric time-series practice.
-
-Model monitoring remains necessary after deployment. Drift in calibration or tail index stability signals the need to adjust the grid, retrain qrb fits, or revise thresholds.
-
-The qtail design is modular: change the grid density, swap the base learner, or toggle EVT based on diagnostics. This flexibility lets practitioners match model complexity to data depth and risk appetite.
-
-In summary, qtail ties a calibrated bulk (via qrb), a logically ordered grid, and an EVT-consistent extension into a single tail surface. The gain over a single quantile fit is stability, logical coherence, and a disciplined path to extrapolation when the evidence supports it.
-
-\section*{Conclusion}
-Quantile methods are the natural language of risk because they target conditional bounds rather than averages. Tree-based quantile regression delivers these bounds with non-linear flexibility and operational speed, while the quantile grid with monotone pooling addresses crossing and variance in the tails. The EVT bridge adds principled extrapolation when exceedances warrant it; otherwise, the stacked monotone fit remains the conservative choice. A disciplined workflow—coverage/QCE and calibration checks, careful capacity control, and cautious threshold selection—turns these pieces into a practical model for tail-aware forecasting and event monitoring in applied econometrics.
-The architecture is modular: the quantile engine can be swapped, the grid can be densified or thinned, and the EVT layer can be toggled based on diagnostics. This modularity allows practitioners to balance flexibility with interpretability and to tailor the model to data availability and tail risk appetite.
-
-Open directions include adaptive threshold selection for EVT, automated monitoring of calibration drift in streaming settings, and closer coupling between quantile surfaces and downstream risk measures such as CVaR and stressed expected shortfall. Empirical studies across assets and macro series can further quantify how extrapolation risk trades off against tail coverage in live environments.
-The overarching aim is a calibrated, transparent pipeline for tail risk: non-linear quantiles that respect coverage, a tail layer that is only invoked when justified, and diagnostics that surface instability before it harms decisions. Continued work on uncertainty quantification for the combined model—and on stress-testing under regime shifts—will make the framework more robust for high-stakes econometric applications.
+Tweaking pinball loss assymetry is encouraged for different, extreme quantile targets when feature engineering provides
+little to no marginal gain.
 
 \begin{thebibliography}{9}
 \bibitem{tsay2010} R. S. Tsay. \emph{Analysis of Financial Time Series}. Wiley, 2010.
-\bibitem{koenker2005} R. Koenker. \emph{Quantile Regression}. Cambridge University Press, 2005.
-\bibitem{koenker2009} R. Koenker and J. Machado. Goodness of Fit and Related Inference Processes for Quantile Regression. \emph{Journal of the American Statistical Association}, 94(448):1296--1310, 1999.
-\bibitem{ke2017} G. Ke, Q. Meng, T. Finley, et al. LightGBM: A Highly Efficient Gradient Boosting Decision Tree. In \emph{NeurIPS}, 2017.
+\bibitem{koenker2012} R. Koenker; J. Machado \emph{Goodness of Fit and Related Inference Processes for Quantile Regression}. Journal of the American Statistical Association, 2012.
+\bibitem{alpaydin2010} E. Alpaydin. \emph{Introduction to Machine Learning}. MIT, 2010.
 \end{thebibliography}
 
 \end{document}
