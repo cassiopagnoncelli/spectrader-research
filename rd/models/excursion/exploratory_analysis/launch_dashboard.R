@@ -36,7 +36,7 @@ check_data <- function() {
     if (!has_dfsr) cat("  - dfsr not found\n")
     if (!has_posl) cat("  - posl not found\n")
     cat("\nPlease run trade_simulation.R first to generate the required data.\n")
-    cat("You can do this by running: source('rd/models/stock_crossover/trade_simulation.R')\n\n")
+    cat("You can do this by running: source('rd/models/extreme_excursion/trade_simulation.R')\n\n")
     FALSE
   }
 }
@@ -45,7 +45,7 @@ check_data <- function() {
 launch_dashboard <- function(load_data = FALSE) {
   if (load_data) {
     cat("Loading trade_simulation.R...\n")
-    source("rd/models/stock_crossover/trade_simulation.R")
+    source("rd/models/extreme_excursion/trade_simulation.R")
     cat("Data loaded successfully.\n\n")
   }
 
@@ -55,7 +55,7 @@ launch_dashboard <- function(load_data = FALSE) {
     cat("Press Ctrl+C (or Cmd+C on Mac) in the console to stop the dashboard.\n\n")
 
     # Run the dashboard
-    shiny::runApp("rd/models/stock_crossover/dashboard.R", launch.browser = TRUE)
+    shiny::runApp("rd/models/extreme_excursion/dashboard.R", launch.browser = TRUE)
   } else {
     cat("\nCannot launch dashboard without required data.\n")
     cat("Please load your data first, then try again.\n")
@@ -73,5 +73,5 @@ if (!interactive()) {
   cat("  2. If you need to load data first:\n")
   cat("       launch_dashboard(load_data = TRUE)\n\n")
   cat("  3. Or just run the dashboard directly:\n")
-  cat("       shiny::runApp('rd/models/stock_crossover/dashboard.R')\n\n")
+  cat("       shiny::runApp('rd/models/extreme_excursion/dashboard.R')\n\n")
 }

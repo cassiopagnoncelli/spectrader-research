@@ -1,13 +1,13 @@
 if (TRUE && !exists("dfsr")) {
   devtools::load_all()
 
-  source("rd/models/stock_crossover/1_etl.R")
-  source("rd/models/stock_crossover/2_feature_engineering.R")
-  source("rd/models/stock_crossover/3_splits.R")
-  source("rd/models/stock_crossover/4_feature_enrichment.R")
-  source("rd/models/stock_crossover/5_datasets.R")
-  source("rd/models/stock_crossover/6_signal_models.R")
-  source("rd/models/stock_crossover/7_exit_models.R")
+  source("rd/models/extreme_excursion/1_etl.R")
+  source("rd/models/extreme_excursion/2_feature_engineering.R")
+  source("rd/models/extreme_excursion/3_splits.R")
+  source("rd/models/extreme_excursion/4_feature_enrichment.R")
+  source("rd/models/extreme_excursion/5_datasets.R")
+  source("rd/models/extreme_excursion/6_signal_models.R")
+  source("rd/models/extreme_excursion/7_exit_models.R")
 }
 
 # TRADE SIMULATION
@@ -88,4 +88,4 @@ dfsr <- position_cohort_returns(posl, signals, y_name = "excursion_high")
 spectrader_export(dfsr)
 
 # Dashboard
-shiny::runApp("rd/models/stock_crossover/dashboard.R")
+shiny::runApp("rd/models/extreme_excursion/dashboard.R")

@@ -1,10 +1,10 @@
 if (FALSE) {
   devtools::load_all()
 
-  source("rd/models/stock_crossover/1_etl.R")
-  source("rd/models/stock_crossover/2_feature_engineering.R")
-  source("rd/models/stock_crossover/3_splits.R")
-  source("rd/models/stock_crossover/4_feature_enrichment.R")
+  source("rd/models/extreme_excursion/1_etl.R")
+  source("rd/models/extreme_excursion/2_feature_engineering.R")
+  source("rd/models/extreme_excursion/3_splits.R")
+  source("rd/models/extreme_excursion/4_feature_enrichment.R")
 }
 
 # DATASETS.
