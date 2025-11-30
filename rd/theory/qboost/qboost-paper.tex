@@ -118,15 +118,15 @@ The starting point is a grid of quantile levels $\tau = \{\tau_1, \tau_2, \ldots
 a QBM fit, supplying non-linear quantile surfaces across the feature space.
 
 These raw curves often cross in finite samples.
-To enforce logical ordering, qtail projects the grid onto the monotone cone projection, which smooths idiosyncratic
-variation and reduces variance where data is sparse.
+To enforce logical ordering, qtail projects the grid onto the monotone cone, which smooths idiosyncratic variation and
+reduces variance where data is sparse.
 
-Combining multiple quantile estimates provides a more balanced estimate into a single robust forecast at each level.
+Combining multiple quantile estimates provides a more balanced estimate into a single, robust forecast at each level.
 After monotonicity, qtail can stack the grid, namely a level 2 regressor, with shrinking weights to adjust for
 explosive extreme tail behaviour.
 
 The tail extension begins at a chosen threshold quantile inside the grid, $\tau^*$.
-Exceedances beyond this threshold are modeled with a Generalized Pareto Distribution (GPD) tail, delivering shape and
+Exceedances beyond this threshold are modeled with a Generalised Pareto Distribution (GPD) tail, delivering shape and
 scale parameters that describe the marginal tail beyond the fitted boundary.
 Formally, exceedances over the threshold quantile $\hat{q}_{\tau^*}(x)$ are defined as
 $e_i = y_i - \hat{q}_{\tau^*}(x_i)$, for $\text{for } y_i > \hat{q}_{\tau^*}(x_i)$.
@@ -176,13 +176,13 @@ picking splits based on informational gain.
 Tweaking pinball loss assymetry is encouraged for different, extreme quantile targets when feature engineering provides
 little to no marginal gain.
 
-Tree-based boosting machine family models currently perform satisfactorily in the non-linear regression landscape, with
-QBM leveraging quantile estimation.
-While ensemble methods provide some marginal edge over individual estimators, the stacked GPD model using these
-estimates consistently displays superior performance on tail extrapolation even in challenging scenarios.
+Tree-based boosting machines family models currently perform satisfactorily in the non-linear regression landscape,
+with QBM leveraging quantile estimation.
+While ensemble methods provide marginal edge over individual estimators, the stacked QBM + GPD model consistently
+displays superior performance on tail extrapolation, including and especially in challenging scenarios.
 
-QBM does the heavy lifting when edge-predicting variables are available, with the tail module providing a balanced
-surface extension in Qtail.
+QBM does the heavy lifting when edge-predicting variables are available, with the tail module providing a
+nearby-quantile-optimised, balanced surface extension.
 
 \begin{thebibliography}{9}
 \bibitem{tsay2010} R. S. Tsay. \emph{Analysis of Financial Time Series}. Wiley, 2010.
