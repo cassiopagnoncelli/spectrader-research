@@ -176,6 +176,15 @@ picking splits based on informational gain.
 Tweaking pinball loss assymetry is encouraged for different, extreme quantile targets when feature engineering provides
 little to no marginal gain.
 
+Tree-based boosting machine family models currently perform satisfactorily in the non-linear regression landscape, with
+QBM leveraging quantile estimation.
+While ensemble methods provide some marginal edge over individual estimators, the stacked GPD model using these
+estimates consistently displays superior performance on tail extrapolation even in challenging scenarios.
+
+\section*{Conclusion}
+
+...
+
 \begin{thebibliography}{9}
 \bibitem{tsay2010} R. S. Tsay. \emph{Analysis of Financial Time Series}. Wiley, 2010.
 \bibitem{koenker2012} R. Koenker; J. Machado \emph{Goodness of Fit and Related Inference Processes for Quantile Regression}. Journal of the American Statistical Association, 2012.

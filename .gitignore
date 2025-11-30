@@ -59,3 +59,5 @@ tmp/*
 rd/**/*.rds
 
 builds/
+
+**/*.log
