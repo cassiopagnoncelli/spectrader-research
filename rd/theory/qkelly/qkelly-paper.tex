@@ -1,0 +1,96 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath, amsfonts, amssymb}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\usepackage{enumitem}
+\geometry{margin=1in}
+
+\title{Quantile-variation Kelly Estimator}
+\author{Cássio Jandir Pagnoncelli}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+  A novelty, parametric quantile-variation for Kelly bet sizing.
+\end{abstract}
+
+\section{Kelly Criterion Review}
+
+Let $(\Omega, \mathcal{F}, \mathbb{P})$ be a probability space and let ${R_t}_{t \ge 1}$ be a
+real-valued i.i.d. return process. Consider a self-financing portfolio investing a constant fraction
+$f \in [0,1]$ of current wealth before each draw. Wealth evolves as:
+
+[
+W_{t+1} = W_t (1 + f R_t), \quad W_1 > 0.
+]
+
+Define the \emph{growth rate functional}:
+
+[
+g(f) := \mathbb{E}\big[\log(1 + f R_1)\big].
+]
+
+Assume the process has favourable odds in the sense that there exists at least one $f$ such that
+$g(f) > 0$ (a positive edge opportunity). Then:
+
+\textbf{Theorem (Kelly, 1956).}
+If $\mathbb{E}[\log(1 + f R_1)]$ exists on $f \in [0,1]$, the optimal constant
+allocation $f^\star$ that maximises the almost-sure long-run exponential growth rate of wealth is:
+
+[
+f^\star = \arg\max_{f \in [0,1]} g(f).
+]
+
+Moreover, this control dominates all other constant fractions almost surely:
+
+[
+\lim_{T \to \infty} \frac{1}{T} \log \frac{W_{T+1}(f^\star)}{W_{T+1}(f)}
+= g(f^\star) - g(f) > 0 \quad \text{a.s.}
+]
+
+for every $f \neq f^\star$ with $g(f) < g(f^\star)$.
+
+The maximiser $f^\star$ satisfies the first-order optimality condition:
+
+[
+\mathbb{E}\left[\frac{R_1}{1 + f^\star R_1}\right] = 0,
+]
+
+which characterises a growth-optimal fixed point for the stochastic recursion.
+
+
+\section{Quantile Kelly Estimator}
+
+...
+
+\section{Implementation}
+
+An R package implementing Quantile Kelly is available at
+
+\begin{center}
+\texttt{https://www.github.com/cassiopagnoncelli/qkelly}.
+\end{center}
+
+\section*{Discussion}
+
+Central moments mean and median metrics tend to differ in returns distributions.
+Even for small differences in these metrics, the resulting bet sizes can differ significantly.
+
+Risk managers commonly use fractional Kelly criteria for bet sizing, normally between 0.3 to 0.5 of the full Kelly
+size as a means to reduce volatility.
+
+Traditional Kelly does not account for variance in losses or gains distributions, it optimises for the avergages of
+these metrics.
+
+Quantile Kelly provides a more flexible way to adjust bet sizes by tuning the quantile parameter conditional on the
+loss probability tolerance of the investor.
+
+\begin{thebibliography}{9}
+\bibitem{kelly1956} J. Kelly. \emph{A New Interpretation of Information Rate}. Bell System Technical Journal. Wiley, 1956.
+\end{thebibliography}
+
+\end{document}
