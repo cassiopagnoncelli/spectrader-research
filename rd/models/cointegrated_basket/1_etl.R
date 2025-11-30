@@ -1,4 +1,5 @@
 library("dplyr")
+library("urca")
 
 if (FALSE) {
   devtools::load_all()
@@ -26,20 +27,13 @@ quotes_raw <- qetl::qetl_global()$send_query(
   ORDER BY date
 ", verbose = FALSE, name = "coint_quotes", fmt = "tibble")
 
-industries <- unique(q$industry)
-sectors <- unique(q$sector)
-symbols <- unique(q$symbol)
+industries <- unique(quotes_raw$industry)
+sectors <- unique(quotes_raw$sector)
+symbols <- unique(quotes_raw$symbol)
 
-industry_n <- q %>%
+industry_n <- quotes_raw %>%
   group_by(industry) %>%
   summarise(n = n_distinct(symbol)) %>%
   arrange(desc(n))
 
 industry_n %>% print(n = Inf)
-
-industry_sel <- "Beverages - Non-Alcoholic"
-
-q <- quotes_raw %>%
-  filter(industry == industry_sel) %>%
-  select(symbol, date, close)
-q
