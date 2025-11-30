@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.11.28)  30 NOV 2025 01:58
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.11.28)  30 NOV 2025 02:03
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -225,12 +225,6 @@ Overfull \hbox (1.1704pt too wide) in paragraph at lines 92--95
 
 
 [2]
-Overfull \hbox (107.47482pt too wide) in paragraph at lines 162--165
-\T1/cmr/m/n/10.95 An R pack-age im-ple-ment-ing QBM and Quan-tile Tail is avail
--able at \T1/cmtt/m/n/10.95 https://www.github.com/cassiopagnoncelli/qboost
- []
-
-
 
 [3]
 
@@ -268,7 +262,7 @@ l/texlive/2025basic/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/
 local/texlive/2025basic/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb></u
 sr/local/texlive/2025basic/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb>
 
-Output written on qboost-paper.pdf (4 pages, 158075 bytes).
+Output written on qboost-paper.pdf (4 pages, 158045 bytes).
 PDF statistics:
  315 PDF objects out of 1000 (max. 8388607)
  69 compressed objects within 1 object stream
