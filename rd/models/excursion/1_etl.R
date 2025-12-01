@@ -10,3 +10,5 @@ if (FALSE) {
 quotes <- qetl::get_sample_quotes()
 
 macro <- fets::macro()
+
+sentiments <- qetl::sentiments()

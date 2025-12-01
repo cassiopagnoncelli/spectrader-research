@@ -1,13 +1,13 @@
 if (TRUE && !exists("dfsr")) {
   devtools::load_all()
 
-  source("rd/models/extreme_excursion/1_etl.R")
-  source("rd/models/extreme_excursion/2_feature_engineering.R")
-  source("rd/models/extreme_excursion/3_splits.R")
-  source("rd/models/extreme_excursion/4_feature_enrichment.R")
-  source("rd/models/extreme_excursion/5_datasets.R")
-  source("rd/models/extreme_excursion/6_signal_models.R")
-  source("rd/models/extreme_excursion/7_exit_models.R")
+  source("rd/models/excursion/1_etl.R")
+  source("rd/models/excursion/2_feature_engineering.R")
+  source("rd/models/excursion/3_splits.R")
+  source("rd/models/excursion/4_feature_enrichment.R")
+  source("rd/models/excursion/5_datasets.R")
+  source("rd/models/excursion/6_signal_models.R")
+  source("rd/models/excursion/7_exit_models.R")
 }
 
 # TRADE SIMULATION
@@ -21,10 +21,14 @@ qeh_cutoff <- .5
 qel_cutoff <- .9993
 
 # Generate trading signals
+# Calculate quantile thresholds outside dplyr::filter to avoid list coercion issues
+qeh_threshold <- quantile(mnXYP$yhat_qeh[test_idx], qeh_cutoff, na.rm = TRUE)
+qel_threshold <- quantile(mnXYP$yhat_qel[test_idx], qel_cutoff, na.rm = TRUE)
+
 signals <- mnXYP[test_idx, ] %>%
   dplyr::filter(
-    yhat_qeh > quantile(yhat_qeh, qeh_cutoff),
-    yhat_qel > quantile(yhat_qel, qel_cutoff)
+    yhat_qeh > qeh_threshold,
+    yhat_qel > qel_threshold
   ) %>%
   filter_signals(within_days = 20, max_per_day = 1) %>%
   dplyr::arrange(date) %>%
@@ -88,4 +92,4 @@ dfsr <- position_cohort_returns(posl, signals, y_name = "excursion_high")
 spectrader_export(dfsr)
 
 # Dashboard
-shiny::runApp("rd/models/extreme_excursion/dashboard.R")
+shiny::runApp("rd/models/excursion/dashboard.R")

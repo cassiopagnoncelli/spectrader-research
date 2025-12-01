@@ -1,7 +1,7 @@
 if (FALSE) {
   devtools::load_all()
 
-  source("rd/models/extreme_excursion/1_etl.R")
+  source("rd/models/excursion/1_etl.R")
 }
 
 # FEATURE ENGINEERING.
@@ -15,6 +15,8 @@ fets::fwd(quotes, lookahead = 25, inplace = TRUE)
 
 # Add macro indicators
 fets::add_macro(quotes, macro)
+
+fets::add_sentiment(quotes, sentiments)
 
 # Engineer features based on current series solely
 quotes_fwd_fe <- fets::fe(quotes, inplace = TRUE)

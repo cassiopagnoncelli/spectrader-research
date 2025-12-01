@@ -1,11 +1,11 @@
 if (FALSE) {
   devtools::load_all()
 
-  source("rd/models/extreme_excursion/1_etl.R")
-  source("rd/models/extreme_excursion/2_feature_engineering.R")
-  source("rd/models/extreme_excursion/3_splits.R")
-  source("rd/models/extreme_excursion/4_feature_enrichment.R")
-  source("rd/models/extreme_excursion/5_datasets.R")
+  source("rd/models/excursion/1_etl.R")
+  source("rd/models/excursion/2_feature_engineering.R")
+  source("rd/models/excursion/3_splits.R")
+  source("rd/models/excursion/4_feature_enrichment.R")
+  source("rd/models/excursion/5_datasets.R")
 }
 
 # SIGNAL RESEARCH.
