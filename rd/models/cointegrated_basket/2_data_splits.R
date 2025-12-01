@@ -27,7 +27,7 @@ industry_with_coint <- c(
   "Internet Content & Information",
   "Communication Equipment",
   "Biotechnology",
-  "Asset Management",
+  "Asset Management"
   # "Oil & Gas Midstream",
 )
 
@@ -41,7 +41,7 @@ selectable_industries <- industry_n %>%
   arrange(industry) %>%
   pull(industry)
 
-industry_sel <- "Oil & Gas Midstream"
+industry_sel <- industry_with_coint[8]
 
 symbol_sel <- quotes %>%
   filter(industry == industry_sel) %>%
@@ -72,7 +72,7 @@ price_matrix <- q_wide %>%
   as.matrix()
 
 coint_res <- test_cointegration_rank(price_matrix, verbose = TRUE)
-cat(sprintf("Industry: %s, Cointegration Rank: %d\n", industry_sel, coint_res$coint_rank))
+Qcat(sprintf("Industry: %s, Cointegration Rank: %d\n", industry_sel, coint_res$coint_rank))
 
 beta <- coint_res$johansen@V
 r <- coint_res$coint_rank
