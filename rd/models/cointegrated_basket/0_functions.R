@@ -1,3 +1,157 @@
+#' Test if a Time Series is I(1)
+#'
+#' Tests whether a time series is integrated of order 1 (I(1)) by checking:
+#' 1. Non-stationary in levels (has unit root)
+#' 2. Stationary in first differences
+#'
+#' @param x Numeric vector representing a time series
+#' @param significance_level Significance level for ADF test (default 0.05)
+#' @param adf_type ADF test specification: "none", "drift", or "trend" (default "drift")
+#' @param verbose Print test details (default FALSE)
+#'
+#' @return Logical value: TRUE if series is I(1), FALSE otherwise
+#'
+#' @details
+#' A series is I(1) if:
+#' - ADF test on levels fails to reject H0 (non-stationary, has unit root)
+#' - ADF test on first differences rejects H0 (stationary, no unit root)
+#'
+#' The test compares the ADF test statistic against the critical value
+#' at the specified significance level. Test statistic < critical value
+#' indicates stationarity (rejection of H0).
+#'
+#' @examples
+#' # I(1) series (random walk)
+#' x <- cumsum(rnorm(200))
+#' is_i1(x)  # Should return TRUE
+#'
+#' # I(0) series (white noise)
+#' y <- rnorm(200)
+#' is_i1(y)  # Should return FALSE
+#'
+#' @export
+is_i1 <- function(
+  x,
+  significance_level = 0.05,
+  adf_type = "drift",
+  verbose = FALSE
+) {
+  library(urca)
+  
+  # Validate input
+  if (!is.numeric(x)) {
+    stop("x must be a numeric vector")
+  }
+  
+  # Remove NAs
+  x_clean <- x[!is.na(x)]
+  
+  if (length(x_clean) < 30) {
+    stop("Insufficient observations. Need at least 30, got ", length(x_clean))
+  }
+  
+  # Map significance level to critical value column
+  crit_col <- switch(
+    as.character(significance_level),
+    "0.01" = 1,
+    "0.05" = 2,
+    "0.10" = 3,
+    2  # default to 5%
+  )
+  
+  # Step 1: ADF test on levels
+  adf_levels <- ur.df(x_clean, type = adf_type, selectlags = "AIC")
+  test_stat_levels <- adf_levels@teststat[1]
+  crit_val_levels <- adf_levels@cval[1, crit_col]
+  
+  # Non-stationary in levels: test_stat >= crit_val (fail to reject H0)
+  non_stationary_levels <- test_stat_levels >= crit_val_levels
+  
+  if (verbose) {
+    cat("Levels: τ =", round(test_stat_levels, 3), 
+        ", critical =", round(crit_val_levels, 3),
+        ", stationary =", !non_stationary_levels, "\n")
+  }
+  
+  # If already stationary in levels, it's I(0), not I(1)
+  if (!non_stationary_levels) {
+    if (verbose) {
+      cat("Series is I(0) (stationary in levels)\n")
+    }
+    return(FALSE)
+  }
+  
+  # Step 2: ADF test on first differences
+  x_diff <- diff(x_clean)
+  adf_diffs <- ur.df(x_diff, type = adf_type, selectlags = "AIC")
+  test_stat_diffs <- adf_diffs@teststat[1]
+  crit_val_diffs <- adf_diffs@cval[1, crit_col]
+  
+  # Stationary in differences: test_stat < crit_val (reject H0)
+  stationary_diffs <- test_stat_diffs < crit_val_diffs
+  
+  if (verbose) {
+    cat("Diffs:  τ =", round(test_stat_diffs, 3),
+        ", critical =", round(crit_val_diffs, 3),
+        ", stationary =", stationary_diffs, "\n")
+  }
+  
+  # I(1) if non-stationary in levels AND stationary in differences
+  is_i1 <- non_stationary_levels && stationary_diffs
+  
+  if (verbose) {
+    if (is_i1) {
+      cat("Result: I(1) ✓\n")
+    } else if (!stationary_diffs) {
+      cat("Result: I(2) or higher (not stationary even in differences)\n")
+    } else {
+      cat("Result: Not I(1)\n")
+    }
+  }
+  
+  return(is_i1)
+}
+
+
+# Example usage
+if (FALSE) {
+  library(urca)
+  
+  # Test 1: I(1) series (random walk)
+  set.seed(123)
+  x_i1 <- cumsum(rnorm(200))
+  cat("Test 1 - Random walk (should be I(1)):\n")
+  result1 <- is_i1(x_i1, verbose = TRUE)
+  cat("\n")
+  
+  # Test 2: I(0) series (white noise)
+  x_i0 <- rnorm(200)
+  cat("Test 2 - White noise (should be I(0)):\n")
+  result2 <- is_i1(x_i0, verbose = TRUE)
+  cat("\n")
+  
+  # Test 3: I(1) series with drift
+  x_drift <- cumsum(rnorm(200, mean = 0.1))
+  cat("Test 3 - Random walk with drift (should be I(1)):\n")
+  result3 <- is_i1(x_drift, verbose = TRUE)
+  cat("\n")
+  
+  # Test 4: Check multiple series
+  price_matrix <- cbind(
+    i1_series = cumsum(rnorm(200)),
+    i0_series = rnorm(200),
+    another_i1 = cumsum(rnorm(200, 0.05))
+  )
+  
+  cat("Test 4 - Multiple series:\n")
+  for (i in 1:ncol(price_matrix)) {
+    col_name <- colnames(price_matrix)[i]
+    result <- is_i1(price_matrix[, i], verbose = FALSE)
+    cat(sprintf("  %-15s: I(1) = %s\n", col_name, result))
+  }
+}
+
+
 #' Test Cointegration Rank
 #'
 #' Tests whether time series in a price matrix are I(1) and determines
