@@ -41,7 +41,7 @@ selectable_industries <- industry_n %>%
   arrange(industry) %>%
   pull(industry)
 
-industry_sel <- "Entertainment"
+industry_sel <- "Oil & Gas Midstream"
 
 symbol_sel <- quotes %>%
   filter(industry == industry_sel) %>%
@@ -55,7 +55,8 @@ symbol_sel
 q <- quotes %>%
   filter(industry == industry_sel) %>%
   # filter(symbol %in% symbol_sel) %>%
-  filter(symbol %in% c("DIS", "FOX", "FOXA", "FWONA", "NWS", "NWSA", "ROKU", "WBD")) %>%
+  filter(symbol %in% c("EPD", "MPLX", "OKE", "PBA", "TRGP", "WMB")) %>%
+  # filter(symbol %in% c("DIS", "FOX", "FOXA", "FWONA", "NWS", "NWSA", "ROKU")) %>%
   select(symbol, date, close)
 
 q_wide <- q %>%
@@ -72,3 +73,13 @@ price_matrix <- q_wide %>%
 
 coint_res <- test_cointegration_rank(price_matrix, verbose = TRUE)
 cat(sprintf("Industry: %s, Cointegration Rank: %d\n", industry_sel, coint_res$coint_rank))
+
+beta <- coint_res$johansen@V
+r <- coint_res$coint_rank
+
+coint_vectors <- beta[, (ncol(beta) - r + 1):ncol(beta), drop = FALSE]
+spread <- cbind(price_matrix, 1) %*% coint_vectors[, 1]
+plot(spread / sd(spread), t='l')
+abline(h = 0, col = 'red', lty = 2)
+
+dtools::analyse(spread, groups = Inf)
