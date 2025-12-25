@@ -157,6 +157,29 @@ Thresholds set too low bias the tail shape; thresholds set too high starve the E
 Qtail combines a logically ordered grid with an EVT-based extension into an unified tail surface.
 The gain over a single quantile fit is stability and extrapolation power at and beyond quantile threshold.
 
+\section{Combining heterogeneous models}
+
+Back in QBM, a pragmatic approach to improve performance is deriving specialised models for different feature
+subspaces, then combining these heterogeneous models.
+The latter is conceptually harder than the former, as models may differ in architecture and, therefore, in output
+scale and distribution, yielding diferent surfaces.
+Unifying these surfaces into a single, coherent estimate is non-trivial —except for the quantile itself.
+
+Multiplexed QBM (MQBM) is a QBM extension that builds upon a specialised architecture combining diverse QBM models
+trained on different feature subspaces, as indicated by a multiplexer variable.
+The multiplexer indicates the variable that splits the subspace into $M$ segments, each with a dedicated QBM model
+trained on the corresponding subset of data.
+At prediction time, the multiplexer variable routes each observation to the appropriate specialised model, which
+produces a quantile estimate, the final output.
+
+Multiplexed Quantile Tail Model (MQtail), by extension, is Quantile Tail model analogue using MQBM.
+Standard metrics are adapted to evaluate the combined model using trivial statistics.
+Surfaces are used to produce empirical coverage, pseudo-$R^2$, Kendall correlation, and PIT histograms, as before,
+but now reflecting the combined model's performance across all subspaces.
+Rest aware that different subspaces produce heterogeneous quantile surfaces and should therefore be evaluated both
+jointly and individually to ensure each specialised model performs adequately within its domain.
+For prediction and forecasting, resort to MQBM's and MQtail's quantile estimates as the final output.
+
 \section{Implementation}
 
 An R package implementing QBM and Quantile Tail is available at

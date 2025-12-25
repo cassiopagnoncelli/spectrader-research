@@ -37,7 +37,7 @@ dqr_general_formula <- S ~ S_1 + S_2 +
 dqr_general_formula
 
 # Fit exit dqr on train subset
-qeh_q <- mnXYP$yhat_qeh[train_idx] %>% quantile(qeh_tau)
+qeh_q <- mnXYP$yhat_qeh[train_idx] %>% quantile(0.9)
 qeh_q
 
 dqr_signals_train <- mnXYP[train_idx, ] %>%
@@ -58,8 +58,9 @@ dqr_fits <- train_dqr(
     dqr_general_formula,
     dqr_general_formula
   ),
-  max_position_days = 30
-)
+  max_position_days = 15,
+  cache = FALSE
+) # ~3 min
 
 message(
   sprintf(

@@ -11,7 +11,7 @@ if (FALSE) {
 #
 
 # Calculate forward features
-fets::fwd(quotes, lookahead = 25, inplace = TRUE)
+fets::fwd(quotes, lookahead = 15, inplace = TRUE)
 
 # Add macro indicators
 fets::add_macro(quotes, macro)
@@ -32,5 +32,4 @@ close <- decomposed$close
 volume <- decomposed$volume
 Y <- decomposed$Y
 X <- decomposed$X %>%
-  dplyr::select(-all_of(c("open", "high", "low"))) %>%
-  dplyr::select(-matches("^(smoothed_close)"))
+  dplyr::select(-all_of(c("open", "high", "low")))
